@@ -44,7 +44,7 @@ rc.5's expanded sheet and rc.1's open drawer show the brand row.
 
 ## Private Skills: the one exception to "never writes local files" (SK, 2026-11-10)
 
-the only exception to §7's "never writes local files". Fishball keeps its own skills (lessons about the user's preferences and ways of working) in `<child DSH home>/skills/<name>/SKILL.md`, and writes them, new or updated, on its own or when asked, with no approval. Six manager-only tools (`private_skill_list/read/create/update/remove/reload`) and one native skill provider are registered through `fishballInstance.manager.registerSetup` in the manager's own agent scope, so no worker, preset or main DSH sees them; workers get skill text in Fishball's messages. The provider is the public native `FileSystemSkillProvider` over that single root, with the host watcher off and a confined reader that refuses links (and multiply linked files) before reading; writes go through a trusted storage service (name grammar first, native-format validation, serialized, complete publication by same-directory rename, typed `committed` outcomes including committed-but-refresh-failed). Ordinary write/edit/shell stay read-only, and the standard child skill provider no longer lists `<child home>/skills`. Refresh affects later loads and the next model catalog only; no slash-menu refresh is claimed. See [SK-SEAM](<docs/planning/v2-sk-seam.md>), [T-SK cases](<docs/test-design/private-skills.md>) and fishball-core's `src/manager/skills.js` and `src/manager/skills-store.js`.
+the only exception to §7's "never writes local files". Fishball keeps its own skills (lessons about the user's preferences and ways of working) in `<child DSH home>/skills/<name>/SKILL.md`, and writes them, new or updated, on its own or when asked, with no approval. Six manager-only tools (`private_skill_list/read/create/update/remove/reload`) and one native skill provider are registered through `fishballInstance.manager.registerSetup` in the manager's own agent scope, so no worker, preset or main DSH sees them; workers get skill text in Fishball's messages. The provider is the public native `FileSystemSkillProvider` over that single root, with the host watcher off and a confined reader that refuses links (and multiply linked files) before reading; writes go through a trusted storage service (name grammar first, native-format validation, serialized, complete publication by same-directory rename, typed `committed` outcomes including committed-but-refresh-failed). Ordinary write/edit/shell stay read-only, and the standard child skill provider no longer lists `<child home>/skills`. Refresh affects later loads and the next model catalog only; no slash-menu refresh is claimed. See [SK-SEAM](<docs/history/planning/v2-sk-seam.md>), [T-SK cases](<docs/history/test-design/private-skills.md>) and fishball-core's `src/manager/skills.js` and `src/manager/skills-store.js`.
 
 ## 7. Requirement 4 (as amended): processes information, does no work, never writes local files
 
@@ -284,3 +284,174 @@ Updated planning estimate: **81–125 person-hours** — MULTI-0 **11–17h**, M
 - **Q06 — Global CIMD URL:** the user asked what CIMD is (Client ID Metadata Document, the client metadata URL used for browser sign-in). Fishball chooses A, one global URL and no per-target overrides, as the least-work option consistent with Q04. **This is Fishball's call, subject to change**, not a direct user answer; validation and credential binding remain per target.
 - **Q07 — Removal/endpoint retirement:** confirm the destructive change, void pending local cards, retain labeled read-only history and delete the retired target token material. Do not implicitly answer/revoke remote requests.
 - **Q12 — No hard cap:** no new target-count limit; all targets remain reachable with scrolling/overflow and independent failure handling. Existing transport/tool/provider budgets still apply.
+
+The [original decision record](<docs/planning/v3-multi-dsh.md#11-settled-user-decisions-not-questions>) and [resolved Q01–Q12 record](<docs/planning/v3-multi-dsh.md#9-resolved-product-decisions-q01q12>) preserve the answers and attribution; **no open product questions remain**. Freeze the technical seams before the three implementation slices begin; Q11's host/owner-change report-back gate remains mandatory.
+
+## 25. V3 R-FIX-FUI: fishball-ui review fixes (2026-11-18)
+
+The fixes for the fishball-ui review (`.runtime/reports/review-x-fishball-ui.md`), the user's one product answer, and the rules they follow:
+
+| Point | Decision | Reason |
+|---|---|---|
+| Rows that change DSH's UI | fishball-ui's patch only inserts its own rows. The UI guard rows (`ui-*`, `entry-customization`) and the hosted child's Preview Notice acknowledgement are in **core's** patch, each conditional on `fishball-ui` being in the profile (live while HMR runs, else `startedBundles`). Core's check reports them only while fishball-ui's `fishballUiGuards` presence service is there. Accepted limit: with core but without fishball-ui these rows read DSH's stock values, so an earlier bundle's setting of one of them is not kept | the user, 2026-11-18 (option 1). The host's patch merge writes every override whatever its `!!js` value, so a row in fishball-ui's patch changed earlier composition without core (Q-G2 = A) |
+| Pairing warning | Each target's pairing warning is drawn in that target's sidebar details (MULTI-3; the R-FIX-FUI dock card and its `/api/fishball/pairing` routes are removed with core's scalar `ui.pairing`). Its choices post `SEAM_TARGETS.route.pairing` `{targetId, choice, confirmed}`; Continue is enabled only with its box ticked, and core still refuses it unconfirmed. Last-seen times are in the page's language and the browser's time zone. The pairing words (`SEAM_PAIRING`) are fishball-shared's | R-ID-07 (import/pasted-token path), R-NAME-03 |
+| A lost stream | The sidebar's DSH targets and the ask cards share one browser stream lifecycle (client.js kit): an `error` marks the cached view stale; CLOSED offers Reconnect, which reopens every stream of the row. Until a fresh valid frame: each target drops its cached state, lines and controls, its pairing warning staying readable; the ask cards keep their cached text readable under the notice; every control is disabled | a cached frame must not look authoritative or be acted on; what was asked stays readable, and core refuses a late answer anyway |
+| Pairing confirmation | The box resets with each new warning (`pairingView` `key`: state, bound pair, name refusal), also between two warnings of the same state | a tick confirms one pairing only (R-ID-07) |
+| Connect presses | Only the latest press opens its approval page or publishes its notice | a double press must not open a dead attempt |
+| Model dialog | Every opening reads DSH's catalog again; a failed read offers Try again | the catalog may change while the dialog is closed |
+| Core Connect control | Reads and presses are sequenced; only the latest read publishes, and nothing settles after unmount (no open, no read, no state). A press's notice stays until a later read's (state, code) differs from the first read after the press | review findings 5 and 6 |
+| Ask-card time | Formatted in the DSH UI language's locale (`en` / `zh-CN`), in the browser's time zone | as DSH's own schedule UI |
+| Same-side status words (finding 8) | Not changed: `SEAM_STATUS.link/connect/guards` still restate K3's frozen data-only file; equality coverage stays | K3 freeze; needs an approved contract change |
+
+## 26. V3 CONN-TOOLS and ASK-NATIVE (2026-11-18)
+
+The user removes `question_ask` and `question_answer_own`, including their exclusive own-card schemas and behaviour. The historical dotted `question.ask` / `question.answerOwn` architecture is superseded, not a compatibility requirement; the historical documents remain unchanged.
+
+`question_answer` still answers forwarded managed-session DSH questions and plan reviews. Shared question/answer validators, generic settlement `answers`, and `QUESTION_ANSWER` / `CARD_CLOSED` semantics for forwarded questions remain. Fishball's local `ask_user` files existing permission/legacy-ask offers only. For its own clarifications, Fishball's manager uses the native DSH `ask_user_question` tool from its guarded preset; this does not add a connector MCP tool or change where managed-session questions are answered.
+
+## 27. Hosted Frame Readiness v1
+
+For the initial hosted navigation and each parent-initiated replacement, `dsh-connector-ui` keeps
+its fresh iframe hidden and inaccessible from first paint. Loading a document is not enough: the
+child might have landed on a sign-in page instead of the Fishball page. The parent reveals it only
+on the [Hosted Frame Readiness v1 signal](<docs/history/connector-contract.md#15-hosted-frame-readiness-v1-v3-only>)
+from the exact admitted origin and current frame window. After 15000 ms the parent offers recovery.
+A late valid signal can still reveal that frame; “Open Fishball again” gets a fresh admission and iframe.
+
+The framed `fishball-ui` page sends one non-secret marker per document when its page plugin is
+installed. This gates presentation only, not later navigations within the same frame, chat health
+or authentication. It changes no SDK, route, frozen connector value or child lifecycle state (§19).
+
+## 28. Plugins for an embedded Fishball are managed from the main DSH (2026-11-20)
+
+**Why.** A plugin installed inside the instance-run child ran pnpm under the child's private home, while the instance's set install had run pnpm in the main process under the user's home. pnpm links one `node_modules` from one store and refused the second (`ERR_PNPM_UNEXPECTED_STORE`). Rather than isolating the store (option A, dropped), the user moved every package operation on the child profile into the main DSH (the user, 2026-11-20).
+
+Decided by the user on 2026-11-20:
+
+| Point | Decision |
+|---|---|
+| Who runs pnpm on the child profile | Only the main DSH, through dsh-instance. The child never installs or uninstalls. |
+| The child's install entries | Hidden, not refused: DSH's Add plugin and its menu, the Discover tab, Uninstall, and the bundle page's Update buttons (they run pnpm in the child too; updating is uninstall and reinstall from the main DSH), by a style rule from fishball-core while the instance runs the child. "Just hide it would be enough to keep it away from normal user path." No Host-side refusal. A DSH markup change can bring a control back; that is accepted. |
+| The child's notice | At the top of the child's Plugins page, where Add plugin was: plugins for this Fishball are installed from the main DSH. |
+| The Recommended tab | Removed in an instance-run child, kept in a standalone Fishball. The list moves to the instance's UI in the main DSH. |
+| Where the main-DSH UI lives | dsh-instance, through DSH's own slots: a **Fishball** tab on the Plugins page (`plugins.tab`) listing the child's plugins with Uninstall, an **Install for Fishball** button at the top of the tab (DSH hides its header actions on a contributed tab and offers no header slot) and the Recommended list; an **Install for Fishball** item in DSH's Add plugin menu (`plugins.add.actions`); and on each main-DSH plugin page (`plugins.detail.actions`) a button for that plugin. |
+| The per-plugin button | A plugin the main profile installed: **Install to Fishball**, the same spec into the child. An official plugin the installation ships: **Use in Fishball**, which adds it to the child's bundle list with no pnpm run. A plugin already in Fishball: **Uninstall from Fishball**. |
+| The dialog | DSH does not export its install dialog, so the instance's dialog follows DSH's screens with DSH's components (as revision 10a did): package field, check, confirmation, progress with Cancel, result or Retry. |
+| After a successful install | The plugin is added to the child's bundle list and the child restarts. |
+| Embed UI | Unchanged, so it can later frame a remote Fishball; it gains no install feature and no slot. Only Hand over leaves it (below). |
+| Hand over | The marks part (Hand over / Take back, "Managed by …", the managed-row fish) moves from dsh-connector-ui to dsh-agent-connector, so every connector install has it. It reads "Hand over to <agent>" and uses the connector's icon, not the fish. |
+
+**Embedded or standalone.** fishball-core treats the child as instance-run while the instance's child-side row `dsh-instance-child` is present (it is inserted only by the instance's launch overlay).
+
+**Process.** The instance mounts DSH's Host `PluginManager` for the child profile in an isolated scope, as revision 10a's `FishballPluginManager` did (spike S31): inspect, install, cancel and remove run DSH's own process unchanged; `publishAndReload` does nothing (the child is not this process's profile); installs pass `enabled: false`, then the instance writes the child's bundle list (files.js `writeProfileBundles`) and restarts the child. Because the set install and these runs share the main process's environment, every pnpm run on the child profile uses one store.
+
+**Restart on the instance's settings page (the user, 2026-11-20).** The instance's own settings page gains **Restart** beside Retry: available while the instance is on and the child is ready, failed or stopped, disabled while it starts or stops. It asks first ("Restart Fishball? Running work in Fishball stops and the Fishball window reloads."), then runs the row's restart, queued behind other starts and stops. Retry for a failed child is unchanged.
+
+**Implementation decisions (2026-11-20).** The Fishball tab lists the child's bundles except the protected ones (the child's base bundles, the Fishball set and dsh-instance), which the instance re-adds at every start; uninstalling them is refused (`protected`). One package operation at a time (install, use or uninstall; `busy` otherwise). Uninstall first runs `pnpm remove` through DSH's package operation when the child declares the package, then drops the bundle from the child's list, so a failed removal changes nothing (`remove-failed`); DSH's `removeBundle` would reload the main profile. Restart is refused on the Host (and disabled on the page) while a Fishball package operation runs, and an operation counts as running until the child restart it queued has settled. The per-plugin button reads the main bundle's facts from DSH's own `listBundles`. Progress reuses DSH's own forwarded install events (`plugin-manager/install-state` and `install-log`), which the dialog filters by its own request id. The child manager's scope isolates `connection` as well as `pluginManager`, because DSH's manager registers the fixed detail-file Fetch route that DSH's own manager already holds.
+
+
+## 29. Waking Fishball in batches (2026-11-21)
+
+**Why.** Each Fishball turn re-reads its whole context, so handing every event over as its own turn cost tokens for each one. The user approved batching on 2026-11-21.
+
+| Point | Decision |
+|---|---|
+| Classes | Every event type is **wake** (delivered as part of a turn) or **silent** (recorded; it never wakes Fishball by itself and rides along with the next wake delivery as one summary line). Wake: permission, question, plan-review, turn-finished, handover, takeback, message, notice, ask and the watchdog's `contributed:dsh-connector-watchdog.drift`. Silent: state, settlement, retirement. Any other type wakes. |
+| Quiet window | Wake events are buffered; each restarts a quiet window (default 10 s). When it passes with no new wake event, everything buffered (wake and silent) goes to Fishball as one message, one turn. Silent events never start or restart it. 0 delivers at the next idle. |
+| Max batch | A buffer of the max batch of wake events (default 20) is delivered at once, with a notice naming the limit and saying more may follow. |
+| Settings | `wake.quietWindowSeconds` (whole, ≥ 0), `wake.maxBatch` (whole, ≥ 1), `wake.classes` (type → class), volatile fields of core's row, on core's settings page. Read at each event: a save applies to the next one. |
+| The user's message | Never waits: the model step that carries it (`agent/pre-step`) takes every waiting event in front of it, so the events and the user's words are one step. Only a message whose source kind is the user's counts, not a plugin notice or the runtime context (the lead, 2026-11-21). |
+| Unchanged | The ledger's exactly-once accounting per record (one batch message settles every record it carries: admitted, discarded or redelivered together), recovery at startup (recovered records are due at once), retired epochs never presented, interceptors first, the ask cards see every polled event. |
+| turn-finished | Carries the session's final message, so the persona no longer sends Fishball to `session_read` for it. |
+| Connector changes | `workspaces_list` and `models_list` join core's tool copy after `sessions_list`; no `settlement` comes for Fishball's own answers, so a successful `approval_answer` through the façade closes (deletes) its open unfiled ask record; `state` events are no longer sent. |
+
+**Implementation.** `src/events/delivery.js` holds the open buffer, the sealed batches and the window timer (injectable, unref'd, cleared by `close()`); `src/events/wake.js` checks the settings. A batch message's id is its first record's own message id and its source lists every record (`{kind: 'fishball-event', events: [{key, eventId, type, targetId}]}`), so a copy an earlier process left pending is recognised and settled for every record at recovery.
+
+## 30. fishball-heartbeat: keep Fishball's cache warm with useful turns (2026-11-21)
+
+**Why.** Fishball's provider prompt cache expires while it is idle, and the next real turn then pays a cold write over its whole context. A heartbeat turn re-reads the cached prefix before it expires and gives Fishball something worth doing in that turn (the user, 2026-11-21). Unlike dsh-cache-retainer's invisible replay, a heartbeat is a real turn in Fishball's session.
+
+Decided by the user: off until the user sets an interval and a maximum of consecutive heartbeats, which Fishball cannot change; every Fishball turn resets the timer, heartbeat turns included; heartbeats sent with no real turn between them are counted and stop at the limit, a real turn resets the count; Fishball's one tool edits only the next heartbeat's focus; every heartbeat tells Fishball to update that focus at the end of the turn from the current state.
+
+**Where.** A row of fishball-amenities (`./heartbeat/index.js`, id `fishball-heartbeat`; its own package `fishball-heartbeat` since §33), bound to `fishballInstance` (apiVersion 2) the way the board row is (`followInstance`, `reportCoreMissing`): X2 `registerSetup` for the tool and the per-manager timer, X10 `manager.notify({wake: true})` for the turn. No core change.
+
+**Implementation decisions (Fishball, 2026-11-21).**
+- Settings: `intervalSeconds` (1 … 2147483, the setTimeout limit) and `maxConsecutive` (≥ 1), no defaults; either unset means off: no tool, no timer.
+- The timer is armed at each `turn/end` for the interval after that event's time and cleared at `turn/start`.
+- A heartbeat turn is a turn that admitted the heartbeat notice and no work message (the user's, a core event batch `fishball-event`, a reminder `schedule`, another plugin's `fishball-notice`); any other turn that entered a step is real. A turn that entered no step sent no request and changes neither the count nor the anchor.
+- With wake batching (§29) each batch is one turn and resets like any real turn; events in the quiet window are not a turn. A heartbeat claimed with a batch in one turn makes that turn real.
+- Each manager setup (when core opens the session after a restart, a resume, or a row reload) rebuilds the count and the anchor from the session log; an overdue heartbeat is not caught up (the cache is presumed cold), and a timer firing more than 5 s late (machine sleep) is dropped by the same rule. The delay is capped at the interval (a wall clock set back).
+- A failed send is logged and not retried; the next turn re-arms it. Known race: core's `notify` cannot be withdrawn, so a turn started between the timer and core's followup is followed by the heartbeat.
+- `heartbeat_focus` declares `focus` as an untyped, optional `json` field (as the board does) so that every malformed call gets the tool's own `invalid-input`; dsh-tools still refuses non-object arguments itself.
+- One dedupe key per idle gap: session id plus the seq of the `turn/end` that opened it.
+- The focus is `<home>/fishball-heartbeat/focus.json`, ≤ 2000 code points, written by rename; an empty focus clears it.
+
+**Compaction on cooling (the user's requirement, 2026-11-21).** When the heartbeat gives up warming the cache, it first compacts Fishball's context once if it is longer than a threshold. The next real turn pays a cold write over the whole context anyway, so a shorter context costs least at that moment.
+- Setting `compactThresholdTokens` (natural number, default 256000) sits next to the other two in the row config, which Fishball's tools cannot write. It has a default, so the on/off rule is unchanged (both timer settings set). 256K is read as 256 × 1000, as DSH reads it: its model settings parse `256K` with `CAPACITY_SCALE.k = 1000` (dsh-client-ui-settings-models `DeepSeekModelsEditor.tsx`), and model windows are quoted in decimal.
+- Cooling points: the limit is reached (live, or found at setup from the log), an overdue gap at setup, a late timer dropped, a failed send. No cooling happens before any turn has ended.
+- Length: `tokenMeter.measure(session).totalTokens` (dsh-token-meter, host plane), the request size DSH's own compaction compares against. Above the threshold only; at or below it nothing happens.
+- Compaction: the engine's `compactNow(agent, signal)`, DSH's idle compaction (what `/compact` runs). It is read as `agentPresets.serviceFor(agent, 'compaction')`, falling back to a host-plane `compaction`. The heartbeat first awaits `agent.whenIdle()`; a turn that starts meanwhile supersedes the cooling. compactNow holds the agent's maintenance phase, so a message arriving meanwhile waits for it, as during `/compact`.
+- The compaction is no activity (the user's requirement, 2026-11-22): it resets neither the timer nor the count, and neither does what it makes other plugins queue. The messages of the first `agent/inbox/spliced` into `next-step` (an `agent.inject`, never the user's own) that directly follows the `compaction/end` of an idle compaction with no `sourceCommandId` (the heartbeat's compactNow; `/compact` records its command), with the same compactionId, are a consequence of the cooling: the turn that admits them is judged as if they were absent, and the rest of the turn is judged as above. Any other event closes that window. The ids are read from the log (a restart keeps them) and forgotten at the next turn that entered a step. fishball-taskboard's compaction reminder is the case reported: it made the next turn real and the heartbeats started over.
+- Once per cooling: the turn fold records `compacted` on a `compaction/start` outside any turn, and the heartbeat sets it on its own attempt. Only a real turn clears it, so a heartbeat turn or a restart does not compact again. An attempt that wrote nothing to the log (nothing compactable, `busy`) is not remembered across a restart.
+- Failure: one warning with the error's code, no retry, no timer; the heartbeat state is untouched. A disposal aborts the compaction without a warning. A missing token meter or compaction service is logged once per setup.
+- **Composition (fishball-core, 2026-11-21, the lead's decision).** Fishball's live session had no compaction service at all. dsh-web-app's patch switches the host-plane `compaction-basic` off and gives each shipped preset its own isolated group; core switches those presets off, and `preset-fishball` carried only `tool-fs` and `tool-ask-user`. Core's preset now carries DSH's `compaction-basic` in an isolated `compaction` group, as the shipped presets do, with `auto: false`. In all three SDKs (0.2.1-rc.5, 0.2.2-rc.1, 0.2.2-rc.3) that flag skips the engine's whole automatic registration: the pre-step pressure check, the model-switch check and overflow recovery. So Fishball's turns behave as before, and only an explicit `compactNow` compacts. Spike (throwaway DSH 0.2.2-rc.3 home, fake model with a 100K window, six large turns): `auto: true` compacted 3 times inside turns, `auto: false` none; `compactNow` then reduced 62184 → 1250 tokens, and `serviceFor` returned the engine. No `command-compact` row is added. A standalone install whose composition lacks the engine keeps the logged no-op.
+
+## 31. `fishball-taskboard`: Fishball's own task board and memo pad (2026-11-21)
+
+The user's request: Fishball gets tools to create tasks, break goals into subtasks, update status and progress, and read the board; tasks are not linked to sessions; the user can view and edit the board in the UI at any time, and a save wakes Fishball with what the user changed; the data persists; after every compaction, if the board has unfinished tasks, one short reminder line is injected. The full contract is [docs/plugins/fishball-taskboard.md](<docs/plugins/fishball-taskboard.md>).
+
+| Point | Decision |
+|---|---|
+| Package | A component of `fishball-amenities` (`taskboard/`, its own sub-package for its browser half; its own package `fishball-taskboard` since §33), a sibling of `fishball-board`, not built on it: the board is session-linked, read-only for the user and shelved with a frozen contract; the taskboard needs none of that. It reuses the board's `followInstance` / `reportCoreMissing`. |
+| Storage | One record in DSH's storage domain `fishball_taskboard` (one atomic write per change). |
+| Tools | `taskboard_read`, `taskboard_add` (with nested `subtasks` and `parentId`), `taskboard_update`, `taskboard_memo`; manager-only through X2 and checked against X1. |
+| UI | A right-sidebar tab "Task board" (page type of `sidebarRightTabs`), opened from a conversation header action and the sidebar guide; a draft is saved as one POST of the whole board, refused `stale` if Fishball changed it meanwhile. |
+| Wake | A changing save calls `manager.notify({wake: true})`: X10 queues it as its own turn at once. It is not a link event, so §29's quiet window and batching never hold it. |
+| Reminder | On a successful `compaction/end` of the manager's session, one `agent.inject` line if any task is unfinished. |
+| PENDING | Memo form (list), statuses (todo, in_progress, blocked, done, dropped), who deletes (only the user), limits: provisional recommended values, asked 2026-11-21. |
+
+## 32. Fishball speaks only through `message_user` (2026-11-21)
+
+**Why.** The user decided that Fishball's assistant output is collapsed by default and that only messages explicitly sent to the user are shown, through a dedicated tool. The prompt tells Fishball that the user sees only what it surfaces, that anything needing the user's attention or action must be sent proactively, that routine events are never sent, and that what it sends is batched.
+
+| Point | Decision |
+|---|---|
+| Tool | Core's `message_user` (`src/manager/message-tools.js` `MESSAGE_TOOL`, `message-user.js`), in the manager's scope only, through X2 (setup `fishball-core-message-user`), and listed in `GUARDS.coreTools`. One required `message` (Markdown). Returns `{shown: true}`, or `{shown: false, code: 'message-empty'}` when blank after trimming. Nothing is stored: the recorded call is the message. |
+| Notify | The persona names embed-UI's `notify` (dsh-connector `UI_TOOL.notify`, model base name `embed-ui__notify`) as offered only when the target DSH runs embed-UI (Q-N3). Core adds no notify tool of its own. |
+| Drawing | fishball-page registers a Conversation Definition on `tool/call` for `message_user`, and a `conversation.chat.node` renderer for its kind `fishball-message`, at group-tree position `turn`, so DSH's turn fold never hides it. The call's own tool row stays in the fold. Fishball's bubble, name and avatar (§22, and the avatar theme) move from assistant replies to this row. |
+| Refused calls | The row is drawn from the dispatched call (`tool/call`), not from its result, so a `message_user` call whose turn is stopped before the tool answers, or that the runtime refuses after dispatch, is still drawn. A blank message is never drawn. |
+| Folding | On the Fishball page, assistant reply rows are hidden unless their Turn's own DSH control (`button[data-turn-process]`) is open or disabled. Expanding that control shows the folded process and the replies, in DSH's plain look. No new disclosure. A folded seat gets DSH's own `hidden` attribute, which DSH's flow gaps, paging and scroll anchoring skip. |
+
+## 33. Every amenity is its own package; `fishball-amenities` is an umbrella (2026-11-21)
+
+**Why.** The user decided that every amenities component is an independent package with its own package.json, name and version, installable on its own, and that `fishball-amenities` only pulls them in so they install together. Only a package with browser code declares `dsh.client`, so no package resolves from two loader sources. dsh-connector made the same split for `dsh-connector-amenities` (its d85037d).
+
+| Point | Decision |
+|---|---|
+| Packages | `packages/fishball-board`, `packages/fishball-heartbeat`, `packages/fishball-taskboard` (were `board/`, `heartbeat/`, `taskboard/` inside `fishball-amenities`), each a DSH bundle with its own `cordis.patch.yml` inserting its own row by package name. Row ids, tools, settings namespaces, storage and routes are unchanged. |
+| Umbrella | `fishball-amenities` depends on and bundles the three members (and `fishball-shared`), and its own patch inserts their rows by package name, because DSH makes only a profile's direct dependencies bundles (as DSH's `dsh-cua-bundle` carries its members' rows). Installing the umbrella and a member as direct dependencies together would insert the same rows twice. |
+| Browser code | `dsh.client` only on `fishball-taskboard` (its Task board tab) and the umbrella (its settings-page hint). Board and heartbeat have none. |
+| Shared helper | `followInstance` / `reportCoreMissing` (was the board's `src/instance.js`, imported by the other two by relative path) moved unchanged to `fishball-shared/instance-follower`, which now has three users; each member lists `fishball-shared` in `dependencies` and `bundleDependencies`. |
+| Release | Decided by the user (2026-11-21): all three amenities ship in the release, together with Fishball, through the umbrella; each is also released on its own, before the umbrella. Every component is separate code: no component imports another component or any core module; their one shared module is the generic `fishball-shared/instance-follower`. The shelving rule that core and fishball-ui name the board nowhere (SHELVE-BOARD) still holds. Known limit: fishball-board binds `fishballInstance` apiVersion 1 (its frozen contract) while core is at 2 (MULTI-0), so beside today's core it loads, logs `fishball-core-missing` once and stays idle. |
+| Icons | Each package declares its own manifest `icon` (`assets/<package>-icon.svg`, listed in `files`), in ICON-SET's look (the fish on the ink tile, a paper badge with the package's own glyph): fishball-amenities a two-layer stack, fishball-board three columns (a work board), fishball-heartbeat a pulse line, fishball-taskboard a checklist with ticks. They are apart from core's link and fishball-ui's bubble at 30 px, and from dsh-connector-amenities' tiles-and-plus. The Plugins page shows the package root's manifest icon as a data-URL `<img>` (cards 36 px, component rows 30 px), so the colours are fixed in the asset |
+
+## 34. The Fishball page holds one live connection (2026-11-21)
+
+**Why.** Every message sent to Fishball, text or image, stayed "sending" until the user left the page; leaving and coming back showed it had arrived. A browser opens at most 6 HTTP/1.1 connections per host (Chrome, Firefox by default), shared by every tab of the profile, and a loopback DSH serves no HTTP/2. Each open EventSource holds one connection, and DSH's own calls (session prompt, history pages, uploads) are ordinary fetches that queue behind the held ones. The page held DSH's `/plugins/events`, fishball-ui's strip view twice (targets list and brand), core's ask cards twice (ask dock and brand), and, since fishball-taskboard, its board feed: 6 of 6. The user decided (2026-11-21): "那就合并数据流，全部都走一个链接" (merge the data streams so they all go over one connection). The count must stay constant however many panels or amenities exist.
+
+| Point | Decision |
+|---|---|
+| Carrier | One owner-only SSE route of core's main row, `/api/fishball/page/events?lang=&tz=` (`fishball-shared` `SEAM_PAGE_STREAM`, core `src/page/stream.js`). Each message is `{topic, frame}`. Every topic's frame is sent at open, then one per change, never an unchanged one twice. The URL names no topics: the stream always carries every registered topic, so mounting a panel never reopens it. Only the page's language (the strip is drawn in it) or Reconnect replaces it. |
+| Topics | `fishballInstance.page.register(topic, {frame(url), onChange})`, additive in apiVersion 2. Core registers `asks`, the fishball-ui row registers `strip`, and fishball-taskboard registers `fishball-taskboard` while it is bound to the instance (`followInstance`). A new amenity adds a topic, never a connection. |
+| Browser | fishball-ui's client opens the one EventSource while any reader is mounted and demultiplexes by topic. A late reader gets the last frame. Health (live/stale/closed) and Reconnect are the carrier's. The kit's `topicStream` replaces `liveStream`/`langStream`, and the client service `fishballPageStream` (`subscribe(topic, {frame, health})`) is the amenities' way in. fishball-taskboard falls back to its own `/api/fishball-taskboard/events` only where that service is absent (standalone, no fishball-ui). |
+| Count | On the Fishball page: one Fishball connection, plus DSH's own `/plugins/events`. That is 2 of the 6, whatever the page draws. The older per-view routes (`/api/fishball/strip`, `/api/fishball/asks/events`) stay for other readers; the page no longer opens them. |
+| Rejected | A DSH stream Remote on DSH's own WebSocket, which would not count against the limit at all: `ctx.remote.$mount` accepts only contributions with the strict descriptors `dsh-typert-generator` writes at build time, and the Fishball packages are plain JS with no build step. HTTP/2 over TLS on loopback: it needs a certificate the browser trusts and DSH's webserver in https mode, which changes the user's DSH setup. Spreading streams over a second host name (127.0.0.1 and localhost): DSH's admission and session cookies are per host, and it only doubles the ceiling. Opening streams lazily or rationing them: the count would still grow with every amenity. |
+
+## 35. Running sessions are re-read while a Fishball page watches (2026-11-22)
+
+**Why.** The sidebar lists each connected target's running managed sessions (core `targets/sessions.js`, from `sessions_list`). That list was refreshed only on connect, on the mailbox events that can change it, and right after Fishball's own session tool call. Since WAKE-REDUCE the connector sends no event when a session starts running, only `turn-finished` when it stops. So a session that starts by itself never appeared: the user typing in it, a handed-over session already running, or a queued message whose turn starts just after `session_message` answered (that read itself comes too early). The user's choice (2026-11-22): poll, but only while someone watches.
+
+| Point | Decision |
+|---|---|
+| Poll | Every `TARGET_SESSIONS.watchIntervalMs` (15 s, the implementer's choice: the user asked for a modest interval and gave no number), one `sessions_list` per connected target, only while a Fishball page holds core's page stream (§34). Core's `page.watching()` / `onWatch` says so. When the first page starts watching, one refresh runs at once. With no page open there is no timer and no call. |
+| Kept | The existing refreshes (connect, `refreshOn` events, the `called` hook) stay. No new connection and no new event type. |
