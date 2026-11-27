@@ -127,12 +127,11 @@ For its own clarifications, Fishball calls
 `ask_user({questions: [{id, question, header?, options?: [{label, description?}], multi_select?}]})`.
 The tool persists one local card for the batch and returns `{cardId}` without waiting. The card
 uses the same ask-card layer and page stream as permission cards. Only the Fishball owner can
-see and answer it. The accordion switches between permission and question cards. Each question
-card shows the batch count and summary; expanding it reveals a separate fieldset for each question.
+see and answer it. The bounded Waiting for you pile scrolls between permission rows and question rows.
+Each question opens, answers, or skips independently. Submitting one row leaves other rows pending.
 
-Submitting the card queues an ordinary user-role follow-up message in Fishball’s chat. It
-contains `cardId` and the answers (`id`, `selected`, optional `custom`) in the original question
-order. If Fishball is idle, the message wakes it; if it is busy, the current turn finishes first.
+Each submission queues one user-role follow-up containing the original `cardId` and one answer
+(`id`, `selected`, optional `custom`) in the existing `answers` array. If Fishball is idle, the message wakes it; if it is busy, the current turn finishes first.
 Nothing is sent to a connector. Forwarded managed-session questions and plan reviews still use
 their own session cards and the existing answer flow.
 

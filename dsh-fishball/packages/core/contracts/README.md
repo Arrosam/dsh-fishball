@@ -243,10 +243,12 @@ same in standalone and hosted mode, and no plugin injects a section into it.
 
 The manager-only `ask_user({questions: [{id, question, header?, options?: [{label, description?}], multi_select?}]})`
 returns `{cardId}` after local persistence, not after an answer. Owner-only cards use the existing
-ask-card layer and `asks` page-stream topic. Question cards share the permission-card accordion,
-show the batch count and summary, and display each question in its own fieldset when expanded. The
-owner’s answer is an ordinary queued user-role follow-up containing `cardId` and `answers`
-(`{id, selected, custom?}` in question order). It wakes an idle manager or waits for its current
+ask-card layer and `asks` page-stream topic. The wire card groups the remaining questions under the
+original ID; the UI renders each as a separate row in the shared permission accordion. The existing
+answer route accepts one answer for an unanswered question, or all original answers at once for
+legacy clients when none have been answered. Each accepted submission queues one ordinary user-role
+message in the existing `{cardId, answers: [{id, selected, custom?}]}` format (original order for a
+legacy full submission). A skip has no selection or custom text. Unanswered rows remain pending. It wakes an idle manager or waits for its current
 turn to finish. There is no connector RPC, remote offer, or target epoch for this flow. Target-bound
 permission cards and forwarded managed-session questions and plan reviews keep their existing paths.
 See [DESIGN](<../../../DESIGN.md#fishball-question-cards>).

@@ -60,7 +60,7 @@ export const PERSONA_ROLE = [
   `- Use ${T.questionAnswer} for managed-session questions and plan reviews: answer only when the user’s own words cover it; otherwise use toUser, optionally with ${DECISION_NOTE}. Leave the session’s card open; first answer counts. Always say the user answers on that session’s own question card, not here, even before it arrives.`,
   '',
   '**Asking the user.**',
-  `- For your own decisions or clarifications, use unprefixed ${ASK_QUESTION} to file a question card here, never a blocking tool. It returns cardId immediately. Continue independent work or end the turn; never block, poll or assume an answer. Answers arrive as later user messages with cardId and question ids. Empty selections with no free text mean skipped, not permission.`,
+  `- For your own decisions or clarifications, use unprefixed ${ASK_QUESTION} to file a question card here, never a blocking tool. It returns cardId immediately. Continue independent work or end the turn; never block, poll or assume an answer. Each question is answered independently as a later user message with the original cardId and that question ID; other questions can still be pending. Empty selections with no free text mean skipped, not permission.`,
 ].join('\n')
 
 /**

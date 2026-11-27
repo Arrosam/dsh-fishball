@@ -36,32 +36,45 @@ export function questionsOf(questions) {
   }))
 }
 
-/** Submit one item per question, in any order. An empty item is a skip, not permission. */
+/** Normalize submitted answers in question order. An empty item is a skip, not permission. */
 export function answersOf(questions, answers) {
-  if (!Array.isArray(answers) || answers.length !== questions.length || !answers.every((item) => isRecord(item)
+  if (!Array.isArray(answers) || answers.length === 0 || !answers.every((item) => isRecord(item)
     && isString(item.id) && Array.isArray(item.selected) && item.selected.every(isString)
     && unique(item.selected) && optional(item.custom, isString))) return undefined
   const byId = new Map(answers.map((item) => [item.id, item]))
   const checked = []
   for (const { id, options, multi_select } of questions) {
     const answer = byId.get(id)
-    if (answer === undefined) return undefined
+    if (answer === undefined) continue
     const { selected } = answer
     const custom = answer.custom?.trim()
     if (multi_select !== true && selected.length + (custom ? 1 : 0) > 1) return undefined
     if (selected.some((label) => !options?.some((option) => option.label === label))) return undefined
     checked.push({ id, selected: [...selected], ...(custom ? { custom } : {}) })
   }
-  return checked
+  return checked.length === answers.length ? checked : undefined
 }
+
+const validReply = (questions, reply) => isRecord(reply) && nonBlank(reply.messageId) && answersOf(questions, reply.answers) !== undefined
 
 export const questionSchema = Object.freeze({
   parse(value) {
     if (!isRecord(value) || !nonBlank(value.cardId) || !nonBlank(value.sessionId)) throw new TypeError(QUESTION_CARD.malformed)
-    if (value.settled === true && value.reply === undefined) return value
-    if (!Number.isSafeInteger(value.askedAt) || questionsOf(value.questions) === undefined
-      || !optional(value.reply, (reply) => isRecord(reply) && nonBlank(reply.messageId) && answersOf(value.questions, reply.answers) !== undefined)
-      || !optional(value.settled, (settled) => settled === true && value.reply !== undefined)) throw new TypeError(QUESTION_CARD.malformed)
+    if (value.settled === true && value.reply === undefined && value.outbox === undefined) return value
+    if (!Number.isSafeInteger(value.askedAt) || questionsOf(value.questions) === undefined) throw new TypeError(QUESTION_CARD.malformed)
+    if (value.reply !== undefined) {
+      // Older builds kept one full-batch reply. Normalize on read so an upgrade can recover it.
+      if (!validReply(value.questions, value.reply) || value.reply.answers.length !== value.questions.length) throw new TypeError(QUESTION_CARD.malformed)
+      const { reply, settled, ...record } = value
+      return { ...record, outbox: [reply], answeredIds: settled ? reply.answers.map(({ id }) => id) : [] }
+    }
+    const { questions, answeredIds = [], outbox = [] } = value
+    const ids = new Set(questions.map(({ id }) => id))
+    if (!Array.isArray(answeredIds) || !unique(answeredIds) || !answeredIds.every((id) => ids.has(id))
+      || !Array.isArray(outbox) || !outbox.every((reply) => validReply(questions, reply))
+      || !unique(outbox.map(({ messageId }) => messageId))) throw new TypeError(QUESTION_CARD.malformed)
+    const queuedIds = outbox.flatMap(({ answers }) => answers.map(({ id }) => id))
+    if (!unique(queuedIds)) throw new TypeError(QUESTION_CARD.malformed)
     return value
   },
 })

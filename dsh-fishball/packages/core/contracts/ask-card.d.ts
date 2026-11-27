@@ -76,7 +76,7 @@ export interface FishballQuestion {
   readonly multi_select?: boolean
 }
 
-/** One manager-local batch; keeps the common handle used by the card layer. */
+/** Pending questions from one manager-local batch; keeps the original card ID and common handle. */
 export interface FishballQuestionCard {
   readonly kind: 'question'
   readonly cardId: string
@@ -87,7 +87,7 @@ export interface FishballQuestionCard {
   readonly state: 'open'
 }
 
-/** POST to the existing owner-only asks answer route. A skip is an empty selection without custom text. */
+/** POST one answer, or the untouched legacy full batch. A skip is an empty selection without custom text. */
 export interface FishballQuestionReply {
   readonly cardId: string
   readonly answers: readonly { readonly id: string; readonly selected: readonly string[]; readonly custom?: string }[]

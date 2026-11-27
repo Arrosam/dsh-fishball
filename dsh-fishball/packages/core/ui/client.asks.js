@@ -40,6 +40,7 @@ window.__ModuleLoader__.load({
       ownSessionLabel: 'Fishball',
       pileFill: '--dsw-alias-bg-layer-1',
       badgeMax: 99,
+      questionsPerRow: 1,
       summarySeparator: ' · ',
       // Retain a few visible lines when chrome wraps at very short viewport heights.
       minQuestionListHeight: 'min(3lh, 20vh)',
@@ -62,7 +63,7 @@ window.__ModuleLoader__.load({
         source: 'fb-ask-source', hidden: 'fb-ask-visually-hidden', from: 'fb-ask-from', time: 'fb-ask-time', body: 'fb-ask-body', badge: 'fb-ask-badge',
         question: 'fb-ask-question', detail: 'fb-ask-detail', label: 'fb-ask-label', args: 'fb-ask-args', row: 'fb-ask-row', reason: 'fb-ask-reason', error: 'fb-ask-error',
         fields: 'fb-ask-fields', option: 'fb-ask-option', questionCard: 'fb-ask-question-card',
-        questionList: 'fb-ask-question-list', progress: 'fb-ask-progress',
+        questionList: 'fb-ask-question-list',
       }),
       // K1's ARGUMENTS_STATUS word for whole arguments (core's AskCard.argumentsStatus, ask-card.d.ts).
       argumentsComplete: 'complete',
@@ -100,7 +101,6 @@ window.__ModuleLoader__.load({
       'question.skip': 'Skip',
       'question.submit': 'Send answer',
       'question.list': 'Questions',
-      'question.progress': '{done} of {total} answered or skipped',
     }
     const zh = {
       waiting: '等你处理',
@@ -119,7 +119,6 @@ window.__ModuleLoader__.load({
       'question.skip': '跳过',
       'question.submit': '发送回答',
       'question.list': '问题列表',
-      'question.progress': '已回答或跳过 {done}/{total} 题',
     }
 
     const focusRing = 'outline:var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));outline-offset:-2px'
@@ -152,7 +151,6 @@ window.__ModuleLoader__.load({
       // If wrapped chrome leaves too little room, the card itself can scroll instead of clipping.
       `.${ASKS_UI.css.questionList}{display:grid;align-content:start;gap:12px;min-height:${ASKS_UI.minQuestionListHeight};overflow-y:auto}`,
       `.${ASKS_UI.css.questionList}:focus-visible{${focusRing}}`,
-      `.${ASKS_UI.css.progress}{order:1;color:var(--dsw-alias-label-secondary)}`,
       `.${ASKS_UI.css.card}>.${ASKS_UI.css.body}[hidden]{display:none}`,
       `.${ASKS_UI.css.question}{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font:var(--dsw-font-s-strong-14);color:var(--dsw-alias-label-primary)}`,
       `.${ASKS_UI.css.fields}{display:grid;gap:8px;min-width:0;margin:0;padding:0;border:0}`,
@@ -244,60 +242,48 @@ window.__ModuleLoader__.load({
         }, t('question.skip'))))
     }
 
-    function QuestionBody({ card, expanded, locked, send, t }) {
-      const [drafts, setDrafts] = React.useState(() => new Map())
+    function QuestionBody({ card, question, expanded, locked, send, t }) {
+      const [draft, setDraft] = React.useState(emptyDraft)
       if (!expanded) return null
-      const done = card.questions.filter(({ id }) => {
-        const draft = drafts.get(id)
-        return draft && (draft.skipped || draft.selected.length > 0 || draft.custom.trim() !== '')
-      }).length
-      const total = card.questions.length
-      const submit = () => {
-        const answers = card.questions.map(({ id }) => {
-          const { selected, custom } = drafts.get(id)
-          // An explicitly skipped question has neither a choice nor custom text on the wire.
-          const text = custom.trim()
-          return { id, selected, ...(text === '' ? {} : { custom: text }) }
-        })
-        send({ cardId: card.cardId, answers })
-      }
+      const { selected, custom, skipped } = draft
+      const answerText = custom.trim()
+      const canSend = skipped || selected.length > 0 || answerText !== ''
+      const submit = () => send({ cardId: card.cardId, answers: [{ id: question.id, selected, ...(answerText ? { custom: answerText } : {}) }] })
       return h(React.Fragment, null,
         h('div', { className: ASKS_UI.css.questionList, role: 'region', 'aria-label': t('question.list'), tabIndex: 0 },
-          card.questions.map((question) => h(QuestionFields, {
-            key: question.id, question, draft: drafts.get(question.id) ?? emptyDraft, locked, t,
-            update: (draft) => setDrafts((current) => new Map(current).set(question.id, draft)),
-          }))),
+          h(QuestionFields, { question, draft, locked, update: setDraft, t })),
         h('div', { className: ASKS_UI.css.row },
-          h('span', { className: ASKS_UI.css.progress, role: 'status' },
-            t('question.progress', { done, total })),
-          h(AskAction, { variant: 'primary', disabled: locked || done !== total, onClick: submit }, t('question.submit'))))
+          h(AskAction, { variant: 'primary', disabled: locked || !canSend, onClick: submit }, t('question.submit'))))
     }
 
     const isQuestion = (card) => card.kind === ASKS_UI.kind.question
+    // Question IDs are only unique within one call. Keep row, draft and press identity scoped to it.
+    const rowsOf = (card) => isQuestion(card)
+      ? card.questions.map((question) => ({ card, question, key: JSON.stringify([card.cardId, question.id]) }))
+      : [{ card, key: card.handle }]
 
     function makeDock(ctx, stream, kit, presses) {
-      function AskCard({ card, expanded, toggle, t, stale, lang }) {
+      function AskRow({ row: { card, question, key }, expanded, toggle, t, stale, lang }) {
         const panelId = React.useId()
         // Press state outlives the dock: remounts cannot unlock an in-flight answer. A stale frame
         // may still show a settled card, so none of its controls can post until the stream is live.
-        const { sending, refused } = kit.usePress(presses, card.handle)
+        const { sending, refused } = kit.usePress(presses, key)
         const locked = sending || stale
         const send = (body) => {
-          if (stale || presses.get(card.handle).sending) return
-          return presses.run(card.handle, () => kit.press(ASKS_UI.answer, body),
+          if (stale || presses.get(key).sending) return
+          return presses.run(key, () => kit.press(ASKS_UI.answer, body),
             (answer) => ({ refused: kit.refusalText(answer, lang) }))
         }
-        const question = isQuestion(card)
         const kind = question ? ASKS_UI.kind.question : ASKS_UI.kind.permission
-        const first = question ? card.questions[0] : card
-        const preview = first?.question
-        const header = (question && first?.header?.trim()) || t('header.' + kind)
+        const preview = (question ?? card).question
+        const header = question?.header?.trim() || t('header.' + kind)
         const session = card.sessionTitle ?? (question ? ASKS_UI.ownSessionLabel : card.sessionId)
         const request = session + ASKS_UI.summarySeparator + header
         const source = card.source?.name ?? t('dsh.unnamed')
         return h('div', {
           className: question ? ASKS_UI.css.card + ' ' + ASKS_UI.css.questionCard : ASKS_UI.css.card,
           'data-fishball-ask': card.handle,
+          'data-fishball-ask-question': question?.id,
           'data-fishball-ask-state': card.state, 'data-fishball-ask-kind': kind,
         },
         h('button', {
@@ -307,7 +293,7 @@ window.__ModuleLoader__.load({
         h('span', { className: ASKS_UI.css.summary },
           h('span', { className: ASKS_UI.css.request, title: request }, request),
           h('span', { className: ASKS_UI.css.preview, title: preview }, preview)),
-        question && h(Tag, { tone: 'neutral' }, card.questions.length),
+        question && h(Tag, { tone: 'neutral' }, ASKS_UI.questionsPerRow),
         h('span', { className: ASKS_UI.css.chevron, 'aria-hidden': true })),
         h('div', { className: ASKS_UI.css.body, id: panelId, hidden: !expanded },
           expanded && h('div', { className: ASKS_UI.css.from },
@@ -317,27 +303,27 @@ window.__ModuleLoader__.load({
             h('span', null, t('from') + ': ' + session),
             h('span', { className: ASKS_UI.css.time }, new Date(card.askedAt).toLocaleString(ASKS_UI.timeLocale[lang]))),
           // Keep the draft owner mounted while removing collapsed controls from the tab order.
-          h(question ? QuestionBody : PermissionBody, { card, expanded, locked, send, t }),
+          h(question ? QuestionBody : PermissionBody, { card, question, expanded, locked, send, t }),
           expanded && refused !== null ? h('p', { className: ASKS_UI.css.error, role: 'alert' }, refused) : null))
       }
 
-      function OpenAsks({ cards, t, lang, health }) {
-        const multiple = cards.length > 1
-        const [accordion, setAccordion] = React.useState(() => ({ multiple, expanded: multiple ? null : cards[0].handle }))
+      function OpenAsks({ rows, t, lang, health }) {
+        const multiple = rows.length > 1
+        const [accordion, setAccordion] = React.useState(() => ({ multiple, expanded: multiple ? null : rows[0].key }))
         const enteringMulti = multiple && !accordion.multiple
-        const stillOpen = cards.some((card) => card.handle === accordion.expanded)
+        const stillOpen = rows.some((row) => row.key === accordion.expanded)
         // Collapse on entry into multi-card mode, but keep the user's choice on subsequent arrivals.
         const expanded = !enteringMulti && stillOpen ? accordion.expanded : null
         if (multiple !== accordion.multiple || expanded !== accordion.expanded) setAccordion({ multiple, expanded })
         const stale = health !== kit.HEALTH.live
         return h('section', { className: [kit.css.dock, ASKS_UI.css.root].join(' '), 'aria-label': t('waiting'), 'data-fishball-asks': true, 'data-fishball-asks-stale': stale ? health : undefined },
           h('h2', { className: ASKS_UI.css.pileHead }, t('waiting'),
-            h('span', { className: ASKS_UI.css.badge, 'data-fishball-asks-count': cards.length },
-              cards.length > ASKS_UI.badgeMax ? ASKS_UI.badgeMax + '+' : cards.length)),
+            h('span', { className: ASKS_UI.css.badge, 'data-fishball-asks-count': rows.length },
+              rows.length > ASKS_UI.badgeMax ? ASKS_UI.badgeMax + '+' : rows.length)),
           stale ? h(kit.StreamNotice, { health, lang }) : null,
-          cards.map((card) => h(AskCard, {
-            key: card.handle, card, t, stale, lang, expanded: expanded === card.handle,
-            toggle: () => setAccordion({ multiple, expanded: expanded === card.handle ? null : card.handle }),
+          rows.map((row) => h(AskRow, {
+            key: row.key, row, t, stale, lang, expanded: expanded === row.key,
+            toggle: () => setAccordion({ multiple, expanded: expanded === row.key ? null : row.key }),
           })))
       }
 
@@ -347,8 +333,8 @@ window.__ModuleLoader__.load({
         const { frame: { managerSessionId, cards }, health } = React.useSyncExternalStore(stream.subscribe, stream.get)
         // Only Fishball's own conversation shows cards. Settled cards stay in history, not the dock.
         if (!sessionId || sessionId !== managerSessionId) return null
-        const open = cards.filter((card) => card.state === ASKS_UI.openState && (!isQuestion(card) || card.sessionId === sessionId))
-        return open.length ? h(OpenAsks, { key: sessionId, cards: open, t, lang, health }) : null
+        const rows = cards.filter((card) => card.state === ASKS_UI.openState && (!isQuestion(card) || card.sessionId === sessionId)).flatMap(rowsOf)
+        return rows.length ? h(OpenAsks, { key: sessionId, rows, t, lang, health }) : null
       }
     }
 

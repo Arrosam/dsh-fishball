@@ -15,6 +15,7 @@ const HOST = Object.freeze({
   tempPrefix: 'fishball-question-cards-', service: 'fishballInstance', timeout: 30_000,
   callBudget: 3_000, get: 'GET', post: 'POST', userMessage: 'user/message', user: 'user',
   carrierDescription: 'Open a question card without waiting', namespace: 'tools',
+  answerPrefix: 'Fishball question card answer: ',
   model: { provider: 'question-card-fixture', model: 'scripted' }, reply: 'Answer received.',
 })
 const LONG = Object.freeze({
@@ -148,9 +149,8 @@ function expectUserAnswer(message, expected) {
   assert.equal(message?.role, HOST.user)
   assert.equal(message.source?.kind, HOST.user)
   const text = textOf(message)
-  const at = text.indexOf('{')
-  assert.ok(at > 0, 'normal user message should introduce the card answer before its JSON payload')
-  assert.deepEqual(JSON.parse(text.slice(at)), expected)
+  assert.ok(text.startsWith(HOST.answerPrefix), 'the existing question answer envelope must be preserved')
+  assert.deepEqual(JSON.parse(text.slice(HOST.answerPrefix.length)), expected)
 }
 
 caseTest(id, '', 'native Fishball offers only its own ask_user; an ordinary DSH session retains its native question tool', options, (t) => withWorld(t, async ({ boot, home, inspect }) => {
@@ -231,11 +231,10 @@ caseTest(id, '', 'native cards survive reload and restart, and settle once throu
     assert.equal(manager.id, sessionId)
     expectPending(await snapshot(), sessionId, [multi, free])
 
-    // Exact question coverage is independent of card existence and answer field type.
+    // Invalid answers leave both cards untouched, so a legacy full batch can still settle one.
     for (const [label, cardId, answers] of [
       ['unknown card', randomUUID(), batchAnswers],
       ['empty answer batch', multi.cardId, []],
-      ['partial batch', multi.cardId, batchAnswers.slice(0, 1)],
       ['duplicate question id', multi.cardId, [batchAnswers[0], batchAnswers[0]]],
       ['answers belong to another card', free.cardId, batchAnswers],
       ['malformed selected field', free.cardId, [{ id: FORM.free.id, selected: FORM.text }]],
@@ -297,38 +296,137 @@ caseTest(id, '', 'a four-question batch returns before submission and delivers o
   })
 }))
 
-caseTest(id, '', 'an answer accepted during a live turn wakes the same session exactly once after a clean restart without opening the page', options, (t) => withWorld(t, async ({ boot, sdk }) => {
-  const { createUserMessage } = await sdk.host('dsh-llm')
-  const activePrompt = 'Keep this fixture turn active until DSH shuts down.'
-  const holdTurn = async ({ signal }) => {
-    // Only a clean host shutdown releases the in-flight turn, so the submitted answer cannot be
-    // admitted before disposal. The fake provider is the only stalled dependency.
-    if (!signal.aborted) await new Promise((resolve) => signal.addEventListener('abort', resolve, { once: true }))
-  }
-  const { sessionId, payload } = await boot(async ({ manager, requests, answer, snapshot }) => {
-    const cardId = cardIdOf(await call(manager, FORM.ask, { questions: freeBatch }))
-    manager.steer(createUserMessage({ source: { kind: HOST.user }, content: [{ type: 'text', text: activePrompt }] }))
-    assert.ok(await until(() => requests.length > 0, HOST.callBudget), 'manager did not reach the held model request')
-    assert.equal(manager.status, 'running')
-    const payload = { cardId, answers: freeAnswers }
-    const response = await answer(cardId, payload.answers)
-    assert.ok(response.ok, 'live turn should accept the answer: HTTP ' + response.status + ' ' + await response.text())
-    expectPending(await snapshot(), manager.id, [])
-    assert.deepEqual(userMessages(manager).map(textOf), [activePrompt], 'answer must still be unadmitted when shutdown begins')
-    return { sessionId: manager.id, payload }
-  }, { modelHook: holdTurn })
+caseTest(id, '', 'singleton submissions reach the manager in order of submission while unanswered questions stay visible', options, (t) => withWorld(t, async ({ boot }) => {
+  await boot(async ({ manager, requests, snapshot, answer, withAsksStream }) => {
+    const questions = [...batch, LONG.notes, LONG.skipped]
+    const cardId = cardIdOf(await call(manager, FORM.ask, { questions }))
+    const pending = (frame, remaining) => expectPending(frame, manager.id, remaining.length ? [{ cardId, questions: remaining }] : [])
+    const notes = { id: LONG.notes.id, selected: [], custom: FORM.text }
+    const skip = { id: LONG.skipped.id, selected: [] }
+    const accepted = []
+    const submit = async (item) => {
+      const answers = [item]
+      const response = await answer(cardId, answers)
+      assert.ok(response.ok, 'singleton answer must be accepted before the rest: HTTP ' + response.status + ' ' + await response.text())
+      await manager.whenIdle()
+      accepted.push({ cardId, answers })
+      assert.equal(userMessages(manager).length, accepted.length, 'each singleton answer delivers one message before the next answer is sent')
+      expectUserAnswer(userMessages(manager).at(-1), accepted.at(-1))
+    }
 
-  await boot(async ({ ctx, requests }) => {
-    // Neither ensureSession nor page SSE is touched on restart: accepting the answer already gave
-    // Fishball responsibility for getting it to the manager without another user interaction.
-    const request = await until(() => requests.find((item) => item.sessionId === sessionId), HOST.callBudget)
-    assert.ok(request, 'a queued accepted answer must wake the original manager session after restart')
-    expectUserAnswer(userInputs(request).at(-1), payload)
-    const manager = ctx.agents.get(sessionId)
-    assert.ok(manager)
-    await manager.whenIdle()
-    assert.equal(requests.length, 1, 'recovery should drive only one turn')
-    assert.equal(userMessages(manager).length, 2, 'only the initial prompt and one admitted answer should remain')
-    expectUserAnswer(userMessages(manager).at(-1), payload)
-  }, { autoOpen: false })
+    await withAsksStream(async (next) => {
+      pending(await next(), questions)
+      await submit(notes)
+      pending(await next(({ cards }) => !cards.some((card) => card.cardId === cardId && card.questions?.some(({ id }) => id === notes.id))), [...batch, LONG.skipped])
+    })
+    assert.equal(requests.length, 1, 'the first answer alone wakes the idle manager')
+    assert.equal(requests[0].sessionId, manager.id)
+    expectUserAnswer(userInputs(requests[0]).at(-1), accepted[0])
+
+    const [first, second] = batchAnswers
+    const remaining = [...batch, LONG.skipped]
+    for (const [label, answers] of [
+      ['same answer replay', [notes]],
+      ['conflicting replay', [{ id: notes.id, selected: [] }]],
+      ['unknown question id', [{ ...notes, id: randomUUID() }]],
+      ['duplicate pending question id', [first, first]],
+    ]) {
+      await answer(cardId, answers)
+      await manager.whenIdle()
+      assert.equal(userMessages(manager).length, accepted.length, label + ' must not generate a user message')
+      pending(await snapshot(), remaining)
+    }
+
+    await submit(skip)
+    pending(await snapshot(), batch)
+    await submit(second)
+    pending(await snapshot(), [FORM.first])
+    await submit(first)
+    pending(await snapshot(), [])
+    assert.equal(requests.length, accepted.length)
+  })
 }))
+
+caseTest(id, '', 'a failed singleton enqueue leaves that question visible when a sibling is answered', options, (t) => withWorld(t, async ({ boot }) => {
+  await boot(async ({ manager, answer, snapshot }) => {
+    const cardId = cardIdOf(await call(manager, FORM.ask, { questions: batch }))
+    const [first, second] = batchAnswers
+    const enqueue = t.mock.method(manager, 'followup', async () => { throw new Error('Fixture refused enqueue') })
+    try {
+      assert.equal((await answer(cardId, [first])).ok, false, 'the failed enqueue must not report success')
+      assert.equal(enqueue.mock.callCount(), 1, 'the valid answer must have reached the host queue seam')
+    } finally { enqueue.mock.restore() }
+    expectPending(await snapshot(), manager.id, [{ cardId, questions: batch }])
+    assert.deepEqual(userMessages(manager), [], 'the failed enqueue did not admit a message')
+
+    const answers = [second]
+    const response = await answer(cardId, answers)
+    assert.ok(response.ok, 'sibling should still enqueue: HTTP ' + response.status + ' ' + await response.text())
+    await manager.whenIdle()
+    expectPending(await snapshot(), manager.id, [{ cardId, questions: [FORM.first] }])
+    assert.equal(userMessages(manager).length, 1, 'only the accepted sibling delivers a message')
+    expectUserAnswer(userMessages(manager)[0], { cardId, answers })
+  })
+}))
+
+const RESTART = [
+  {
+    title: 'an answer accepted during a live turn wakes the same session exactly once after a clean restart without opening the page',
+    questions: freeBatch, submissions: [freeAnswers], remaining: [],
+  },
+  {
+    title: 'a queued singleton answer and its unanswered sibling survive a clean restart',
+    questions: batch, submissions: [batchAnswers.slice(1)], remaining: batch.slice(0, 1),
+  },
+  {
+    title: 'two queued singleton answers recover exactly once in submission order after a clean restart',
+    questions: [...batch, LONG.notes], submissions: [[batchAnswers[1]], [batchAnswers[0]]], remaining: [LONG.notes],
+  },
+]
+for (const { title, questions, submissions, remaining } of RESTART) {
+  caseTest(id, '', title, options, (t) => withWorld(t, async ({ boot, sdk }) => {
+    const { createUserMessage } = await sdk.host('dsh-llm')
+    const activePrompt = 'Keep this fixture turn active until DSH shuts down.'
+    const holdTurn = async ({ signal }) => {
+      // Only a clean host shutdown releases the in-flight turn, so the submitted answer cannot be
+      // admitted before disposal. The fake provider is the only stalled dependency.
+      if (!signal.aborted) await new Promise((resolve) => signal.addEventListener('abort', resolve, { once: true }))
+    }
+    const pending = (cardId) => remaining.length ? [{ cardId, questions: remaining }] : []
+    const { sessionId, payloads, cardId } = await boot(async ({ manager, requests, answer, snapshot }) => {
+      const cardId = cardIdOf(await call(manager, FORM.ask, { questions }))
+      manager.steer(createUserMessage({ source: { kind: HOST.user }, content: [{ type: 'text', text: activePrompt }] }))
+      assert.ok(await until(() => requests.length > 0, HOST.callBudget), 'manager did not reach the held model request')
+      assert.equal(manager.status, 'running')
+      const payloads = []
+      for (const answers of submissions) {
+        const response = await answer(cardId, answers)
+        assert.ok(response.ok, 'live turn should accept the answer: HTTP ' + response.status + ' ' + await response.text())
+        payloads.push({ cardId, answers })
+      }
+      expectPending(await snapshot(), manager.id, pending(cardId))
+      assert.deepEqual(userMessages(manager).map(textOf), [activePrompt], 'answers must still be unadmitted when shutdown begins')
+      return { sessionId: manager.id, payloads, cardId }
+    }, { modelHook: holdTurn })
+
+    await boot(async ({ ctx, requests, snapshot }) => {
+      // Neither ensureSession nor page SSE is touched until recovery: accepting the answer already
+      // gave Fishball responsibility for getting it to the manager without another user interaction.
+      const request = await until(() => requests.find((item) => item.sessionId === sessionId), HOST.callBudget)
+      assert.ok(request, 'a queued accepted answer must wake the original manager session after restart')
+      const manager = ctx.agents.get(sessionId)
+      assert.ok(manager)
+      assert.ok(await until(() => userMessages(manager).length > payloads.length, HOST.callBudget),
+        'all queued replies must reach the manager after restart')
+      await manager.whenIdle()
+      if (payloads.length === 1) assert.equal(requests.length, 1, 'one recovered answer should drive only one turn')
+      const admitted = userMessages(manager).slice(1)
+      const modeled = userInputs(requests.at(-1)).slice(1)
+      for (const actual of [admitted, modeled]) {
+        assert.equal(actual.length, payloads.length, 'every answer must appear exactly once')
+        payloads.forEach((expected, index) => expectUserAnswer(actual[index], expected))
+      }
+      expectPending(await snapshot(), sessionId, pending(cardId))
+    }, { autoOpen: false })
+  }))
+}

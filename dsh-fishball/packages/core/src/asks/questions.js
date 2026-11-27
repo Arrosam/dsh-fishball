@@ -45,15 +45,22 @@ export function createQuestionCards({ table, resolveAgent, ownsSession, flush, w
   // Weakly track attempted replies per live agent. The log is authoritative across restarts;
   // within one agent a claimed reply may not have its user/message receipt yet.
   const attempts = new WeakMap()
-  const outstanding = new Map(records().flatMap((record) => record.reply === undefined ? [] : [[record.reply.messageId, record.cardId]]))
+  const outstanding = new Map(records().flatMap(({ cardId, outbox = [] }) => outbox.map(({ messageId }) => [messageId, cardId])))
   const admitted = (live, id) => live.session.snapshotEvents().some((event) => event.type === Q.event.admitted && event.data.id === id)
 
-  async function complete(record) {
-    // Once admitted, the user's text belongs in the session log, not a second history store.
-    const { cardId, sessionId } = record
-    await table.put(cardId, { cardId, sessionId, settled: true })
-    outstanding.delete(record.reply.messageId)
-    if (!record.settled) publish()
+  const confirmedIds = ({ answeredIds = [] }, { answers }) => [...new Set([...answeredIds, ...answers.map(({ id }) => id)])]
+
+  async function complete(record, messageId) {
+    // Remove only the admitted reply; later replies from the same batch can still be queued.
+    const { cardId, sessionId, questions, answeredIds, outbox } = record
+    const reply = outbox.find((item) => item.messageId === messageId)
+    const pending = outbox.filter((item) => item !== reply)
+    const completed = confirmedIds(record, reply)
+    await table.put(cardId, pending.length === 0 && completed.length === questions.length
+      ? { cardId, sessionId, settled: true }
+      : { ...record, answeredIds: completed, outbox: pending })
+    outstanding.delete(messageId)
+    if (completed.length !== answeredIds.length) publish()
   }
 
   const unwatch = watchSession((log, event) => {
@@ -61,14 +68,14 @@ export function createQuestionCards({ table, resolveAgent, ownsSession, flush, w
     const cardId = outstanding.get(event.data.id)
     if (cardId !== undefined) void run(async () => {
       const latest = table.get(cardId)
-      if (latest?.reply === undefined) return
+      if (!latest?.outbox?.some(({ messageId }) => messageId === event.data.id)) return
       if (!await flush(log)) throw new Error(Q.answerUnavailable)
-      await complete(latest)
+      await complete(latest, event.data.id)
     })
   })
 
-  async function deliver(record, live, recovering = false) {
-    const { cardId, reply: { messageId, answers } } = record
+  async function deliver(record, { messageId, answers }, live, recovering = false) {
+    const { cardId } = record
     const received = admitted(live, messageId)
     if (!received) {
       let tried = attempts.get(live)
@@ -76,21 +83,26 @@ export function createQuestionCards({ table, resolveAgent, ownsSession, flush, w
       const steered = live.inbox.nextStep.find((message) => message.id === messageId)
       const pending = steered ?? live.inbox.nextTurn.find((message) => message.id === messageId)
       if (pending !== undefined && recovering && live.status !== Q.running) {
-        // Restored inbox entries do not wake DSH. Requeue the exact pending identity as its
-        // scheduler does; a crash between removal and requeue still leaves the outbox intact.
-        live.inbox.remove(messageId)
-        if (steered === undefined) await live.followup(pending)
-        else await live.steer(steered)
+        // Restored inbox entries do not wake DSH. Requeue a tracked tail entry when
+        // possible, so all earlier answers retain their original place in the queue.
+        const tail = live.inbox.nextTurn.at(-1)
+        const wake = steered ?? (outstanding.has(tail?.id) ? tail : pending)
+        live.inbox.remove(wake.id)
+        if (steered === undefined) await live.followup(wake)
+        else await live.steer(wake)
       } else if (pending === undefined && !tried.has(messageId)) {
         await live.followup(freezeMessage({ id: messageId, role: 'user', source: Q.replySource, content: [textBlock(replyText(cardId, answers))] }))
       }
       tried.add(messageId)
     }
     if (!await flush(live.session)) throw new Error(Q.answerUnavailable)
-    if (received) await complete(record)
-    else if (!record.settled) {
-      await table.put(cardId, { ...record, settled: true })
-      publish()
+    if (received) await complete(record, messageId)
+    else {
+      const completed = confirmedIds(record, { answers })
+      if (completed.length !== record.answeredIds.length) {
+        await table.put(cardId, { ...record, answeredIds: completed })
+        publish()
+      }
     }
     return ok
   }
@@ -102,27 +114,30 @@ export function createQuestionCards({ table, resolveAgent, ownsSession, flush, w
       if (record === undefined || !ownsSession(record.sessionId)) return refusal(SEAM_TARGETS.refusal.unknownTarget)
       if (record.settled) return refusal(REFUSAL.alreadySettled)
       const answers = answersOf(record.questions, input)
-      if (answers === undefined) return refusal(REFUSAL.invalidArguments)
+      if (answers === undefined || (answers.length !== Q.singleAnswer && answers.length !== record.questions.length)) return refusal(REFUSAL.invalidArguments)
+      const { answeredIds = [], outbox = [] } = record
+      const retry = outbox.find((reply) => JSON.stringify(reply.answers) === JSON.stringify(answers))
+      const claimed = new Set([...answeredIds, ...outbox.flatMap((reply) => reply.answers.map(({ id }) => id))])
+      if (retry === undefined && answers.some(({ id }) => claimed.has(id))) return refusal(REFUSAL.alreadySettled)
       const live = await resolveAgent(record.sessionId)
       if (live?.id !== record.sessionId) return refusal(REFUSAL.expired)
-      // Commit the user's first choice before touching the session log. If the two writes are
-      // interrupted, the stored message identity lets retry/restart reconcile without duplicating it.
-      if (record.reply !== undefined) {
-        if (JSON.stringify(record.reply.answers) !== JSON.stringify(answers)) return refusal(REFUSAL.alreadySettled)
-        return deliver(record, live)
-      }
+      if (retry !== undefined) return deliver(record, retry, live, true)
+      // Persist each reply's identity and claim its question IDs in the same write, before enqueue.
       const { id: messageId } = createUserMessage({ source: Q.replySource, content: [textBlock(replyText(cardId, answers))] })
-      const answered = { ...record, reply: { messageId, answers } }
+      const reply = { messageId, answers }
+      const answered = { ...record, answeredIds, outbox: [...outbox, reply] }
       await table.put(cardId, answered)
       outstanding.set(messageId, cardId)
-      return deliver(answered, live)
+      return deliver(answered, reply, live)
     })
   }
 
   return Object.freeze({
-    list: () => records().filter(({ sessionId, settled }) => !settled && ownsSession(sessionId)).map(({ cardId, sessionId, questions, askedAt }) => ({
-      kind: Q.kind, handle: cardId, cardId, sessionId, questions, askedAt, state: CARD_STATE.open,
-    })),
+    list: () => records().flatMap(({ sessionId, settled, cardId, questions, askedAt, answeredIds = [] }) => {
+      if (settled || !ownsSession(sessionId)) return []
+      const pending = questions.filter(({ id }) => !answeredIds.includes(id))
+      return pending.length === 0 ? [] : [{ kind: Q.kind, handle: cardId, cardId, sessionId, questions: pending, askedAt, state: CARD_STATE.open }]
+    }),
     onChange: (fn) => subscribe(listeners, fn),
     answer,
     toolFor: (sessionId) => ({
@@ -145,17 +160,18 @@ export function createQuestionCards({ table, resolveAgent, ownsSession, flush, w
       },
     }),
     async recover(liveAgent) {
-      const pending = records().filter(({ sessionId, reply }) => reply !== undefined && ownsSession(sessionId))
+      const pending = records().filter(({ sessionId, outbox }) => outbox?.length && ownsSession(sessionId))
       if (pending.length === 0) return
       const { sessionId } = pending[0]
       // A row reload may join an agent between its inbox claim and user/message append. Let
       // that activity finish before deciding the delivery is missing; never wait in the tool.
       await liveAgent(sessionId)?.whenIdle()
-      for (const { cardId } of pending) await run(async () => {
+      for (const { cardId, outbox } of pending) for (const { messageId } of outbox) await run(async () => {
         const current = table.get(cardId)
-        if (current?.reply === undefined || !ownsSession(sessionId)) return
+        const reply = current?.outbox?.find((item) => item.messageId === messageId)
+        if (reply === undefined || !ownsSession(sessionId)) return
         const live = await resolveAgent(sessionId)
-        if (live?.id === sessionId) await deliver(current, live, true)
+        if (live?.id === sessionId) await deliver(current, reply, live, true)
       })
     },
     close() {
