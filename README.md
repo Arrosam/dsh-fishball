@@ -57,6 +57,8 @@ plugin. See [docs/package-layout.md](<docs/package-layout.md>).
 ## Supported DSH versions
 
 - DSH **0.2.1-rc.5** and **0.2.2-rc.1**, either the DSH Web build or the one bundled with DSH-X.
+  Before a release the tests also run on the DSH this machine's launcher runs (`node scripts/test-release.mjs`;
+  the list is `SUPPORTED` in `packages/test-helpers/dsh.mjs`).
 - Node: whichever one runs your DSH. The instance starts its child with DSH's own executable and
   arguments. The connector needs Node 22.14 or later; DSH itself needs Node 24.9 or later.
 
