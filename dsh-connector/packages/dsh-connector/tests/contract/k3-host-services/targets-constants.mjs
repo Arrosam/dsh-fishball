@@ -111,7 +111,11 @@ export const PROVENANCE = Object.freeze({
 export const WITHDRAWN_REMOTE = Object.freeze({
   code: 'target-remote',
   refusalType: 'ReconnectRefusalCode',
-  refusals: Object.freeze(['not-ready', 'connector-missing', 'operation-failed', 'credentials-unwritable']),
+  // 283748d7 extends reconnect for verified hosted rebind without restoring the remote override.
+  refusals: Object.freeze([
+    'not-ready', 'connector-missing', 'operation-failed', 'credentials-unwritable',
+    'hosted-entry-disabled', 'hosted-binding-unavailable', 'rebind-not-confirmed',
+  ]),
   readme: path.join(FOLDER.hostServices, 'README.md'),
   /** A README table row naming reconnect(). */
   reconnectRow: /^\|\s*`reconnect\(\)`/,

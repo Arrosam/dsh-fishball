@@ -80,8 +80,12 @@ const TOKENS_DTS = path.join(REPO, 'packages', 'dsh-connector', 'host-services',
 export const K3 = Object.freeze({
   service: 'dshConnectorTokens',
   apiVersion: 1,
-  // K3 amendment I-SUCCEED, the user's Q1 = C, 2026-11-17: `onChange(fn) → dispose` added.
-  members: Object.freeze(['apiVersion', 'createHosted', 'entryState', 'retire', 'onChange']),
+  // K3 I-SUCCEED added onChange; 283748d7 added hosted recovery methods (host-services/tokens.d.ts).
+  // The methods are optional for older providers, but this connector supplies all three.
+  members: Object.freeze([
+    'apiVersion', 'createHosted', 'entryState', 'retire', 'onChange',
+    'hostedState', 'matchHosted', 'discardHosted',
+  ]),
   createdFields: Object.freeze(['entryKey', 'label', 'value']),
   codes: Object.freeze({
     unknownEntry: 'unknown-entry', notHosted: 'not-hosted', successorUnpaired: REFUSAL.successorUnpaired, operationFailed: REFUSAL.operationFailed,
