@@ -1,0 +1,41 @@
+{
+  "name": "dsh-connector-ui",
+  "version": "1.0.0-alpha.1",
+  "private": true,
+  "type": "module",
+  "files": [
+    "index.js",
+    "src/",
+    "locale/*.json",
+    "assets/connector-ui-icon.svg",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "engines": {
+    "node": ">=22.14",
+    "dsh": ">=0.2.1-rc.5"
+  },
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./src/client/client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "//client": "inject: the providers of the services and slots the shell and the attention part use (renderer slots, sidebar panel list, layout main and shell.overlay, locale, plugin navigation); the conversation and workspace rows left with the marks part (DESIGN.md §28). external: dsh-agent-connector's client entry, the one home of the helpers over the connector UI backend (its ui export), which client.js loads with require.async before the shell.",
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-renderer",
+        "@deepseek-ai/dsh-client-ui-sidebar",
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-plugin-manager"
+      ],
+      "external": [
+        "dsh-agent-connector"
+      ]
+    }
+  }
+}

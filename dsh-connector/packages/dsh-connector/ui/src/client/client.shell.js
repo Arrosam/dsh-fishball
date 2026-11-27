@@ -1,0 +1,884 @@
+/**
+ * dsh-connector-ui, the shell part (U-SHELL, U-DRAW, U-WIRE):
+ * 1. The Fishball entries (R-UI-11; the user, 2026-11-21): one fish row in DSH's sidebar panel
+ *    list per connected agent with a window this DSH can open (the backend snapshot's `windows`:
+ *    by capability, not identity), labelled with that agent's name, first letter capitalised, and
+ *    none while there is no such agent. DSH's own brand mark and name are not overridden (no
+ *    sidebar.brand.* slot): a brand override would change the host UI for every user of that DSH.
+ * 2. No settings card (R-UI-06, 1.33 Q-D2): the connector's limits are on the connector's own
+ *    settings page, and Fishball's two settings entries are fishball-ui's, inside the framed page
+ *    (1.34; the user, U-WIRE: the window adds none of its own).
+ * 3. The window (U-DRAW; requirements 1.38 Q-U2, 1.41 Q-G3; R-UI-02): DSH's main area, the
+ *    `main` slot where a session's conversation shows, one per entry, opened by its row and titled
+ *    with the row's label. It opens only the hosted child's page, through the instance's admission.
+ *    A child that is not ready shows its state and a Retry link to the instance's own settings page
+ *    (decided #77). An agent with no window here has no entry (the user, 2026-11-21, replacing
+ *    Q-G3's hint entry); a window whose instance goes while it is open shows the hint.
+ * 4. The kit the attention part is built from (`exports.kit`): the connector UI backend's
+ *    snapshot hook and its POST helper, the style sheet and dictionary, and the seats (SEAT) where
+ *    the attention part draws the fish's light and clears it when the window opens. The light with
+ *    the notify prompt (client.attention.js) is a part of its own. The marks with Hand over / Take
+ *    back moved to dsh-agent-connector (its client.marks.js; DESIGN.md §28). There are no cards
+ *    (Q-U2) and no inline records (Q-G4).
+ *
+ * The mark is FishMark from the owner's fishball app (THIRD_PARTY_NOTICES), drawn plain on every
+ * surface here (ICON-SET, the user 2026-11-18): the wrench is dsh-connector's own badge and shows
+ * only on that package's icon (its Plugins card and settings page; its managed session rows draw the plain fish, V1's mark), and this package's own icon
+ * (assets/connector-ui-icon.svg, the fish with a window badge) is DSH's to draw from the manifest.
+ *
+ * State comes from the connector's UI backend (its `events` route, server-sent snapshots; 1.34:
+ * "connector当后端，embed UI当前端"), through the connector's own browser helpers: the snapshot
+ * stream, the POST helper and the value store have one home, dsh-agent-connector's client entry
+ * (its `ui` export, DESIGN.md §28), so this page opens one stream for both packages. client.js
+ * loads that entry before this chunk, so the plain `require` below finds it materialized.
+ */
+window.__ModuleLoader__.load({
+  // V3 R-EMBED: moved here from packages/dsh-connector/client.js (R-ARCH-04), then split by
+  // U-SHELL. It is a package-local chunk of dsh-connector-ui's client (client.js starts it as a
+  // sub-plugin), so it registers under that package with its chunk name.
+  id: 'dsh-connector-ui',
+  chunk: 'client.shell.js',
+  factory(require) {
+    const module = { exports: {} }
+    const exports = module.exports
+    const React = require('react')
+    const { Button, IconRefreshOutlineRegular, IconWarningOutlineRegular, StateDot, Tag } = require('@deepseek-ai/dsh-client-ui-primitives')
+    // The connector's helpers over its UI backend (client.js loaded the entry before this chunk).
+    const { apiUrl, snapshotHook, snapshotStore, send, valueStore, visibilityEvent: VISIBILITY_EVENT } = require('dsh-agent-connector').ui
+    const h = React.createElement
+
+    /** The shell's sub-plugin name, beside the attention part's `dsh-connector-ui: attention`. */
+    const SHELL_NAME = 'dsh-connector-ui: shell'
+    const NS = 'fishball'
+    /** Client services read on demand (not injected: Fishball works without each of them). */
+    const SERVICE = Object.freeze({ layout: 'layout' })
+    /**
+     * The Fishball windows (R-UI-02) and their chrome.
+     * `panelIdPrefix` and the agent's principal key make one id shared by a `main` occupant and its
+     * `sidebar.panellist` row, as DSH's Plugins ("plugins") and Tasks ("schedules") panels share
+     * theirs; the principal key is opaque and never a token. `panelOrder` puts the first row first,
+     * before Plugins (0) and Tasks (10): Fishball is the conversation you open most, so it sits where
+     * a pinned session would; each later row is `panelOrderStep` further down, so the rows keep the
+     * snapshot's order (the connector's settings order) and stay above Plugins. `pluginsPanelId` is DSH's own Plugins panel, which the Retry link
+     * opens when DSH has no plugin navigation service. `warningIconPx` is the glyph of DSH's own empty/error state
+     * (dsh-client-ui-schedule's list error, 24px). `stateTone` maps the frame's state to DSH's Tag
+     * tones (the ones its plugin page uses). DSH's Tag styles `danger`, not `error`, on
+     * 0.2.1-rc.5 and 0.2.2-rc.1 (dsh-web-frontend's `[data-tone=danger]`), so failed states keep `danger`.
+     * The frame's address is only ever admit's one-time URL (CHILD_UI).
+     */
+    const EMBED_UI = Object.freeze({
+      panelIdPrefix: 'fishball:', panelOrder: -10, panelOrderStep: 0.01, pluginsPanelId: 'plugins', warningIconPx: 24, refreshIconPx: 14,
+      stateTone: Object.freeze({ ready: 'info', failed: 'danger' }), neutralTone: 'neutral',
+      /**
+       * Clipboard write only, for every origin the frame lands on: admit's one-time URL at the
+       * child's own loopback origin (design §4.1) and the child's redirect to its clean page, where
+       * native copy actions would otherwise be refused. The wildcard is safe because `src` is only
+       * ever the host half's admit URL, and the grant is write-only: no clipboard-read or any other
+       * feature (Fishball's decision, 2026-11-10).
+       */
+      iframeAllow: 'clipboard-write *',
+      /**
+       * The framed page is an admission launch that the child redirects after redeeming its
+       * ticket, so the frame sends no referrer onward.
+       */
+      iframeReferrerPolicy: 'no-referrer',
+    })
+    /**
+     * DSH's session header (dsh-client-ui-conversation ConversationRoot .header/.titleRow/
+     * .crumbCurrent, identical in 0.2.1-rc.5 and 0.2.2-rc.1), without its tab row: the Fishball
+     * view has one page, so the header is one line of DSH's title-row height plus padding.
+     */
+    const DSH_SESSION_HEADER = Object.freeze({ minHeight: '52px', padding: '10px 28px', startPadding: '20px', gap: '8px', nameFont: '14px', nameLine: '20px' })
+    /**
+     * DSH's empty/error state (dsh-client-ui-schedule TaskManagerPage .empty), with the glyph in a
+     * soft round well (DSH's neutral Tag fill) so a not-framed view has one clear focal point. The
+     * column keeps to `maxWidth`, so a long hint wraps as a paragraph, not as one line.
+     */
+    const DSH_EMPTY_STATE = Object.freeze({ padding: '48px 20px', gap: '8px', font: '14px', maxWidth: '360px', wellPx: 56, wellGapPx: 8 })
+    /**
+     * The window's reads of the host half's child routes (the browser never calls the instance).
+     * The open window re-reads the child's status once a second (`pollMs`), only while it is
+     * mounted and the tab is visible, one read at a time.
+     */
+    const FRAME_UI = Object.freeze({
+      read: Object.freeze({ method: 'GET', cache: 'no-store', credentials: 'same-origin' }),
+      pollMs: 1000,
+      // Match dsh-instance's RUNTIME_LIMITS.requestTimeoutMs; this classic client can't import
+      // the optional instance. Include time queued behind the browser's same-origin streams.
+      requestTimeoutMs: 5000,
+      loading: 'loading',
+      unknown: 'unknown',
+      /** The instance's page the window frames: the hosted child's chat (its settings are the instance's own page). */
+      page: Object.freeze({ chat: 'chat' }),
+      /** DSH's pluginNavigation service, which opens a package's own settings page. */
+      navigation: 'pluginNavigation',
+      /**
+       * The admission's language, K3 `AdmitLang` (child.d.ts; the host half's ADMIT.langs, which
+       * this classic script cannot import). `byLocale` is DSH's text map for
+       * ctx.locale.resolveText: DSH's locale id (lowercase, `en` required) to the `lang` value.
+       * resolveText walks the active language's fallback chain exactly as this package's own `t`
+       * does, so the page opens in the same language as embed-UI's words: a language pack that
+       * falls back to `zh` frames `zh`, and any other language frames `en`.
+       */
+      lang: Object.freeze({ byLocale: Object.freeze({ en: 'en', zh: 'zh' }) }),
+      /** The instance's package, whose own settings page the window's Retry link opens (decided #77). */
+      instancePackage: 'dsh-instance',
+    })
+    /**
+     * The V3 frame (U-SHELL; design §4.1, §4.2; R-UI-02, R-UI-03): the instance locator
+     * `dshInstanceChild` as embed-UI's host half re-serves it. The host half's routes come from its
+     * `services` answer (`routes`, page-relative; client.js reads it), so none is kept here.
+     * - The frame's `src` is only ever `admit`'s one-time URL, asked for afresh for each frame
+     *   document (first open, a language change, Refresh, or a not-ready state the 1 s status poll
+     *   saw; a restart faster than the poll keeps the frame, which then reloads by Refresh); it is
+     *   never stored or logged, and the address holds no token (the ticket is redeemed by the child
+     *   into its own cookie, S4).
+     * - `hostnameRefused` is K3's AdmitErrorCode: the page was not opened under a loopback name, so
+     *   the view shows the refusal text and no frame (UIM-EP-02 row 4).
+     * - A child that is not ready shows its state and code and a Retry **link** to the instance's
+     *   own settings page, which holds Retry (R-UI-03 amended by 1.33, decided #77): embed-UI has no
+     *   Retry of its own.
+     */
+    const CHILD_UI = Object.freeze({
+      readyState: 'ready',
+      hostnameRefused: 'hostname-refused',
+      /** The host half's refusal without a usable locator (src/host/constants.js REFUSAL.unavailable). */
+      instanceMissing: 'instance-missing',
+    })
+    /**
+     * PROPOSED wording (W3 brief P-3): new copy with no text in the spec, except `hostnameRefused`,
+     * whose English is R-UI-02's. The user reviews this object at the W3 merge; the dictionaries
+     * below take it unchanged.
+     */
+    const PROPOSED_WORDING = Object.freeze({
+      en: Object.freeze({
+        hostnameRefused: 'Open DSH at 127.0.0.1 to use Fishball',
+        admitFailed: 'The Fishball page could not be opened.',
+      }),
+      zh: Object.freeze({
+        hostnameRefused: '请通过 127.0.0.1 打开 DSH 以使用 Fishball',
+        admitFailed: '无法打开 Fishball 页面。',
+      }),
+    })
+    /**
+     * U-DRAW's words. The English of `noInstance` is decided item #76; the rest, and every Chinese
+     * text, is PROPOSED (the zh review stays deferred, #76). The Hand over words moved with the
+     * marks to dsh-agent-connector (DESIGN.md §28).
+     */
+    const DRAW_WORDING = Object.freeze({
+      en: Object.freeze({
+        noInstanceTitle: 'Fishball isn\'t running here',
+        noInstance: 'No Fishball child instance is running here. Open your Fishball instance\'s own page.',
+        notReady: 'Fishball isn\'t ready ({state}).',
+        retryLink: 'Retry',
+        // R-NAME-08: a nameless agent is named by its id after this prefix (as the connector's marks do).
+        idPrefix: 'ID:',
+        noticeLabel: 'Notice ({count} since you last looked): {message}. Click to dismiss.',
+      }),
+      zh: Object.freeze({
+        noInstanceTitle: 'Fishball 不在这里运行',
+        noInstance: '此处没有正在运行的 Fishball 子实例。请打开你的 Fishball 实例自己的页面。',
+        notReady: 'Fishball 尚未就绪（{state}）。',
+        retryLink: '重试',
+        idPrefix: 'ID:',
+        noticeLabel: '提示（自上次查看以来 {count} 条）：{message}。点击关闭。',
+      }),
+    })
+    /**
+     * The fish mark's dot, used by the shell's sheet and by the attention part (kit.ROW_MARK). The
+     * dot sits at the mark's top-right and marks the fish's light; its green comes from DSH's state
+     * token, so light and dark themes both read.
+     */
+    const ROW_MARK = Object.freeze({
+      dot: Object.freeze({ sizePx: 7, topPx: -1, rightPx: -1, lit: 'lit' }),
+    })
+    /**
+     * The shell's seats (U-SHELL's slot registry): places in the shell's own surfaces that a part
+     * fills (`seats.register(seat, value)`), so the shell draws them without knowing the part, and a
+     * part that never loads leaves the shell's fallback. One value per seat; the latest wins.
+     * - mark: the sidebar mark component `({size})` the first Fishball row draws (the light is one per
+     *   connector, so one fish carries it; the other rows draw the plain fish);
+     * - pageOpened: a function the window calls once each time it mounts;
+     * - portalGate: an optional component `({title, renderFrame})` registered via `dshConnectorUiPortal`
+     *   by a child-instance plugin (such as `dsh-instance`) to wrap or precede the framed child view.
+     */
+    const SEAT = Object.freeze({ mark: 'mark', pageOpened: 'pageOpened', portalGate: 'portalGate' })
+    /**
+     * Generic client-side portal gate service provided by the shell so a child-instance plugin can
+     * present first-run onboarding inside the Fishball portal without coupling `dsh-connector-ui`
+     * to onboarding logic or state.
+     */
+    const PORTAL_SERVICE = Object.freeze({
+      name: 'dshConnectorUiPortal',
+      apiVersion: 1,
+    })
+    const SLOT = Object.freeze({
+      overlay: 'shell.overlay',
+      /**
+       * DSH's central pane, keyed by panel id ("conversation" is the session), and the sidebar's
+       * global-panel rows that select it (dsh-client-ui-layout, dsh-client-ui-sidebar; the same
+       * contract in 0.2.1-rc.5 and 0.2.2-rc.1).
+       */
+      main: 'main',
+      panelList: 'sidebar.panellist',
+    })
+    /**
+     * The one Fishball accent (§8.5): the app's magenta. It is declared once here and exposed
+     * once as `--fb-accent` (the style sheet below); the important notice's ring and the Retry
+     * link's fallback colour read it, and the mark's eye and the count pill use it directly. DSH mounts this plugin's surfaces in several slots, so the variable is
+     * set on the document rather than on a single root element.
+     */
+    const FISHBALL_ACCENT = '#EC0A6E'
+    /**
+     * FishMark (fishball app, Surfaces.kt): body and eye on a 24-unit grid. In the sidebar the
+     * body takes the text colour so it reads on light and dark themes; the eye keeps the
+     * app's magenta, the one colour the mark spends.
+     */
+    const FISH_MARK = Object.freeze({
+      viewBox: '0 0 24 24',
+      body: 'M7.4 16.6 L7.4 9.9 L11.3 5.6 L18.4 5.6 L18.4 12.7 L14.1 16.6 Z M7.4 16.6 L2.6 21.4 L7.4 21.4 Z',
+      eye: 'M14.6 7.4 h2 v2 h-2 Z',
+      bodyColor: 'currentColor',
+      eyeColor: FISHBALL_ACCENT,
+    })
+    /**
+     * The font the unread count ends on. DSH sets <html lang> to its display language
+     * (dsh-client-locale), and a bare `sans-serif` then picks a per-language face: PingFang SC in
+     * Chinese, lighter and shaped differently. Named Latin faces first give every language the English face.
+     * DSH's own --dsw-font-family is SF Pro on macOS, wider than the approved look.
+     */
+    const BRAND_LATIN_FONT = 'Helvetica,Arial,sans-serif'
+    /**
+     * The important animation (§13.6) and the count pill's look: a short tail wag, repeated every
+     * cycle while the fish's light is important, pivoting near the tail's root (a keyframe list, so
+     * a change of look edits data); and the pill the notify prompt counts in, in the one accent.
+     */
+    const UNREAD_BADGE = Object.freeze({
+      /** The keyframe name of the tail wag (declared once in the style sheet below). */
+      wagAnimation: 'fb-wag',
+      fill: FISH_MARK.eyeColor, textColor: '#fff',
+      minWidth: '16px', height: '16px', paddingX: '4px', radius: '8px',
+      fontFamily: BRAND_LATIN_FONT, fontSize: '10px', fontWeight: 800,
+      cycleSeconds: 2.2, wagOrigin: '70% 40%',
+      /** Keyframe percentages of one cycle: rest, then wag back and forth, then rest. */
+      wag: Object.freeze([[0, 0], [55, 0], [62, -14], [70, 12], [78, -9], [86, 5], [100, 0]]),
+    })
+    const STYLE_ID = 'fishball-style'
+    const CLS = Object.freeze({ code: 'fb-code', mark: 'fb-mark', markBox: 'fb-mark-box', wag: 'fb-wag', muted: 'fb-muted', managedRowDot: 'fb-managed-row-dot', embed: 'fb-embed', embedBar: 'fb-embed-bar', embedTitle: 'fb-embed-title', embedName: 'fb-embed-name', embedState: 'fb-embed-state', embedStateWords: 'fb-embed-state-words', embedCode: 'fb-embed-code', embedActions: 'fb-embed-actions', embedFrame: 'fb-embed-frame', embedError: 'fb-embed-error', embedGlyph: 'fb-embed-glyph', embedDetails: 'fb-embed-details', embedLead: 'fb-embed-lead', link: 'fb-link', notice: 'fb-notice', noticeText: 'fb-notice-text', noticeCount: 'fb-notice-count' })
+    /**
+     * The fish's prompt bubble (R-FN-01: "a bubble beside the sidebar fish"): it sits `gapPx` to
+     * the right of the fish's mark, level with its top, and keeps to `maxWidthPx` wide and
+     * `maxHeightPx` tall (a 4000-code-point message scrolls inside it). Without a visible mark (the
+     * sidebar is closed) it rests in the window's bottom-left corner, `edgePx` in, where the
+     * sidebar's foot is.
+     */
+    const NOTICE_BUBBLE = Object.freeze({
+      gapPx: 8, edgePx: 16, maxWidthPx: 280, maxHeightPx: 160, layer: 1000,
+      /** Its inside: DSH's menu-row padding and caption size, the text-to-count gap. */
+      paddingYPx: 10, paddingXPx: 12, fontSize: '13px', lineHeight: 1.5, innerGapPx: 10,
+      /** Its entrance (a short fade from the fish's side) and the keyframe that draws it. */
+      enterAnimation: 'fb-notice-in', enterShiftPx: 4,
+      /** Values of data-fishball-notice-place: beside the fish (with the tail) or in the corner. */
+      place: Object.freeze({ mark: 'mark', corner: 'corner' }),
+      /**
+       * Its tail: a small square turned 45°, half outside the bubble's left edge, `tailTopPx` down,
+       * so it points at the middle of the fish the bubble is level with (DSH's 16px panel icon);
+       * none in the corner place, where there is no fish.
+       */
+      tailPx: 8, tailTopPx: 4,
+    })
+    /** The gap between the window's state dot and its words. */
+    const STATE_WORDS_GAP_PX = 6
+    /** DSH's caption type (the size its settings fields use), for the window's details line. */
+    const TYPE = Object.freeze({ caption: '12px/18px var(--dsw-font-family)', detailGap: '4px 12px' })
+    /** The header's fish beside the title (FishMark, the window's one brand mark). */
+    const HEADER_MARK_PX = 18
+    /** The window's state line: DSH's StateDot sizes, and the tones of each state's dot. */
+    const STATE_DOT = Object.freeze({ sizePx: 8, byState: Object.freeze({ ready: 'done', failed: 'error', unknown: 'idle', stopped: 'idle', disabled: 'idle' }), pending: 'ongoing', pendingSizePx: 12 })
+
+    const en = {
+      ...PROPOSED_WORDING.en,
+      ...DRAW_WORDING.en,
+      embedTitle: 'Fishball chat', embedRefresh: 'Refresh',
+      embedState: 'State', embedCode: 'Code',
+      frameWaiting: 'Waiting for Fishball to load…',
+      frameNotLoaded: "Fishball didn't load", frameWaitReason: "This frame hasn't confirmed that Fishball loaded.", frameOpenAgain: 'Open Fishball again',
+      // The child's lifecycle states the window shows (K3 child.d.ts); `ready` reads "running".
+      'frameState.loading': 'checking', 'frameState.unknown': 'status unknown',
+      statusUnreadable: 'Could not check Fishball’s status.',
+      'frameState.disabled': 'disabled', 'frameState.waiting': 'waiting', 'frameState.starting': 'starting', 'frameState.ready': 'running',
+      'frameState.stopping': 'stopping', 'frameState.stopped': 'stopped', 'frameState.failed': 'failed',
+    }
+    const zh = {
+      ...PROPOSED_WORDING.zh,
+      ...DRAW_WORDING.zh,
+      embedTitle: 'Fishball 聊天', embedRefresh: '刷新',
+      embedState: '状态', embedCode: '代码',
+      'frameState.loading': '检查中', 'frameState.unknown': '状态未知',
+      statusUnreadable: '无法检查 Fishball 的状态。',
+      frameWaiting: '正在等待 Fishball 加载…',
+      frameNotLoaded: 'Fishball 未能加载', frameWaitReason: '此页面尚未确认 Fishball 已加载。', frameOpenAgain: '重新打开 Fishball',
+      'frameState.disabled': '已禁用', 'frameState.waiting': '等待中', 'frameState.starting': '启动中', 'frameState.ready': '运行中',
+      'frameState.stopping': '停止中', 'frameState.stopped': '已停止', 'frameState.failed': '失败',
+    }
+
+    const css = [
+      `.${CLS.mark}{color:var(--dsw-alias-label-primary)}`,
+      `.${CLS.markBox}{position:relative;display:inline-flex}`,
+      `.${CLS.wag}{transform-origin:${UNREAD_BADGE.wagOrigin};animation:${UNREAD_BADGE.wagAnimation} ${UNREAD_BADGE.cycleSeconds}s ease-in-out infinite}`,
+      `@keyframes ${UNREAD_BADGE.wagAnimation}{${UNREAD_BADGE.wag.map(([at, degrees]) => `${at}%{transform:rotate(${degrees}deg)}`).join('')}}`,
+      // Motion is the only thing that stops: the light's dot and the prompt stay.
+      `@media (prefers-reduced-motion:reduce){.${CLS.wag}{animation:none}}`,
+      `.${CLS.code}{font-family:var(--ds-font-family-code);overflow-wrap:anywhere}`,
+      `.${CLS.muted}{color:var(--dsw-alias-label-tertiary)}`,
+      // The Fishball view (§7) fills DSH's main area as a session does: DSH's conversation root,
+      // its header (border, padding, the leading clearance a hidden macOS sidebar leaves) and its
+      // name style; the frame takes the rest.
+      `.${CLS.embed}{display:flex;flex-direction:column;flex:1;width:100%;height:100%;min-width:0;min-height:0;background:var(--dsw-alias-bg-base)}`,
+      `.${CLS.embedBar}{box-sizing:border-box;flex:none;display:flex;align-items:center;gap:${DSH_SESSION_HEADER.gap};min-height:${DSH_SESSION_HEADER.minHeight};padding:${DSH_SESSION_HEADER.padding};padding-inline-start:max(${DSH_SESSION_HEADER.startPadding}, var(--dsh-frame-leading-clearance,0px));border-bottom:.5px solid var(--dsw-alias-border-l3)}`,
+      // The fish and the name read as one title, as a session's crumb does.
+      // The title, the tag and Refresh keep their size; only the code gives way on a narrow header.
+      `.${CLS.embedTitle}{display:inline-flex;flex:none;align-items:center;gap:${DSH_SESSION_HEADER.gap}}`,
+      `.${CLS.embedName}{color:var(--dsw-alias-label-primary);font-size:${DSH_SESSION_HEADER.nameFont};line-height:${DSH_SESSION_HEADER.nameLine};font-weight:500;white-space:nowrap}`,
+      // The state tag and its safe code sit together, as one item of the header line.
+      `.${CLS.embedState}{display:inline-flex;flex:0 1 auto;align-items:center;gap:${DSH_SESSION_HEADER.gap};min-width:0}`,
+      `.${CLS.embedState}>:first-child{flex:none}`,
+      `.${CLS.embedStateWords}{display:inline-flex;align-items:center;gap:${STATE_WORDS_GAP_PX}px}`,
+      // The header's code is one line that ends in an ellipsis (its `title` and the body's details
+      // carry it whole): a code such as INVALID_MAIN_HOME broke into three lines at 390 px.
+      `.${CLS.embedCode}{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;overflow-wrap:normal}`,
+      // The header is a window-drag area on macOS Desktop, as DSH's own; its buttons are not.
+      `.${CLS.embedActions}{display:flex;flex:none;align-items:center;gap:${DSH_SESSION_HEADER.gap};margin-inline-start:auto;-webkit-app-region:no-drag}`,
+      `.${CLS.embedFrame}{display:block;flex:1;width:100%;min-height:0;border:0;background:var(--dsw-alias-bg-base)}.${CLS.embedFrame}[hidden]{display:none}`,
+      // Not ready, failed or still checking: DSH's empty/error state (dsh-client-ui-schedule .empty), centred in the view.
+      `.${CLS.embedError}{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:${DSH_EMPTY_STATE.gap};padding:${DSH_EMPTY_STATE.padding};text-align:center;color:var(--dsw-alias-label-tertiary);font-size:${DSH_EMPTY_STATE.font};line-height:1.6}`,
+      `.${CLS.embedError}>*{max-width:${DSH_EMPTY_STATE.maxWidth}}`,
+      `.${CLS.embedError} p{margin:0}`,
+      // The glyph's round well: DSH's neutral fill, the caption colour inside.
+      `.${CLS.embedGlyph}{display:inline-flex;align-items:center;justify-content:center;width:${DSH_EMPTY_STATE.wellPx}px;height:${DSH_EMPTY_STATE.wellPx}px;margin-bottom:${DSH_EMPTY_STATE.wellGapPx}px;border-radius:50%;background:var(--dsw-alias-bg-module-platform);color:var(--dsw-alias-label-caption)}`,
+      // The state's message reads first, in the primary colour; the safe details follow, smaller.
+      `.${CLS.embedLead}{color:var(--dsw-alias-label-primary)}`,
+      `.${CLS.embedDetails}{display:flex;flex-wrap:wrap;justify-content:center;gap:${TYPE.detailGap};font:${TYPE.caption}}`,
+      // The fish's light (§13.6): DSH's own success token, so light and dark themes both read.
+      `.${CLS.managedRowDot}{position:absolute;top:${ROW_MARK.dot.topPx}px;right:${ROW_MARK.dot.rightPx}px;box-sizing:border-box;width:${ROW_MARK.dot.sizePx}px;height:${ROW_MARK.dot.sizePx}px;border-radius:50%;background:var(--dsw-alias-state-success-primary);pointer-events:none}`,
+      // The Retry link (decided #77) reads as a link: DSH's accent label colour, underlined, no button chrome.
+      `.${CLS.link}{padding:0;border:0;background:none;color:var(--dsw-alias-label-link,var(--fb-accent));font:inherit;text-decoration:underline;cursor:pointer}`,
+      // The notify prompt (R-FN-01): DSH's menu material and radius, beside the fish (NOTICE_BUBBLE).
+      // DSH's popover material: an opaque layer-2 surface with its prominent elevation (DSH's menu
+      // fill is translucent and needs a backdrop blur this plain element cannot rely on), so the text
+      // reads on any page behind it. The message scrolls inside the text, so the tail stays put.
+      `.${CLS.notice}{position:fixed;z-index:${NOTICE_BUBBLE.layer};display:flex;align-items:flex-start;gap:${NOTICE_BUBBLE.innerGapPx}px;box-sizing:border-box;max-width:${NOTICE_BUBBLE.maxWidthPx}px;max-height:${NOTICE_BUBBLE.maxHeightPx}px;padding:${NOTICE_BUBBLE.paddingYPx}px ${NOTICE_BUBBLE.paddingXPx}px;border:0;border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-layer-2);box-shadow:var(--dsw-elevation-prominent);color:var(--dsw-alias-label-primary);font:inherit;font-size:${NOTICE_BUBBLE.fontSize};line-height:${NOTICE_BUBBLE.lineHeight};text-align:start;cursor:pointer;animation:${NOTICE_BUBBLE.enterAnimation} var(--ds-transition-duration,.2s) var(--ds-ease-in-out,ease)}`,
+      `.${CLS.notice}:hover{background:color-mix(in srgb, var(--dsw-alias-bg-layer-2) 92%, var(--dsw-alias-label-primary))}`,
+      `.${CLS.notice}:focus-visible{outline:var(--dsw-focus-ring-width,2px) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));outline-offset:2px}`,
+      `.${CLS.notice}[data-fishball-notice-place="${NOTICE_BUBBLE.place.mark}"]::before{content:"";position:absolute;left:-${NOTICE_BUBBLE.tailPx / 2}px;top:${NOTICE_BUBBLE.tailTopPx}px;width:${NOTICE_BUBBLE.tailPx}px;height:${NOTICE_BUBBLE.tailPx}px;background:inherit;transform:rotate(45deg);box-shadow:-.5px .5px 0 0 var(--dsw-alias-border-l3)}`,
+      // Important: the one accent as a ring around the bubble (§8.5).
+      `.${CLS.notice}[data-fishball-notice-important="true"]{box-shadow:var(--dsw-elevation-prominent),0 0 0 1px color-mix(in srgb, var(--fb-accent) 55%, transparent)}`,
+      `@keyframes ${NOTICE_BUBBLE.enterAnimation}{from{opacity:0;transform:translateX(-${NOTICE_BUBBLE.enterShiftPx}px)}to{opacity:1;transform:none}}`,
+      `@media (prefers-reduced-motion:reduce){.${CLS.notice}{animation:none}}`,
+      `.${CLS.noticeText}{max-height:${NOTICE_BUBBLE.maxHeightPx - 2 * NOTICE_BUBBLE.paddingYPx}px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere}`,
+      `.${CLS.noticeCount}{flex:none;min-width:${UNREAD_BADGE.minWidth};height:${UNREAD_BADGE.height};padding:0 ${UNREAD_BADGE.paddingX};border-radius:${UNREAD_BADGE.radius};background:${UNREAD_BADGE.fill};color:${UNREAD_BADGE.textColor};font:${UNREAD_BADGE.fontWeight} ${UNREAD_BADGE.fontSize}/${UNREAD_BADGE.height} ${UNREAD_BADGE.fontFamily};text-align:center}`,
+      // The one accent token (§8.5).
+      `:root{--fb-accent:${FISHBALL_ACCENT}}`,
+    ].join('')
+
+    /**
+     * Fishball's fish: wags while anything is unread. The fish is plain everywhere it is drawn,
+     * where it keeps the unread pill and the green dot (the user's answer to D0). The managed
+     * session rows show the connector's own icon, drawn by dsh-agent-connector (DESIGN.md §28).
+     */
+    function FishballIcon({ size, unread, decorative = false }) {
+      const animation = unread ? CLS.wag : null
+      // `decorative`: a brand glyph in the window's chrome (its header, the hint's well). It carries
+      // no `data-fishball-mark`, which names the fish that stands for the light (the sidebar's),
+      // so the hook keeps meaning exactly that fish.
+      return h('svg', { width: size, height: size, viewBox: FISH_MARK.viewBox, className: [CLS.mark, animation].filter(Boolean).join(' '), 'aria-hidden': true, ...(decorative ? {} : { 'data-fishball-mark': true }) },
+        h('path', { d: FISH_MARK.body, fill: FISH_MARK.bodyColor }),
+        h('path', { d: FISH_MARK.eye, fill: FISH_MARK.eyeColor }))
+    }
+
+    /** The fish's light as a dot on its mark (§13.6): no timer, no animation of its own. */
+    const attentionDot = (dot) => h('span', { className: CLS.managedRowDot, 'data-fishball-dot': dot, 'aria-hidden': true })
+
+    /**
+     * The seat registry (SEAT). `register` returns its disposer, so a part fills a seat inside its
+     * own effect and the seat empties when the part stops; a disposer of a replaced value changes
+     * nothing.
+     */
+    const seats = (() => {
+      const stores = new Map(Object.values(SEAT).map((seat) => [seat, valueStore(undefined)]))
+      return Object.freeze({
+        register(seat, value) {
+          const store = stores.get(seat)
+          store.set(value)
+          return () => { if (store.get() === value) store.set(undefined) }
+        },
+        // Kit API: a part may read a seat once outside React; the shell itself follows seats with `use`.
+        get: (seat) => stores.get(seat).get(),
+        use: (seat) => { const store = stores.get(seat); return React.useSyncExternalStore(store.subscribe, store.get) },
+      })
+    })()
+
+    /** The sidebar mark before (or without) the attention part: Fishball's icon alone, with no latch (R-UI-09). */
+    const PlainMark = ({ size }) => h(FishballIcon, { size, unread: false })
+    /** The first sidebar row's mark: the attention part's seat, else `Plain`. */
+    function makeMark(Plain) {
+      return function Mark(props) {
+        return h(seats.use(SEAT.mark) ?? Plain, props)
+      }
+    }
+
+    /**
+     * One GET of a route of this page: the JSON answer when `valid(answer)` holds, else undefined
+     * (unreachable, not JSON, or not the route's shape), so the caller keeps what it showed. A
+     * refusal's body is read too, so a `valid` that accepts it can follow it (the window's
+     * `instance-missing`).
+     */
+    async function readJson(path, valid, signal) {
+      try {
+        const response = await fetch(apiUrl(path), { ...FRAME_UI.read, signal })
+        const value = await response.json()
+        return value !== null && typeof value === 'object' && valid(value) ? value : undefined
+      } catch { return undefined }
+    }
+    /**
+     * The child status route's answers the window follows: its status, or the refusal that the
+     * locator went away after the page loaded (the window then shows the hint, Q-G3).
+     */
+    const isChildAnswer = (value) => (value.ok === true && typeof value.status?.state === 'string') || value.code === CHILD_UI.instanceMissing
+
+    /** Whether two answers show the same thing, so a steady poll re-renders nothing. */
+    const sameAnswer = (a, b) => JSON.stringify(a) === JSON.stringify(b)
+
+    /**
+     * A frame request has one owner. Timeout settles that owner even if no reply arrives;
+     * unmount/supersession only cancels it. In either case no late reply may replace the next
+     * attempt, and a queued or body-pending fetch no longer occupies a connection.
+     */
+    function frameRequest(read, settle) {
+      const controller = new AbortController()
+      const cancel = () => { clearTimeout(timer); controller.abort() }
+      const timer = setTimeout(() => { cancel(); settle(undefined) }, FRAME_UI.requestTimeoutMs)
+      void read(controller.signal).then((answer) => {
+        if (controller.signal.aborted) return
+        clearTimeout(timer)
+        settle(answer)
+      })
+      return cancel
+    }
+
+    /** Poll one read at a time. A failed first read isn't a lifecycle state; keep trying even
+     * after showing the error. A transient failure after a valid read needn't unmount a live chat. */
+    function useChildStatus(path, generation) {
+      const [latest, setLatest] = React.useState(undefined)
+      React.useEffect(() => {
+        let cancel
+        let timer
+        const poll = () => {
+          if (cancel || document.hidden) return
+          cancel = frameRequest((signal) => readJson(path, isChildAnswer, signal), (answer) => {
+            cancel = undefined
+            setLatest((previous) => {
+              // Keep the last answer only to preserve an admitted frame; never label it current
+              // after a failed probe. A subsequent successful poll clears the warning in place.
+              const next = { answer: answer ?? previous?.answer, unreadable: answer === undefined }
+              return sameAnswer(previous, next) ? previous : next
+            })
+          })
+        }
+        const stop = () => {
+          clearInterval(timer)
+          timer = undefined
+          cancel?.()
+          cancel = undefined
+        }
+        const followVisibility = () => {
+          // A hidden pane should neither queue a new probe nor occupy a connection with an old one.
+          if (document.hidden) { stop(); return }
+          if (timer !== undefined) return
+          timer = setInterval(poll, FRAME_UI.pollMs)
+          poll()
+        }
+        document.addEventListener?.(VISIBILITY_EVENT, followVisibility)
+        followVisibility()
+        return () => {
+          document.removeEventListener?.(VISIBILITY_EVENT, followVisibility)
+          stop()
+        }
+      }, [path, generation])
+      return latest
+    }
+
+    /**
+     * The frame's state tag: DSH's StateDot (a spinner while it moves, green running, red failed,
+     * grey at rest) and Tag with the state's words, and the safe code beside it when there is one.
+     * The words carry the state, so the dot is never the only signal.
+     */
+    function FrameState({ state, code, t }) {
+      const dot = STATE_DOT.byState[state]
+      return h('span', { className: CLS.embedState, 'data-fishball-embed-state': state, ...(code ? { 'data-fishball-embed-code': code } : {}) },
+        // DSH's Tag takes no data attributes, so the hooks sit on this wrapper.
+        h(Tag, { tone: EMBED_UI.stateTone[state] ?? EMBED_UI.neutralTone },
+          h('span', { className: CLS.embedStateWords },
+            dot === undefined ? h(StateDot, { state: STATE_DOT.pending, size: STATE_DOT.pendingSizePx }) : h(StateDot, { state: dot, size: STATE_DOT.sizePx }),
+            t('frameState.' + state))),
+        code ? h('code', { className: [CLS.code, CLS.muted, CLS.embedCode].join(' '), title: code }, code) : null)
+    }
+
+    /**
+     * The `lang` value for DSH's active language, followed live. resolveText walks the same
+     * fallback chain as this package's own `t` (FRAME_UI.lang). The store's value is the string
+     * itself, so a dictionary registration (which also notifies) re-renders nothing, and only a
+     * real language change gives the frame a new address, which reloads it.
+     */
+    function frameLangStore(locale) {
+      return {
+        subscribe: (listener) => locale.subscribe(listener),
+        get: () => locale.resolveText(FRAME_UI.lang.byLocale),
+      }
+    }
+
+    /** DSH's own empty/error state, centred in the view (dsh-client-ui-schedule .empty). */
+    const emptyState = (...children) => h('div', { className: CLS.embedError }, ...children)
+    // Hosted Frame Readiness v1 (connector contract §1.5), separate from process readiness.
+    const FRAME_READY = Object.freeze({ type: 'fishball:frame-ready', version: 1 })
+    const FRAME_WAIT = Object.freeze({ event: 'message', timeoutMs: 15000, waiting: 'waiting', recovery: 'recovery', shown: 'shown' })
+    function isPageReady(data) {
+      return data !== null && typeof data === 'object' && !Array.isArray(data) && Reflect.ownKeys(data).length === Object.keys(FRAME_READY).length &&
+        Object.entries(FRAME_READY).every(([key, value]) => Object.hasOwn(data, key) && data[key] === value)
+    }
+
+    /** Mounted once per admission. A timeout changes the explanation, not the listener or frame. */
+    function AdmittedFrame({ t, src, onRetry }) {
+      const frame = React.useRef(null)
+      const [phase, setPhase] = React.useState(FRAME_WAIT.waiting)
+      React.useLayoutEffect(() => {
+        // Install before the browser can deliver a posted message, even on an already-warm child.
+        const expectedOrigin = new URL(src).origin
+        let expired = false
+        // Only this admitted frame owns the wait. Defer a hidden timeout's UI change until
+        // foregrounding; accepting even a late signal leaves no recovery to display.
+        const showRecovery = () => {
+          if (!document.hidden && expired) {
+            setPhase((current) => current === FRAME_WAIT.waiting ? FRAME_WAIT.recovery : current)
+          }
+        }
+        const timer = setTimeout(() => { expired = true; showRecovery() }, FRAME_WAIT.timeoutMs)
+        function onMessage(event) {
+          const source = frame.current?.contentWindow
+          if (!source || event.source !== source || event.origin !== expectedOrigin || !isPageReady(event.data)) return
+          clearTimeout(timer)
+          setPhase(FRAME_WAIT.shown)
+        }
+        window.addEventListener(FRAME_WAIT.event, onMessage)
+        document.addEventListener?.(VISIBILITY_EVENT, showRecovery)
+        return () => {
+          window.removeEventListener(FRAME_WAIT.event, onMessage)
+          document.removeEventListener?.(VISIBILITY_EVENT, showRecovery)
+          clearTimeout(timer)
+        }
+      }, [src])
+      return h(React.Fragment, null,
+        h('iframe', { ref: frame, hidden: phase !== FRAME_WAIT.shown, className: CLS.embedFrame, src, title: t('embedTitle'), allow: EMBED_UI.iframeAllow, referrerPolicy: EMBED_UI.iframeReferrerPolicy, 'data-fishball-embed-frame': true }),
+        phase === FRAME_WAIT.waiting ? loadingState(t, t('frameWaiting')) : phase === FRAME_WAIT.recovery ? emptyState(warningGlyph(),
+          h('p', { className: CLS.embedLead, role: 'alert' }, t('frameNotLoaded')),
+          h('p', null, t('frameWaitReason')),
+          h(Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: onRetry }, t('frameOpenAgain'))) : null)
+    }
+    /** The glyph that opens every not-framed state, in its round well; decorative, as the words say it. */
+    const glyphWell = (glyph) => h('span', { className: CLS.embedGlyph, 'aria-hidden': true }, glyph)
+    /** The view's "checking" state, before its first answer: DSH's spinner over the words. */
+    const loadingState = (t, label = t('frameState.' + FRAME_UI.loading)) => emptyState(
+      glyphWell(h(StateDot, { state: STATE_DOT.pending, size: EMBED_UI.warningIconPx })),
+      h('p', { role: 'status' }, label))
+    /** The warning glyph of a not-ready child or a refused admission. */
+    const warningGlyph = () => glyphWell(h(IconWarningOutlineRegular, { size: EMBED_UI.warningIconPx }))
+    /**
+     * A not-ready child: "Fishball isn't ready (<state>)." as the lead line, then "State <state>"
+     * and, when there is one, "Code <code>" as the safe details, side by side.
+     */
+    const stateDetails = (t, state, code) => [
+      h('p', { key: 'lead', className: CLS.embedLead }, t('notReady', { state: t('frameState.' + state) })),
+      h('div', { key: 'details', className: CLS.embedDetails },
+        h('p', null, t('embedState'), ' ', h('code', { className: CLS.code }, state)),
+        code ? h('p', null, t('embedCode'), ' ', h('code', { className: CLS.code }, code)) : null),
+    ]
+
+    /**
+     * Tells the attention part the window opened, once per mount (not on every snapshot or iframe
+     * refresh; a ref keeps a re-run effect from clearing twice): the backend then clears the latch
+     * and the prompt (§13.6, R-FN-01). The hint is the window too, so it counts.
+     * The seat is followed, not read once (review UI-06): the attention chunk loads on its own and
+     * may register after the window mounted, and that open still clears. The open counts as
+     * delivered only once a registered callback was called.
+     */
+    function useWindowOpened() {
+      const opened = React.useRef(false)
+      const pageOpened = seats.use(SEAT.pageOpened)
+      React.useEffect(() => {
+        if (opened.current || pageOpened === undefined) return
+        opened.current = true
+        pageOpened()
+      }, [pageOpened])
+    }
+
+    /**
+     * The window's chrome: DSH's session header with the title, then the body. Every view draws
+     * it, so the header cannot drift between them. It has no settings button: Fishball settings
+     * and DSH settings are fishball-ui's entries inside the framed page (the user, U-WIRE).
+     * `title` is the label of the sidebar entry that opened it (the user, 2026-11-21: the same
+     * label), so the header names the agent whose window this is.
+     * Optional parts:
+     * - `state` (and `code`): the state tag; the hint has none, as there is no child to describe;
+     * - `onRefresh`: Refresh, enabled by `canRefresh`.
+     */
+    function FrameChrome({ t, title, page, state, code, canRefresh, onRefresh, statusWarning, body }) {
+      return h('section', { className: CLS.embed, 'aria-label': title, 'data-fishball-embed': true, 'data-fishball-embed-page': page },
+        h('header', { className: CLS.embedBar, 'data-window-drag': true },
+          h('span', { className: CLS.embedTitle },
+            h(FishballIcon, { size: HEADER_MARK_PX, unread: false, decorative: true }),
+            h('span', { className: CLS.embedName }, title)),
+          state === undefined ? null : h(FrameState, { state, code, t }),
+          h('div', { className: CLS.embedActions },
+            onRefresh === undefined ? null : h(Button, { type: 'button', size: 'sm', variant: 'ghost', icon: h(IconRefreshOutlineRegular, { size: EMBED_UI.refreshIconPx }), disabled: !canRefresh, onClick: onRefresh }, t('embedRefresh')))),
+        statusWarning ? h('p', { role: 'alert' }, t('statusUnreadable')) : null,
+        body)
+    }
+
+
+    /**
+     * The frame's one-time address for `{view, lang}` while the child is ready: asked of the admit
+     * route `path` afresh whenever the view, the language, the generation (Refresh) or readiness changes,
+     * because a ticket is single-use (UIM-UC-01 A1, A2). The answer is held only in this
+     * component's state for that one frame document. `{refused}` carries the route's code.
+     */
+    function useAdmission(path, view, lang, ready, generation) {
+      // Filter during render: a passive effect is too late to prevent React from mounting a new
+      // frame with the previous single-use URL. Identity distinguishes even en → zh → en.
+      const request = React.useMemo(() => ({ view, lang }), [path, view, lang, ready, generation])
+      const [admission, setAdmission] = React.useState(undefined)
+      React.useEffect(() => {
+        if (!ready) return undefined
+        return frameRequest((signal) => send(path, request, signal), (result) => {
+          const answer = result?.ok && typeof result.answer?.url === 'string'
+            ? { url: result.answer.url } : { refused: result?.code ?? null }
+          setAdmission({ request, answer })
+        })
+      }, [path, ready, request])
+      return admission?.request === request ? admission.answer : undefined
+    }
+
+    /**
+     * The Retry link of a child that is not ready (decided #77; R-UI-03 amended by 1.33): it opens
+     * the instance's own settings page, where Retry is, through DSH's plugin navigation. A link,
+     * not a button, because it takes the user to another page and starts nothing itself.
+     */
+    function retryLink(ctx, t) {
+      const open = (event) => {
+        event.preventDefault()
+        const navigation = ctx.get(FRAME_UI.navigation)
+        // Without DSH's plugin navigation, the Plugins panel, where the instance's row opens its page.
+        if (navigation) navigation.openBundle(FRAME_UI.instancePackage)
+        else ctx.get(SERVICE.layout)?.selectPanel(EMBED_UI.pluginsPanelId)
+      }
+      return h('p', { key: 'retry' }, h('a', { href: '#', className: CLS.link, 'data-fishball-retry-link': true, onClick: open }, t('retryLink')))
+    }
+
+    /**
+     * The window over the instance locator (U-SHELL, U-DRAW; design §4.2; R-UI-02; Q-G3; decided
+     * #77): the child's state and code outside the frame, and the frame's address from admit only.
+     * A child that is not ready shows its state and the Retry link, no frame. A page opened under
+     * any name but a loopback one gets `hostname-refused` and shows R-UI-02's text instead of a
+     * frame. Only an admitted page's fixed document-ready marker can reveal that frame.
+     */
+    function makeChildView(ctx, t, route, useTitle) {
+      const frameLang = frameLangStore(ctx.locale)
+      function FishballChildFrame({ title }) {
+        const page = FRAME_UI.page.chat
+        const lang = React.useSyncExternalStore(frameLang.subscribe, frameLang.get)
+        const [generation, setGeneration] = React.useState(0)
+        const [statusGeneration, setStatusGeneration] = React.useState(0)
+        const reopen = () => setGeneration((value) => value + 1)
+        const check = useChildStatus(route.status, statusGeneration)
+        const status = check?.answer
+        const state = check?.unreadable ? FRAME_UI.unknown : status?.status?.state ?? FRAME_UI.loading
+        const code = check?.unreadable ? null : status?.status?.code
+        const ready = status?.status?.state === CHILD_UI.readyState
+        const admission = useAdmission(route.admit, page, lang, ready, generation)
+        const refresh = () => {
+          setStatusGeneration((value) => value + 1)
+          // With a status warning, Refresh retries the probe without retiring the current chat.
+          if (!check?.unreadable || !admission?.url) reopen()
+        }
+        // A hostname refusal stays until the page is opened under another name; any other refusal
+        // can be asked again with Refresh, as a framed page can be reloaded.
+        const hostnameRefused = admission?.refused === CHILD_UI.hostnameRefused
+        if (!check?.unreadable && status?.code === CHILD_UI.instanceMissing) return hintChrome(t, title)
+        const body = check?.unreadable && !ready ? null : status === undefined
+          ? loadingState(t)
+          : !ready
+            ? emptyState(warningGlyph(), ...stateDetails(t, state, code), retryLink(ctx, t))
+            : admission === undefined
+              ? loadingState(t)
+              : admission.refused !== undefined
+                ? emptyState(warningGlyph(), hostnameRefused
+                  ? h('p', { role: 'alert', 'data-fishball-hostname-refused': true }, t('hostnameRefused'))
+                  : h('p', { role: 'alert', 'data-fishball-admit-refused': admission.refused ?? '' }, t('admitFailed')))
+                : h(AdmittedFrame, { key: generation, t, src: admission.url, onRetry: reopen })
+        return h(FrameChrome, {
+          t, title, page, state, code, statusWarning: check?.unreadable,
+          canRefresh: !hostnameRefused && (check?.unreadable || (status !== undefined && (!ready || admission !== undefined))),
+          onRefresh: refresh,
+          body,
+        })
+      }
+      return function FishballChildView() {
+        const title = useTitle()
+        useWindowOpened()
+        const Gate = seats.use(SEAT.portalGate)
+        const renderFrame = () => h(FishballChildFrame, { title })
+        return Gate === undefined ? renderFrame() : h(Gate, { title, renderFrame })
+      }
+    }
+
+    /**
+     * The window with no usable instance (Q-G3: "当不存在子实例，包括只连接外部实例时提示用户当前没有子实例运行，
+     * 需要转去外部实例的页面"; R-UI-08 amended by 1.41): the hint, and no frame, state or Retry. An
+     * external agent connected to this connector has its own page, which embed-UI cannot know.
+     */
+    function makeHintView(t, useTitle) {
+      return function FishballHintView() {
+        useWindowOpened()
+        return hintChrome(t, useTitle())
+      }
+    }
+    /** The hint inside the window's chrome: no frame, no state, no Retry. */
+    const hintChrome = (t, title) => h(FrameChrome, {
+      t, title, page: FRAME_UI.page.chat,
+      body: emptyState(
+        glyphWell(h(FishballIcon, { size: EMBED_UI.warningIconPx, unread: false, decorative: true })),
+        h('p', { className: CLS.embedLead }, t('noInstanceTitle')),
+        h('p', { 'data-fishball-no-instance': true }, t('noInstance'))),
+    })
+
+    /**
+     * An agent's entry label (the user, 2026-11-21): its name with the first letter capitalised
+     * ("fishball2" reads "Fishball2"), the rest as the agent chose it. The first code point, not
+     * the first UTF-16 unit, so a name that starts outside the BMP is not split; the locale-free
+     * upper case, so the label does not change with DSH's display language. A nameless agent reads
+     * "ID: <id>", as the connector's marks name it (R-NAME-08), with nothing capitalised.
+     */
+    function windowLabel(t, row) {
+      if (row.name === null) return t('idPrefix') + ' ' + row.id
+      const [first = '', ...rest] = row.name
+      return first.toUpperCase() + rest.join('')
+    }
+
+    /**
+     * The Fishball entries (R-UI-11; the user, 2026-11-21): one row in DSH's sidebar panel list and
+     * one `main` view per agent in the backend snapshot's `windows`, followed live. DSH draws each
+     * row, its label and its selected highlight (`aria-current` while its view is open), exactly as
+     * for Plugins and Tasks. The first row's icon is `FirstMark` (the attention part's light, when
+     * that part runs: the light is one per connector, so it sits on one fish); the others draw
+     * `Plain`.
+     *
+     * A row is registered again when its place or label changes (DSH reads a row's order and label
+     * when the slot changes); its view stays registered while its agent is listed, so an open
+     * window survives a rename or a reorder, and goes when the agent goes (DSH then closes it).
+     * A snapshot without `windows` is the store's unknown state (a hidden tab or a dropped stream,
+     * dsh-agent-connector's eventStore), so the entries stay as they were until a real frame.
+     * @param View - `(useTitle) => Component`, the window for one entry.
+     * @returns the disposer of every entry and the subscription.
+     */
+    function followWindows(ctx, t, store, { View, FirstMark, Plain }) {
+      /** id → {row: {order, label, Icon}, disposeRow, disposeView, title: valueStore} */
+      const entries = new Map()
+      const sameRow = (a, b) => a.order === b.order && a.label === b.label && a.Icon === b.Icon
+      const registerRow = (id, row) => ctx.slots.register({ name: SLOT.panelList, id, order: row.order, locale: NS, label: () => row.label }, row.Icon)
+      function reconcile() {
+        const windows = store.get()?.windows
+        if (!Array.isArray(windows)) return
+        const wanted = new Map(windows.map((agent, index) => [EMBED_UI.panelIdPrefix + agent.key, {
+          order: EMBED_UI.panelOrder + index * EMBED_UI.panelOrderStep,
+          label: windowLabel(t, agent),
+          Icon: index === 0 ? FirstMark : Plain,
+        }]))
+        for (const [id, entry] of [...entries]) {
+          if (wanted.has(id)) continue
+          entry.disposeRow()
+          entry.disposeView()
+          entries.delete(id)
+        }
+        for (const [id, row] of wanted) {
+          const entry = entries.get(id)
+          if (entry === undefined) {
+            const title = valueStore(row.label)
+            const useTitle = () => React.useSyncExternalStore(title.subscribe, title.get)
+            const disposeView = ctx.slots.register({ name: SLOT.main, key: id, locale: NS }, View(useTitle))
+            entries.set(id, { row, title, disposeView, disposeRow: registerRow(id, row) })
+          } else if (!sameRow(entry.row, row)) {
+            entry.disposeRow()
+            entry.row = row
+            entry.title.set(row.label)
+            entry.disposeRow = registerRow(id, row)
+          }
+        }
+      }
+      const unsubscribe = store.subscribe(reconcile)
+      reconcile()
+      return () => {
+        unsubscribe()
+        for (const entry of entries.values()) { entry.disposeRow(); entry.disposeView() }
+        entries.clear()
+      }
+    }
+
+    function mountStyles() {
+      const style = document.createElement('style')
+      style.id = STYLE_ID
+      style.textContent = css
+      document.head.appendChild(style)
+      return () => style.remove()
+    }
+
+    /**
+     * What the attention part shares with the shell (client.attention.js): the backend's snapshot
+     * hook and the POST helper (the connector's, passed on), one style sheet and dictionary, and
+     * the seats. A part is a factory of this kit and the host half's availability; client.js starts
+     * each result as a sub-plugin of the row.
+     */
+    exports.kit = Object.freeze({
+      NS, SLOT, CLS, ROW_MARK, NOTICE_BUBBLE, SEAT, seats,
+      snapshotHook, send, FishballIcon, attentionDot,
+    })
+    /**
+     * The shell as a client plugin for what is usable now (readAvailability).
+     * @param available - the host half's answer (client.js readAvailability): its flags, `routes`
+     *   and the backend's `ui` routes.
+     */
+    exports.shellPlugin = (available) => ({ name: SHELL_NAME, inject: ['slots', 'locale'], apply: (ctx) => apply(ctx, available) })
+    function apply(ctx, available) {
+      const t = ctx.locale.bind(NS)
+      ctx.effect(() => ctx.locale.register(NS, { en, zh }), 'fishball: dictionaries')
+      ctx.effect(mountStyles, 'fishball: styles')
+      // Expose a generic portal gate registration point for a child-instance plugin (such as
+      // dsh-instance's first-run onboarding) without adding any onboarding logic to this package.
+      ctx.provide(PORTAL_SERVICE.name, Object.freeze({
+        apiVersion: PORTAL_SERVICE.apiVersion,
+        registerGate(Gate) {
+          if (typeof Gate !== 'function') throw new TypeError('dshConnectorUiPortal: gate must be a function')
+          return seats.register(SEAT.portalGate, Gate)
+        },
+      }))
+      // One Fishball view in DSH's main area and one sidebar row per agent with a window here
+      // (followWindows), as Plugins and Tasks register theirs (§7). The window by availability
+      // (UIM-EP-01): the hosted child's window, or the hint if this page loaded without a locator.
+      // client.js starts the shell only with the connector's backend (Q-U1).
+      const View = (useTitle) => (available.page ? makeChildView(ctx, t, available.routes, useTitle) : makeHintView(t, useTitle))
+      const parts = { View, FirstMark: makeMark(PlainMark), Plain: PlainMark }
+      const store = snapshotStore(available.ui)
+      // Both slots must be declared before an entry registers, so the follower runs inside both.
+      ctx.effect(() => ctx.slots.inject(SLOT.main, () => ctx.slots.inject(SLOT.panelList, () => followWindows(ctx, t, store, parts))), 'fishball: sidebar rows and windows')
+    }
+    return module.exports
+  },
+})

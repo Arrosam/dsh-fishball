@@ -1,0 +1,63 @@
+{
+  "name": "dsh-connector-adapter",
+  "version": "1.0.0-alpha.1",
+  "description": "Lets a DSH sign in to another DSH's dsh-agent-connector through DSH's stock MCP client, with normal OAuth.",
+  "icon": "./assets/adapter-icon.svg",
+  "license": "MIT",
+  "publishConfig": {
+    "tag": "alpha"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=22.14",
+    "dsh": ">=0.2.1-rc.5"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Arrosam/dsh-connector.git",
+    "directory": "packages/dsh-connector-adapter"
+  },
+  "scripts": {
+    "test": "node ../dsh-connector-test-helpers/src/runner/cli.mjs"
+  },
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "src/",
+    "assets/",
+    "locale/*.json",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "//dependencies": "dsh-connector-shared (the DSH side's library) carries ./live-settings, the re-apply of this row on a live settings change that dsh-connector-adapter and dsh-connector-watchdog both use. It is bundled, as dsh-agent-connector bundles it, so the tarball installs with no registry fetch for it.",
+  "dependencies": {
+    "@modelcontextprotocol/client": "2.4.0",
+    "dsh-connector-shared": "1.0.0-alpha.1"
+  },
+  "bundleDependencies": [
+    "dsh-connector-shared"
+  ],
+  "peerDependencies": {
+    "@deepseek-ai/dsh-credentials": "*",
+    "@deepseek-ai/dsh-mcp-client": "*",
+    "@deepseek-ai/dsh-timeout": "*",
+    "@deepseek-ai/dsh-tools": "*",
+    "@deepseek-ai/schemastery": "*"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "//devDependencies": "Test-only: the adapter's tests speak the connector's published MCP and OAuth contract (dsh-agent-connector/mcp-schema) to their fake connector, and use the shared test helpers. Neither ships.",
+  "devDependencies": {
+    "dsh-agent-connector": "1.0.0-alpha.1",
+    "dsh-connector-test-helpers": "1.0.0-alpha.1"
+  }
+}

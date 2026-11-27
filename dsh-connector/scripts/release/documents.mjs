@@ -1,0 +1,64 @@
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { COMMAND, DIST_TAG, INSTALL_SETS, LAYOUT, OFFLINE, PACKAGES, PROFILE, REGISTRY, SDKS } from './constants.mjs'
+
+const fence = (lines) => ['```bash', ...lines, '```'].join('\n')
+const dsh = (...args) => ['dsh plugin --profile', PROFILE, ...args].join(' ')
+const add = (specs, ...flags) => dsh('add', ...specs, ...flags)
+const here = (name) => '"$PWD/' + name + '"'
+
+function offlineAdd(tarballs) {
+  const store = OFFLINE.storeVariable + '="$(node ' + here(LAYOUT.offlineStore) + ' ' + here(LAYOUT.store) + ' "$(' + dsh(OFFLINE.modulesQuery) + ')" "$(' + dsh(OFFLINE.storeQuery) + ')")" &&'
+  return [store, add(tarballs.map(here), COMMAND.offline, '--store-dir="$' + OFFLINE.storeVariable + '"', '--cache-dir=' + here(LAYOUT.cache), COMMAND.registry)]
+}
+
+function installBlocks(set, packages) {
+  const manifests = INSTALL_SETS[set].map((key) => packages[key].manifest)
+  return [
+    fence([add(manifests.map(({ name, version }) => name + '@' + version))]),
+    'Offline, from this folder:',
+    fence(offlineAdd(manifests.map(LAYOUT.tarball))),
+  ].join('\n\n')
+}
+
+function installMarkdown(packages) {
+  return `# DSH Connector ${packages.connector.manifest.version}: install and uninstall
+
+Supported: DeepSeek Harness (DSH) ${SDKS.join(' and ')}.
+
+## Managed DSH (connector + connector UI components)
+
+${installBlocks('managed', packages)}
+
+## Amenities, all together (the dsh-connector-amenities umbrella: the adapter and the watchdog)
+
+${installBlocks('amenities', packages)}
+
+## One amenity on its own
+
+dsh-connector-adapter:
+
+${installBlocks('adapter', packages)}
+
+dsh-connector-watchdog (needs the managed DSH's dsh-agent-connector):
+
+${installBlocks('watchdog', packages)}
+`
+}
+
+function publishMarkdown(packages) {
+  const lines = PACKAGES.map((entry) => 'npm publish ' + LAYOUT.tarball(packages[entry.key].manifest) + ' --tag ' + DIST_TAG + ' --access public --registry ' + REGISTRY)
+  return `# DSH Connector ${packages.connector.manifest.version}: publish
+
+Run from this release folder:
+
+${fence(lines)}
+`
+}
+
+export function writeDocuments(out, packages) {
+  fs.writeFileSync(path.join(out, LAYOUT.install), installMarkdown(packages))
+  fs.writeFileSync(path.join(out, LAYOUT.publish), publishMarkdown(packages))
+  fs.copyFileSync(fileURLToPath(new URL('./offline-store.mjs', import.meta.url)), path.join(out, LAYOUT.offlineStore))
+}

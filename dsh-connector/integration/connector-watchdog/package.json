@@ -1,0 +1,19 @@
+{
+  "name": "dsh-connector-integration-watchdog",
+  "version": "1.0.0-alpha.1",
+  "private": true,
+  "description": "Release-only integration suite: dsh-connector-watchdog running beside dsh-agent-connector in one real DSH (its permission delegate, Stop, watchdog_session_start, the settlements the manager sees).",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "test": "node ../../packages/dsh-connector-test-helpers/src/runner/cli.mjs"
+  },
+  "dependencies": {
+    "dsh-agent-connector": "1.0.0-alpha.1",
+    "dsh-connector-watchdog": "1.0.0-alpha.1",
+    "dsh-connector-test-helpers": "1.0.0-alpha.1"
+  },
+  "engines": {
+    "node": ">=22.14"
+  }
+}

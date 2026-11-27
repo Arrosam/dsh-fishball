@@ -1,0 +1,231 @@
+/**
+ * The V3 domain's own fixed values (task C-WIRE-2): DSH's waterfalls, events and outcomes it binds
+ * to, the request ids it mints, the texts a managed session's agent reads, its storage layout and
+ * its log lines. Every MCP word is K1's (`../../mcp-schema`) and is imported where it is used; the
+ * live limits are the connector's settings (src/config.js).
+ */
+import { TOOL } from '../../mcp-schema/index.js'
+
+/**
+ * The manager's tree stop (tree-stop.js; the user's decision of 2026-11-21): DSH's words for a
+ * running agent and job (dsh-agent AgentStatus, dsh-jobs JobStatus), the cancel cause DSH itself
+ * gives a subagent stopped with its parent (dsh-subagent `cancel({kind: 'parent'})`), the jobs
+ * service and its kill answer, the kill reason recorded in the job's terminal detail, and the log
+ * line (`what`, id, code; never text).
+ */
+export const TREE_STOP = Object.freeze({
+  runningAgent: 'running',
+  runningJob: 'running',
+  cause: Object.freeze({ kind: 'parent' }),
+  jobsService: 'jobs',
+  killRequested: 'requested',
+  killReason: 'stopped by the session\'s manager',
+  /**
+   * The hold on the stopped work's own notices (tree-stop.js `holdNotices`): DSH's step waterfall
+   * (dsh-agent `agent/pre-step`, its `enter` decision, a turn's first step), the notice sources of a
+   * settled subagent (dsh-subagent) and of a settled job (dsh-tool-jobs), and the hold's bound: a
+   * subagent's teardown and a job's kill settle within seconds on both SDKs; one minute is ample
+   * and still ends a hold whose notice never came.
+   */
+  preStep: 'agent/pre-step',
+  enter: 'enter',
+  firstStep: 1,
+  noticeKinds: Object.freeze(['subagent-settled', 'tool-jobs']),
+  holdMs: 60000,
+  log: Object.freeze({ failed: 'tree stop: %s %s failed (%s)', subagent: 'cancelling subagent', job: 'killing job', unknown: 'unknown' }),
+})
+
+/**
+ * A plugin's Stop with a reason (`dshConnectorSessions.stop`, e.g. Watchdog's drift stop; the user,
+ * 2026-11-21: "Watchdog's stop must be distinguishable"). DSH's own cancel (sessionController.cancel,
+ * the Stop button) always records `{kind: 'user'}` (dsh-api-session-controller commands.ts), so the
+ * turn-finished read "cancelled (user)". DSH's AgentCancelCause has a `hook` kind with a reason for a
+ * plugin's own cancel (dsh-session types.ts; dsh-deepseek-account uses it), which `turn/end` records
+ * with its reason on every supported SDK (dsh-agent-loop `abortedCancelCause`). `keepInbox` keeps
+ * the Stop button's meaning: queued input stays for the next turn.
+ */
+export const PLUGIN_STOP = Object.freeze({
+  cause: (reason) => Object.freeze({ kind: 'hook', reason }),
+  options: Object.freeze({ keepInbox: true }),
+})
+
+/** DSH's approval service (dsh-user-approval, both SDKs): the answerer waterfall and its outcomes. */
+export const APPROVAL = Object.freeze({
+  waterfall: 'approval/request',
+  rejectedErrorCode: 'APPROVAL_REJECTED',
+  outcome: Object.freeze({ allowedOnce: 'allowed-once', rejected: 'rejected', cancelled: 'cancelled', unavailable: 'unavailable' }),
+})
+
+/**
+ * DSH's question service (dsh-user-questions, spike S36): the answerer waterfall, the two tools,
+ * the plan-review intent, the timed-wait claim and its error codes.
+ */
+export const QUESTION = Object.freeze({
+  waterfall: 'user-questions/request',
+  askTool: 'ask_user_question',
+  planTool: 'exit_plan_mode',
+  planIntent: 'plan-review',
+  /** DSH's error shape for a rejection the gateway forwards to the session's card. */
+  errorName: 'UserQuestionError',
+  aborted: 'ASK_ABORTED',
+  /** The service that holds a timed question's foreground wait (attachWait, S36). */
+  service: 'userQuestions',
+  /**
+   * A cancelled turn (Stop, session_stop, session_redirect) aborts its calls with the turn's cause,
+   * an object with a string `kind` (dsh-agent-loop `cancel(cause)`; wire/constants.js reads the same
+   * field). Any other abort of a question's call, such as a `run_code` program ending at its
+   * deadline (its nested calls abort with a string), ends the call but not the turn.
+   */
+  turnCauseKind: 'kind',
+})
+
+/** Session log facts read to find a call's arguments and a question's call id (spikes S11, S36). */
+export const LOG_EVENT = Object.freeze({
+  assistant: 'assistant/message',
+  toolCallBlock: 'tool-call',
+  ptcDispatch: 'tool/ptc-dispatch-start',
+  toolCall: 'tool/call',
+  toolResult: 'tool/result',
+  turnEnd: 'turn/end',
+  sessionEvent: 'session/event',
+})
+
+/** dsh-tools' post-execute waterfall and its decisions (spike S35). */
+export const POST_EXECUTE = Object.freeze({ event: 'tools/post-execute', block: 'block' })
+
+/** Agent lifecycle events (dsh-agent, spike S34): a managed session's tools follow each new agent. */
+export const AGENT_EVENT = Object.freeze({ created: 'agent/created', disposed: 'agent/disposed' })
+
+/** Request ids the domain mints: a prefix plus 32 lowercase hex characters (a UUID without dashes). */
+export const REQUEST_ID = Object.freeze({
+  permission: 'apr_',
+  question: 'qst_',
+  prompt: 'prm_',
+  grant: 'grt_',
+  uuidSeparator: /-/g,
+})
+
+/** The one-line summaries a descriptor's `prompt` carries; JSON-quoted, so a tool name cannot break them. */
+export const SUMMARY = Object.freeze({
+  permission: (toolName) => `Permission request: ${JSON.stringify(toolName)}`,
+  question: (toolName) => `Question: ${toolName}`,
+})
+
+/** Cut text ends with this (a whole UTF-8 character always precedes it). */
+export const ELLIPSIS = '…'
+
+/**
+ * Standing grants (design §7a.8 as V3 keeps it): the shell tools a prefix grant may name, each with
+ * its command argument; one trailing `*` is notation. setTimeout's limit bounds one wait of the
+ * expiry timer, so a far end time is reached in steps.
+ */
+export const GRANT = Object.freeze({
+  commandArgument: Object.freeze({ bash: 'command', pwsh: 'command', terminal_send: 'text' }),
+  wildcard: '*',
+  maxTimerMs: 2147483647,
+  digest: 'sha256',
+  digestEncoding: 'hex',
+})
+
+/**
+ * The grants' durable table: one storage domain of the connector, per-record, so a use writes one
+ * record. Keys are the grant ids (path-safe: prefix + hex).
+ */
+export const GRANT_STORE = Object.freeze({
+  domain: 'dsh_connector_grants', version: 1, layout: 'per-record', table: 'grants',
+  /**
+   * A record's optional durable `state` (review F01/F04; absent = active, so earlier records read
+   * as before): `pending` until its answer's settlement is stored, `ended` once it ends, written
+   * before its delete. Neither covers or lists, and the start sweep deletes both, so neither a
+   * failed answer's grant nor a revoked grant whose delete failed can revive after a restart.
+   */
+  state: Object.freeze({ pending: 'pending', ended: 'ended' }),
+})
+
+/**
+ * `message_agent`, the one tool of a managed session (the user, 2026-11-17: no `ask_agent`, no
+ * `list_user_messages`). Model-facing text; neutral names (§1.0c, Q-G8 = B).
+ */
+export const MESSAGE_AGENT = Object.freeze({
+  name: 'message_agent',
+  description: 'Send a message to the agent that manages this session. Use it to report something the user should know, to hand over a result, or to ask for something to be passed on. The agent sees which session sent it. Keep it short and self-contained.',
+  messageArg: 'The message (plain text or markdown).',
+  delivered: 'Delivered to the agent that manages this session.',
+  duplicate: 'The managing agent already has this message.',
+  /** The dedupe key's parts are joined with this (caller, call id, response seq, text digest). */
+  keySeparator: ':',
+  /** The log seq of a session with no assistant message yet. */
+  noResponse: 0,
+})
+
+/** What a session's agent reads when its call is rejected (DSH's outcome carries no text). */
+export const WORDING = Object.freeze({
+  rejected: (reason) => `The managing agent rejected this call: ${reason}`,
+  incomplete: 'The connector rejected this call because its arguments were incomplete. Resend with complete arguments and a short justification. For shell commands, split the work into shorter commands, each well under about 2,000 characters.',
+  keySeparator: '|',
+  incompleteContext: (tool, callId) => `Permission request for ${JSON.stringify(tool)}${callId === undefined ? '' : ` (call ${JSON.stringify(callId)})`}.`,
+  incompleteNote: Object.freeze({
+    source: Object.freeze({ kind: 'dsh-connector-note', form: 'notice' }),
+    summary: 'dsh-connector: incomplete permission arguments',
+    target: 'next-step',
+    wake: false,
+  }),
+})
+
+/**
+ * The `kind` of a late answer's message. A different word from DSH's own `answer_to_pending_question`
+ * (a timed call's pending reply), because this call did not return `pending`: it failed, and the
+ * session's agent must not look for a pending call to match it to.
+ */
+const QUESTION_TEXT_KIND = Object.freeze({ lateAnswer: 'answer_to_ended_question' })
+
+/**
+ * A question answered by the managing agent closes the session's own card with this rejection, as
+ * DSH's gateway forwards it (S36 Q2).
+ */
+export const QUESTION_TEXT = Object.freeze({
+  answeredElsewhere: 'answered by the managing agent',
+  aborted: 'aborted before the question was answered',
+  /** The `question-call-ended` notice's text to the manager (mcp-schema NOTICE.codes). */
+  callEnded: (toolName, cause) => `The session's ${toolName} call ended before anyone answered it (${cause}). The question stays open: answer it with ${TOOL.questionAnswer} and the answer is delivered into the session as a message.`,
+  /** What the cause of an ended call reads as when DSH gave no text for it. */
+  unknownCause: 'no reason given',
+  /**
+   * The message a question's late answer reaches its session as. JSON, as DSH's own
+   * `answer_to_pending_question` reply, so the session's agent reads which call and questions it answers.
+   */
+  lateAnswer: (toolName, callId, questions, answers) => JSON.stringify({ kind: QUESTION_TEXT_KIND.lateAnswer, tool: toolName, callId: callId ?? null, questions, answers }),
+})
+
+/** Why a question batch was refused (`bad-answer`); domain words only, never shown as the code. */
+export const ANSWER_RULE = Object.freeze({
+  items: 'items', ids: 'ids', labels: 'labels', custom: 'custom', single: 'single',
+  planOnly: 'plan-only', questionOnly: 'question-only', planBoth: 'plan-both', feedback: 'feedback',
+  nothing: 'nothing',
+})
+
+/**
+ * Log lines: `logger.warn(LOG.format, line, code)`; never an argument, a reason or a session's text,
+ * except `highRiskAllowed`, whose manager's reason is the record of a high-risk approval.
+ */
+export const LOG = Object.freeze({
+  format: '%s (%s)',
+  incompleteFeedbackFailed: 'domain: could not deliver incomplete permission feedback',
+  autoRejectedIncomplete: 'domain: automatically rejected a managed permission request with incomplete arguments (%s)',
+  offerFailed: 'domain: a request could not be offered; it goes to the user',
+  handoffFailed: 'domain: a permission handoff notice could not be committed',
+  settleFailed: 'domain: a settlement could not be committed',
+  withdrawFailed: 'domain: a withdrawn offer could not be retired',
+  grantWriteFailed: 'domain: a grant could not be written',
+  grantExpiryFailed: 'domain: a grant expiry failed',
+  holdFailed: 'domain: a timed question\'s wait could not be held',
+  noticeFailed: 'domain: the manager could not be told that a question\'s call ended',
+  lateAnswerFailed: 'domain: an ended question\'s answer could not be delivered into its session',
+  frozenRequest: 'domain: a request could not be routed: its signal cannot be replaced',
+  toolsFailed: 'domain: a managed session\'s tool could not be applied',
+  toolsRemovalFailed: 'domain: a managed session\'s tool could not be removed',
+  closeFailed: 'domain: a part did not close cleanly',
+  pluginStartFailed: 'domain: a plugin\'s session start failed unexpectedly; answered operation-failed',
+  /** `logger.info(highRiskAllowed, sessionId, toolName, requestId, principalKey, reason)` (permissions.js `auditHighRisk`). */
+  highRiskAllowed: 'domain: high-risk call allowed by its manager: session %s, tool %s, request %s, manager %s, reason: %s',
+})

@@ -1,0 +1,4 @@
+- insert:
+    - id: fbix-tools
+      name: 'fbix-tools'
+      config: {}

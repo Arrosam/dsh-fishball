@@ -1,0 +1,17 @@
+{
+  "name": "dsh-connector-integration-package-icons",
+  "version": "1.0.0-alpha.1",
+  "private": true,
+  "description": "Release-only integration suite: the plugin icons of every package of this repository together (each one valid and shipped, distinct from the others, keeping the family's shared base, visible on light and dark themes in a real Chromium).",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "test": "node ../../packages/dsh-connector-test-helpers/src/runner/cli.mjs"
+  },
+  "dependencies": {
+    "dsh-connector-test-helpers": "1.0.0-alpha.1"
+  },
+  "engines": {
+    "node": ">=22.14"
+  }
+}

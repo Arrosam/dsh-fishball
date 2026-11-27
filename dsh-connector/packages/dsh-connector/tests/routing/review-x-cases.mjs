@@ -1,0 +1,772 @@
+/**
+ * R-FIX-CONNECTOR black-box rows for the deep review's findings on the session domain
+ * (.runtime/reports/review-x-dsh-connector.md): F01 grant revocation fails closed, F04 a failed
+ * settlement leaves the offer answerable, F05 a failed succession keeps its grants, F08 a reject needs
+ * a reason and no risk, F09 the V2 session helpers are gone. Expected outcomes are the requirements
+ * the parent relayed for the task (each row names its finding); no domain module body was read.
+ *
+ * Level: the REAL routing and mailbox (routeWorld: real DSH storage of the SDK under test) with the
+ * REAL session domain composed over them (`createSessionDomain`, as C-WIRE composes it: grants,
+ * permissions, prompts). DSH is reached only through its approval waterfall on the world's context
+ * (a permission request for a shell call whose arguments the session log carries); the DSH services
+ * the session port requires are stubs no row reads. A storage seam on the context makes chosen table
+ * writes reject, as a backend that refused the write. F01's expiry, discard and sweep rows use the
+ * real `createGrants` over an in-memory table with a fake clock and timers.
+ *
+ * Techniques: State Transition (Active → revoke with a failed delete → Revoked-unstored → retry →
+ * Gone; a sweep that failed its delete → handed over again), Decision Table (F08: decision × risk ×
+ * reason; F05: where the succession fails), Boundary Value (a grant at its end time and one tick
+ * before), Equivalence Partitioning (each way a grant ends).
+ */
+import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import path from 'node:path'
+import test from 'node:test'
+import { APPROVAL_DECISION, EVENT_TYPE, GRANT_KIND, REFUSAL, RISK, SETTLED_BY, SETTLEMENT_OUTCOME } from '../../mcp-schema/index.js'
+import { INSTANCE } from 'dsh-connector-test-helpers/legacy'
+import { importInstance } from 'dsh-connector-test-helpers/sdk'
+import { caseName } from 'dsh-connector-test-helpers/cases'
+import { resolveRuntimePackages } from '../pairs/subject.mjs'
+import { descriptor, pendingOf, principalSettlementOf, quiet, settlementOf, until } from './cases.mjs'
+import { FIXTURE, REVIEW_X as RX, WAIT } from './constants.mjs'
+import { mailboxPort } from './fakes.mjs'
+import { routeWorld } from './subject.mjs'
+
+const T = Object.freeze({ timeout: WAIT.testMs })
+const D = RX.dsh
+const S = RX.sessions
+const row = (sdk, id, part, title, fn) => test(caseName(sdk, id, part, title), T, fn)
+
+// ------------------------------------------------------------------------------------------------
+// Modules
+
+const loaded = new Map()
+/** A connector module bound to `sdk`, with `names` required as exports. */
+function moduleOf(sdk, entry, names = []) {
+  const key = sdk + '\0' + entry
+  if (!loaded.has(key)) {
+    loaded.set(key, (async () => {
+      assert.ok(fs.existsSync(entry), `${entry} does not exist`)
+      resolveRuntimePackages()
+      const mod = await importInstance(sdk, path.relative(INSTANCE.dir, entry))
+      for (const name of names) assert.equal(typeof mod[name], 'function', `${path.basename(entry)} exports no ${name}()`)
+      return mod
+    })())
+  }
+  return loaded.get(key)
+}
+
+// ------------------------------------------------------------------------------------------------
+// Seams
+
+const injected = () => Object.assign(new Error(RX.injected), { injected: true })
+const TABLE_WRITES = Object.freeze(['put', 'delete', 'update', 'deleteMany'])
+
+/**
+ * Wraps `ctx.storageDomain.open` so a row can make chosen table writes reject (the backend refused
+ * them; the real table is not touched). `fail({domain, table, op, skip, times})` arms a fault: the
+ * first `skip` matching writes pass, the next `times` reject. Returns `{stop, count()}`.
+ */
+function storageSeam(ctx) {
+  const faults = new Set()
+  const facility = ctx.storageDomain
+  const open = facility.open.bind(facility)
+  facility.open = async (spec) => {
+    const domain = await open(spec)
+    const handles = new Map()
+    const wrap = (name) => new Proxy(domain.table(name), {
+      get(target, prop) {
+        const value = Reflect.get(target, prop, target)
+        if (typeof value !== 'function') return value
+        if (!TABLE_WRITES.includes(prop)) return value.bind(target)
+        return (...args) => {
+          const fault = [...faults].find((f) => f.domain === domain.name && f.table === name && f.op === prop)
+          if (fault !== undefined) {
+            if (fault.skip > 0) fault.skip -= 1
+            else if (fault.times > 0) { fault.times -= 1; fault.failed += 1; return Promise.reject(injected()) }
+          }
+          return value.apply(target, args)
+        }
+      },
+    })
+    return new Proxy(domain, {
+      get(obj, prop) {
+        if (prop === 'table') return (name) => { if (!handles.has(name)) handles.set(name, wrap(name)); return handles.get(name) }
+        const value = Reflect.get(obj, prop, obj)
+        return typeof value === 'function' ? value.bind(obj) : value
+      },
+    })
+  }
+  return {
+    fail({ domain, table, op, skip = 0, times = Number.POSITIVE_INFINITY }) {
+      const fault = { domain, table, op, skip, times, failed: 0 }
+      faults.add(fault)
+      return { stop: () => { faults.delete(fault) }, count: () => fault.failed }
+    },
+    /** The stored records of one table, read past the seam (DSH's own open domain). */
+    records: ({ domain, table }) => [...(facility.get(domain)?.table(table).entries() ?? [])],
+  }
+}
+
+/**
+ * The mailbox port routing gets: the routing fakes' port plus C-MAILBOX `stage`, with two switches
+ * a row flips: `failSettlement` rejects every `settlement` commit, `failStage` rejects `stage`.
+ */
+function reviewPort(switches) {
+  return (real) => {
+    const base = mailboxPort(real)
+    return {
+      ...base,
+      commit: (recipient, draft) => (switches.failSettlement && draft?.type === EVENT_TYPE.settlement ? Promise.reject(injected()) : base.commit(recipient, draft)),
+      stage: (...args) => (switches.failStage ? Promise.reject(injected()) : real.stage(...args)),
+    }
+  }
+}
+
+// ------------------------------------------------------------------------------------------------
+// The world: routing, mailbox and the session domain
+
+/** Provides each DSH service the session port requires as a stub (no row reads one: no session is ever attached). */
+function stubServices(ctx) {
+  const stubs = { sessions: { get: () => undefined }, sessionController: {}, agents: { list: () => [] }, workspaceRegistry: { list: () => [] } }
+  for (const name of D.services) ctx.provide(name, stubs[name])
+}
+
+/**
+ * One world for `t`: A (and B) paired, sessions S and T, the session domain composed over the real
+ * routing. Returns `{w, d, seam, switches, settlements, A, B, call(...)}`.
+ */
+async function domainWorld(t, sdk, { highRisk = RX.requestSettings.allowHighRisk } = {}) {
+  const mod = await moduleOf(sdk, RX.domainEntry, [RX.domainFactory])
+  const switches = { failSettlement: false, failStage: false, highRiskAllowed: highRisk }
+  let seam
+  const w = await routeWorld(t, sdk, { port: reviewPort(switches), prepare: (ctx) => { seam = storageSeam(ctx); stubServices(ctx) } })
+  // Every settlement the domain hands routing (HIGH-RISK-APPROVAL: a principal's carries risk and reason).
+  const settlements = []
+  const routing = new Proxy(w.routing, {
+    get(target, key) {
+      if (key === 'settle') return (offerId, settlement, options) => { settlements.push(settlement); return target.settle(offerId, settlement, options) }
+      const value = target[key]
+      return typeof value === 'function' ? value.bind(target) : value
+    },
+  })
+  const readSettings = () => ({ ...RX.requestSettings, allowHighRisk: switches.highRiskAllowed })
+  const d = await mod[RX.domainFactory](w.ctx, {
+    storageDomain: w.helpers, readLimits: () => RX.readLimits, readSettings, routing, logger: w.logger,
+  })
+  w.beforeClose(() => d.close())
+  // Registered after the domain, so it runs first: every call still waiting is aborted before the domain closes.
+  const calls = []
+  w.beforeClose(() => { for (const c of calls) c.control.abort() })
+  const A = w.principal(RX.ids.a)
+  const B = w.principal(RX.ids.b)
+  for (const s of Object.values(S)) w.session(s)
+  let n = 0
+  /**
+   * A permission request through DSH's approval waterfall for one shell call of `command` in
+   * `sessionId`. The stock prompt (the waterfall's `next`) waits until the call is aborted.
+   * Returns `{outcome, settled(), control, command}`.
+   */
+  function call(sessionId, command) {
+    n += 1
+    const callId = `call_fbtest_rx_${n}`
+    const events = [{ type: D.assistantEvent, data: { message: { content: [{ type: D.toolCallBlock, id: callId, name: RX.shellTool, arguments: JSON.stringify({ [RX.shellArgument]: command }) }] } } }]
+    const agent = { id: sessionId, session: { snapshotEvents: () => events } }
+    const control = new AbortController()
+    const stock = () => new Promise((resolve) => control.signal.addEventListener('abort', () => resolve(D.outcome.cancelled), { once: true }))
+    const outcome = w.ctx.waterfall(agent, D.approvalWaterfall, { agent, toolName: RX.shellTool, callId, reason: RX.dshReason, signal: control.signal }, stock)
+    let done = false
+    outcome.then(() => { done = true }, () => { done = true })
+    const c = { outcome, settled: () => done, control, command }
+    calls.push(c)
+    return c
+  }
+  return { w, d, seam, switches, settlements, A, B, call }
+}
+
+/** The live offer of `sessionId` whose arguments carry `command`, or undefined. */
+const offerFor = (x, sessionId, command) => x.w.routing.liveOffers(sessionId).find((o) => o.descriptor.arguments.includes(command))
+
+/** A call that is offered: the request and its live offer. */
+async function asked(x, sessionId, command) {
+  const c = x.call(sessionId, command)
+  await until(() => offerFor(x, sessionId, command) !== undefined || c.settled(), `an offer for ${command}`)
+  const offer = offerFor(x, sessionId, command)
+  // The outcome is read only when there is no offer: a message is built eagerly, and the call waits while offered.
+  if (offer === undefined) assert.fail(`${command} was not offered (it settled: ${await c.outcome})`)
+  return { ...c, offer, approvalId: offer.descriptor.approvalId }
+}
+
+/** What a call of `command` in `sessionId` meets now: `covered` (allowed once, no offer) or `offered` (then aborted). */
+async function fateOf(x, sessionId, command) {
+  const c = x.call(sessionId, command)
+  await until(() => c.settled() || offerFor(x, sessionId, command) !== undefined, `${command} to be covered or offered`)
+  if (offerFor(x, sessionId, command) !== undefined) {
+    c.control.abort()
+    return 'offered'
+  }
+  assert.equal(await c.outcome, D.outcome.allowed, `${command} settled without an offer, but not allowed once`)
+  return 'covered'
+}
+
+const answer = (x, request, a, principalKey = x.A) => x.d.interactions.answerApproval({ approvalId: request.approvalId, answer: a, principalKey })
+const allow = () => ({ decision: APPROVAL_DECISION.allow, risk: RISK.low, reason: RX.allowReason })
+const exactGrant = (expiresAt = Date.now() + RX.grantMs) => ({ decision: APPROVAL_DECISION.grant, risk: RISK.low, reason: RX.allowReason, grant: { kind: GRANT_KIND.exact, expiresAt } })
+
+/** A grant of A's for one exact call of `command` in `sessionId` (A manages it): returns `{grantId, command}`. */
+async function grantFor(x, sessionId, command) {
+  const r = await asked(x, sessionId, command)
+  const reply = await answer(x, r, exactGrant())
+  assert.equal(reply?.ok, true, `harness: the grant answer was refused: ${JSON.stringify(reply)}`)
+  assert.equal(await r.outcome, D.outcome.allowed, 'harness: the granting call did not run')
+  assert.equal(await fateOf(x, sessionId, command), 'covered', 'harness: the new grant does not cover its own call')
+  return { grantId: reply.grantId, command }
+}
+async function manage(x, sessionId, key) {
+  assert.deepEqual(await x.w.managed.manage(sessionId, key), { ok: true }, 'harness: manage refused')
+}
+const listed = async (x) => (await x.d.interactions.listGrants()).map((g) => g.grantId)
+
+/** A promise's end as data: `{value}` or `{error}`. */
+const ended = (promise) => Promise.resolve(promise).then((value) => ({ value }), (error) => ({ error }))
+/** "The operation reports failure": it rejected, or answered `operation-failed`; never a success. */
+function assertFailed(end, what) {
+  if (end.error !== undefined) return
+  assert.equal(end.value?.ok, false, `${what} reported success: ${JSON.stringify(end.value)}`)
+  assert.equal(end.value.code, REFUSAL.operationFailed, `${what}: ${JSON.stringify(end.value)}`)
+}
+const grantDeletes = (x, options = {}) => x.seam.fail({ ...RX.grantsDomain, op: 'delete', ...options })
+
+// ------------------------------------------------------------------------------------------------
+// F01 — the domain over real storage
+
+function f01Domain(sdk) {
+  row(sdk, 'RX-F01', 'ST (a, b) revoke with a failed delete', 'revoke of A\'s active grant whose durable delete fails → never success (rejects / operation-failed); from then on the grant covers no call and is not listed', async (t) => {
+    const x = await domainWorld(t, sdk)
+    await manage(x, S.s, x.A)
+    const g = await grantFor(x, S.s, RX.command(1))
+    const failing = grantDeletes(x)
+    const end = await ended(x.d.interactions.revokeGrant({ grantId: g.grantId, reason: RX.reason, principalKey: x.A }))
+    assert.ok(failing.count() > 0, 'harness: the revoke never tried to delete the record')
+    assertFailed(end, 'the revoke whose delete failed')
+    assert.equal(await fateOf(x, S.s, g.command), 'offered', 'the grant still covers its call after a revoke whose delete failed')
+    assert.ok(!(await listed(x)).includes(g.grantId), 'grants_list still shows the grant')
+  })
+  row(sdk, 'RX-F01', 'ST (c) retry after a failed delete', 'a later revoke of the same id, the delete now working → success ({ok: true}); the record is gone from storage; still covers nothing', async (t) => {
+    const x = await domainWorld(t, sdk)
+    await manage(x, S.s, x.A)
+    const g = await grantFor(x, S.s, RX.command(1))
+    const failing = grantDeletes(x)
+    assertFailed(await ended(x.d.interactions.revokeGrant({ grantId: g.grantId, reason: RX.reason, principalKey: x.A })), 'the first revoke')
+    failing.stop()
+    assert.deepEqual(await x.d.interactions.revokeGrant({ grantId: g.grantId, reason: RX.reason, principalKey: x.A }), { ok: true })
+    assert.deepEqual(x.seam.records(RX.grantsDomain).filter(([k]) => k === g.grantId), [], 'the grant record is still stored')
+    assert.equal(await fateOf(x, S.s, g.command), 'offered')
+  })
+  row(sdk, 'RX-F01', 'ST (d) the successful path', 'revoke with a working delete → {ok: true}; the call is offered again; a second revoke → ended', async (t) => {
+    const x = await domainWorld(t, sdk)
+    await manage(x, S.s, x.A)
+    const g = await grantFor(x, S.s, RX.command(1))
+    assert.deepEqual(await x.d.interactions.revokeGrant({ grantId: g.grantId, reason: RX.reason, principalKey: x.A }), { ok: true })
+    assert.equal(await fateOf(x, S.s, g.command), 'offered')
+    assert.ok(!(await listed(x)).includes(g.grantId))
+    assert.deepEqual(await x.d.interactions.revokeGrant({ grantId: g.grantId, reason: RX.reason, principalKey: x.A }), { ok: false, code: REFUSAL.grantEnded })
+  })
+  row(sdk, 'RX-F01', 'ST (e) end of management with a failed delete', 'Take back sweeps A\'s grant while its delete fails; S handed back to A → the grant still covers nothing and is not listed (never revived)', async (t) => {
+    const x = await domainWorld(t, sdk)
+    await manage(x, S.s, x.A)
+    const g = await grantFor(x, S.s, RX.command(1))
+    const failing = grantDeletes(x)
+    assert.deepEqual(await x.w.handover.takeBack(S.s), { ok: true })
+    await until(() => failing.count() > 0, 'the sweep to try the grant\'s delete')
+    await manage(x, S.s, x.A)
+    await quiet()
+    assert.equal(await fateOf(x, S.s, g.command), 'offered', 'a grant whose sweep delete failed covers again after the session came back')
+    assert.ok(!(await listed(x)).includes(g.grantId))
+  })
+}
+
+// ------------------------------------------------------------------------------------------------
+// F01 (e) — createGrants over an in-memory table, fake clock and timers
+
+/** A KvTable (dsh-storage-domain's members) over a Map; `failDeletes` makes `delete` reject. */
+class MapTable {
+  #rows = new Map()
+  failDeletes = false
+  deleteCalls = 0
+  get(key) { return this.#rows.get(key) }
+  entries() { return new Map(this.#rows).entries() }
+  keys() { return new Map(this.#rows).keys() }
+  get size() { return this.#rows.size }
+  async put(key, value) { this.#rows.set(key, value) }
+  async delete(key) {
+    this.deleteCalls += 1
+    if (this.failDeletes) throw injected()
+    return this.#rows.delete(key)
+  }
+  async update(key, fn) { const next = fn(this.#rows.get(key)); this.#rows.set(key, next); return next }
+}
+/** `{setTimeout, clearTimeout}` that fire only on `runAll()`. */
+function fakeTimers() {
+  const pending = new Map()
+  let id = 0
+  return {
+    setTimeout: (fn) => { id += 1; pending.set(id, fn); return id },
+    clearTimeout: (handle) => { pending.delete(handle) },
+    async runAll() { const due = [...pending.values()]; pending.clear(); for (const fn of due) await fn() },
+  }
+}
+/**
+ * The real createGrants over a MapTable; A manages S until `manager.set` says otherwise. The grant is
+ * created, then activated once its answer is settled, as the answer path does (`activate: false`
+ * leaves it pending: an answer whose settlement never stored). `restart()` is a connector restart:
+ * the old instance stops, a new one over the same table runs `reconcile`.
+ */
+async function grantsUnit(sdk, { activate = true } = {}) {
+  const mod = await moduleOf(sdk, RX.grantsEntry, [RX.grantsFactory])
+  const table = new MapTable()
+  const managers = new Map([[S.s, FIXTURE.principal(RX.ids.a)]])
+  let now = RX.t0
+  const timers = fakeTimers()
+  const logger = { warn() {}, info() {}, debug() {}, error() {} }
+  const open = () => mod[RX.grantsFactory]({ table, managerOf: (s) => managers.get(s), now: () => now, timers, logger })
+  const A = FIXTURE.principal(RX.ids.a)
+  const args = { [RX.shellArgument]: RX.command(1) }
+  const expiresAt = RX.t0 + RX.grantMs
+  const u = { table, managers, timers, A, args, expiresAt, grants: open() }
+  u.id = await u.grants.create({ sessionId: S.s, principalKey: A, toolName: RX.shellTool, args, spec: { kind: GRANT_KIND.exact, expiresAt } })
+  assert.equal(typeof u.id, 'string', 'harness: create gave no grant id')
+  if (activate) await u.grants.activate(u.id)
+  u.setNow = (ms) => { now = ms }
+  u.covers = () => u.grants.cover(S.s, RX.shellTool, args)
+  u.listedIds = () => u.grants.list().map((g) => g.grantId)
+  u.restart = async () => {
+    u.grants.stop()
+    u.grants = open()
+    await u.grants.reconcile()
+  }
+  return u
+}
+
+function f01Unit(sdk) {
+  row(sdk, 'RX-F01', 'BVA (e) expiry with a failed delete', 'one tick before its end the grant covers; at its end time, its delete failing, it covers nothing and is not listed', async () => {
+    const u = await grantsUnit(sdk)
+    u.setNow(u.expiresAt - RX.tickMs)
+    assert.equal(u.covers(), u.id, 'harness: the grant does not cover before its end')
+    u.table.failDeletes = true
+    u.setNow(u.expiresAt)
+    await u.timers.runAll()
+    assert.equal(u.covers(), undefined, 'a grant at its end time still covers')
+    assert.ok(!u.listedIds().includes(u.id))
+    u.grants.stop()
+  })
+  row(sdk, 'RX-F01', 'EP (e) discard with a failed delete', 'discard of a grant whose delete fails → the grant covers nothing at once and is not listed', async () => {
+    const u = await grantsUnit(sdk)
+    u.table.failDeletes = true
+    await ended(u.grants.discard(u.id))
+    assert.ok(u.table.deleteCalls > 0, 'harness: discard never tried the delete')
+    assert.equal(u.covers(), undefined, 'a discarded grant whose delete failed still covers')
+    assert.ok(!u.listedIds().includes(u.id))
+    u.grants.stop()
+  })
+  row(sdk, 'RX-F01', 'ST (e) sweep with a failed delete', 'S leaves A\'s management; the end-of-management sweep\'s delete fails; S managed by A again → the grant covers nothing and is not listed', async () => {
+    const u = await grantsUnit(sdk)
+    u.table.failDeletes = true
+    u.managers.delete(S.s)
+    await ended(u.grants.endUnmanaged())
+    assert.ok(u.table.deleteCalls > 0, 'harness: the sweep never tried the delete')
+    u.managers.set(S.s, u.A)
+    assert.equal(u.covers(), undefined, 'a swept grant whose delete failed covers again once its session is back')
+    assert.ok(!u.listedIds().includes(u.id))
+    u.grants.stop()
+  })
+  row(sdk, 'RX-F01', 'ST (c, unit) revoke retry', 'revoke whose delete fails rejects; the retry with a working delete resolves undefined and removes the record; a third answers ended', async () => {
+    const u = await grantsUnit(sdk)
+    u.table.failDeletes = true
+    assert.ok((await ended(u.grants.revoke(u.id, u.A))).error !== undefined, 'a revoke whose delete failed did not reject')
+    assert.equal(u.covers(), undefined)
+    u.table.failDeletes = false
+    assert.equal(await u.grants.revoke(u.id, u.A), undefined)
+    assert.equal(u.table.get(u.id), undefined, 'the record is still stored after the retry')
+    assert.equal(await u.grants.revoke(u.id, u.A), REFUSAL.grantEnded)
+    u.grants.stop()
+  })
+  row(sdk, 'RX-F04', 'ST (unit) failed answer, then restart', 'a grant created for an answer whose settlement never stored (never activated) covers nothing; after a restart (reconcile over the same table) it still covers nothing and is not listed', async () => {
+    const u = await grantsUnit(sdk, { activate: false })
+    assert.equal(u.covers(), undefined, 'a grant whose answer never settled covers')
+    await u.restart()
+    assert.equal(u.covers(), undefined, 'a grant whose answer never settled covers after a restart')
+    assert.ok(!u.listedIds().includes(u.id))
+    u.grants.stop()
+  })
+  row(sdk, 'RX-F01', 'ST (unit) failed revoke delete, then restart', 'a revoke whose delete failed; after a restart (reconcile over the same table, deletes still failing) the grant covers nothing and is not listed', async () => {
+    const u = await grantsUnit(sdk)
+    assert.equal(u.covers(), u.id, 'harness: the activated grant does not cover')
+    u.table.failDeletes = true
+    assert.ok((await ended(u.grants.revoke(u.id, u.A))).error !== undefined, 'a revoke whose delete failed did not reject')
+    await u.restart()
+    assert.equal(u.covers(), undefined, 'a revoked grant revived after a restart')
+    assert.ok(!u.listedIds().includes(u.id))
+    u.grants.stop()
+  })
+}
+
+// ------------------------------------------------------------------------------------------------
+// F04 — a failed settlement commit
+
+// Re-baselined by CONN-REPORT A3 (user-approved 2026-11-21): "settlement events with by: 'principal' are NO LONGER
+// PRODUCED", so the principal's allow / grant commits no settlement and no settlement commit can fail it. F04's
+// finding (a failed settlement commit leaves the offer answerable) is kept on the settlement still produced: the
+// user's. The principal rows now show that a failing settlement commit cannot affect the principal's answer.
+function f04(sdk) {
+  row(sdk, 'RX-F04', 'ST (user settlement commit fails, then retry)', 'a user settlement whose commit rejects → never success (rejects / false); the offer stays live; the same settlement with the mailbox working → true, one settlement to A; the offer is no longer live', async (t) => {
+    const x = await domainWorld(t, sdk)
+    await manage(x, S.s, x.A)
+    const r = await asked(x, S.s, RX.command(1))
+    const s = settlementOf(r.approvalId)
+    x.switches.failSettlement = true
+    const end = await ended(x.w.routing.settle(r.offer.descriptor.offerId, s))
+    x.switches.failSettlement = false
+    assert.ok(end.error !== undefined || end.value === false, `the settle whose commit failed reported success: ${JSON.stringify(end.value)}`)
+    assert.ok(offerFor(x, S.s, r.command), 'the offer left the live offers after a failed settlement commit')
+    assert.deepEqual((await pendingOf(x.w, x.A)).filter((e) => e.type === EVENT_TYPE.settlement), [], 'a settlement was stored though its commit failed')
+    assert.equal(await x.w.routing.settle(r.offer.descriptor.offerId, s), true, 'the retry of the same settlement was refused')
+    await until(async () => (await pendingOf(x.w, x.A)).some((e) => e.type === EVENT_TYPE.settlement), 'the retried settlement')
+    assert.deepEqual((await pendingOf(x.w, x.A)).filter((e) => e.type === EVENT_TYPE.settlement).map((e) => e.payload), [s])
+    assert.equal(offerFor(x, S.s, r.command), undefined, 'the settled offer is still live')
+  })
+  row(sdk, 'RX-F04', 'ST (principal allow while settlement commits fail)', 'every settlement commit rejects; the principal\'s allow → accepted (it commits none); the call allowed once; no settlement event', async (t) => {
+    const x = await domainWorld(t, sdk)
+    await manage(x, S.s, x.A)
+    const r = await asked(x, S.s, RX.command(1))
+    x.switches.failSettlement = true
+    assert.equal((await answer(x, r, allow()))?.ok, true, 'the principal\'s allow failed on a settlement it should not commit')
+    assert.equal(await r.outcome, D.outcome.allowed)
+    x.switches.failSettlement = false
+    await quiet()
+    assert.deepEqual((await pendingOf(x.w, x.A)).filter((e) => e.type === EVENT_TYPE.settlement), [])
+  })
+  row(sdk, 'RX-F04', 'DT (principal grant while settlement commits fail)', 'every settlement commit rejects; the principal\'s grant → accepted; the grant is listed and covers a later matching call', async (t) => {
+    const x = await domainWorld(t, sdk)
+    await manage(x, S.s, x.A)
+    const r = await asked(x, S.s, RX.command(1))
+    x.switches.failSettlement = true
+    const reply = await answer(x, r, exactGrant())
+    x.switches.failSettlement = false
+    assert.equal(reply?.ok, true, `the principal's grant failed on a settlement it should not commit: ${JSON.stringify(reply)}`)
+    assert.equal(await r.outcome, D.outcome.allowed)
+    assert.ok((await listed(x)).includes(reply.grantId), 'the grant is not listed')
+    assert.equal(await fateOf(x, S.s, r.command), 'covered', 'the grant does not cover a later matching call')
+  })
+}
+
+// ------------------------------------------------------------------------------------------------
+// F05 — succession and A's grants
+
+/** Everything a failed succession must leave: S (and T) managed by A, A's grants listed and covering. */
+async function assertKept(x, sessions, grants) {
+  await x.w.routing.afterChanges?.(async () => {})
+  await quiet()
+  for (const s of sessions) assert.equal(x.w.managed.managerOf(s), x.A, `${s} is not managed by A after the failed succession`)
+  const ids = await listed(x)
+  for (const [i, g] of grants.entries()) {
+    assert.ok(ids.includes(g.grantId), `A's grant on ${sessions[i]} is gone after the failed succession`)
+    assert.ok(x.seam.records(RX.grantsDomain).some(([k, r]) => k === g.grantId && r.principalKey === x.A), 'the grant record is not stored as A\'s')
+    assert.equal(await fateOf(x, sessions[i], g.command), 'covered', `A's grant on ${sessions[i]} no longer covers A's call`)
+  }
+}
+const committed = async () => ({ ok: true })
+
+function f05(sdk) {
+  row(sdk, 'RX-F05', 'DT (stage fails)', 'A → B succession fails at the mailbox staging step → S managed by A again; A\'s grant still stored as A\'s, listed, covering', async (t) => {
+    const x = await domainWorld(t, sdk)
+    await manage(x, S.s, x.A)
+    const g = await grantFor(x, S.s, RX.command(1))
+    x.switches.failStage = true
+    assert.ok((await ended(x.w.routing.succeedPrincipal(x.A, x.B, committed))).error !== undefined, 'the succession did not fail')
+    x.switches.failStage = false
+    await assertKept(x, [S.s], [g])
+  })
+  row(sdk, 'RX-F05', 'DT (caller commit fails)', 'the caller\'s commit rejects → S managed by A again; the grant kept, covering A\'s call', async (t) => {
+    const x = await domainWorld(t, sdk)
+    await manage(x, S.s, x.A)
+    const g = await grantFor(x, S.s, RX.command(1))
+    assert.ok((await ended(x.w.routing.succeedPrincipal(x.A, x.B, async () => { throw injected() }))).error !== undefined, 'the succession did not fail')
+    await assertKept(x, [S.s], [g])
+  })
+  row(sdk, 'RX-F05', 'DT (managed put fails partway)', 'S and T managed by A, one grant each; the managed table\'s second write rejects during the move → both still A\'s; both grants kept', async (t) => {
+    const x = await domainWorld(t, sdk)
+    await manage(x, S.s, x.A)
+    await manage(x, S.t, x.A)
+    const gs = [await grantFor(x, S.s, RX.command(1)), await grantFor(x, S.t, RX.command(2))]
+    const failing = x.seam.fail({ ...RX.managedDomain, op: 'put', skip: 1, times: 1 })
+    const end = await ended(x.w.routing.succeedPrincipal(x.A, x.B, committed))
+    failing.stop()
+    assert.ok(failing.count() > 0, 'harness: the managed move never reached its second write')
+    assert.ok(end.error !== undefined || end.value?.ok === false, `the succession reported success: ${JSON.stringify(end.value)}`)
+    await assertKept(x, [S.s, S.t], gs)
+  })
+  row(sdk, 'RX-F05', 'UC (succession succeeds)', 'A → B succeeds → S managed by B; the grant is B\'s (stored as B\'s, listed) and covers the call under B\'s management; no grant ends', async (t) => {
+    const x = await domainWorld(t, sdk)
+    await manage(x, S.s, x.A)
+    const g = await grantFor(x, S.s, RX.command(1))
+    const result = await x.w.routing.succeedPrincipal(x.A, x.B, committed)
+    assert.equal(result?.ok, true, JSON.stringify(result))
+    await x.w.routing.afterChanges?.(async () => {})
+    await quiet()
+    assert.equal(x.w.managed.managerOf(S.s), x.B)
+    assert.ok((await listed(x)).includes(g.grantId), 'the grant ended in a succession')
+    assert.ok(x.seam.records(RX.grantsDomain).some(([k, r]) => k === g.grantId && r.principalKey === x.B), 'the grant is not stored as B\'s')
+    assert.equal(await fateOf(x, S.s, g.command), 'covered')
+  })
+}
+
+// ------------------------------------------------------------------------------------------------
+// F08 — the decision rules
+
+function f08(sdk) {
+  // Re-baselined by CONN-REPORT A3 (user-approved 2026-11-21): the principal's own reject commits no settlement; {accepted} is that outcome.
+  row(sdk, 'RX-F08', 'DT (reject + reason, no risk)', '{decision: reject, reason: "Do not run"} → accepted; the call is rejected; no settlement event (A3); the offer is no longer live', async (t) => {
+    const x = await domainWorld(t, sdk)
+    await manage(x, S.s, x.A)
+    const r = await asked(x, S.s, RX.command(1))
+    assert.equal((await answer(x, r, { decision: APPROVAL_DECISION.reject, reason: RX.reason }))?.ok, true)
+    assert.equal(await r.outcome, D.outcome.rejected)
+    await quiet()
+    assert.deepEqual((await pendingOf(x.w, x.A)).filter((e) => e.type === EVENT_TYPE.settlement), [])
+    assert.equal(offerFor(x, S.s, r.command), undefined)
+  })
+  for (const [label, a, code] of [
+    ['reject, no reason, no risk', { decision: APPROVAL_DECISION.reject }, REFUSAL.reasonRequired],
+    ['reject, blank reason, no risk', { decision: APPROVAL_DECISION.reject, reason: ' \t ' }, REFUSAL.reasonRequired],
+    ['allow, no risk', { decision: APPROVAL_DECISION.allow, reason: RX.allowReason }, REFUSAL.riskRequired],
+    ['grant, no risk', (() => { const { risk, ...g } = exactGrant(); void risk; return g })(), REFUSAL.riskRequired],
+    // Re-baselined by HIGH-RISK-APPROVAL (the user, 2026-11-21): a high-risk allow is accepted (rows HR-*); a high-risk grant never is.
+    ['grant, risk high', { ...exactGrant(), risk: RISK.high }, REFUSAL.grantNeedsLowRisk],
+    ['allow, blank reason', { ...allow(), reason: '   ' }, REFUSAL.reasonRequired],
+  ]) {
+    row(sdk, 'RX-F08', `DT (${label})`, `→ ${code}; the offer stays live and the call waits`, async (t) => {
+      const x = await domainWorld(t, sdk)
+      await manage(x, S.s, x.A)
+      const r = await asked(x, S.s, RX.command(1))
+      assert.deepEqual(await answer(x, r, a), { ok: false, code })
+      assert.ok(offerFor(x, S.s, r.command), 'a refused answer ended the offer')
+      assert.equal(r.settled(), false)
+    })
+  }
+  // prompt_answer keeps its rules: a prompt shows for a session nobody manages (the user's stock prompt).
+  for (const [label, a, want] of [
+    ['allow, no risk', { decision: APPROVAL_DECISION.allow, reason: RX.allowReason }, { code: REFUSAL.riskRequired }],
+    // Re-baselined by HIGH-RISK-APPROVAL: accepted by default (HR-* rows cover the setting).
+    ['allow, risk high', { decision: APPROVAL_DECISION.allow, risk: RISK.high, reason: RX.allowReason }, { outcome: D.outcome.allowed }],
+    ['reject, no risk', { decision: APPROVAL_DECISION.reject, reason: RX.reason }, { outcome: D.outcome.rejected }],
+  ]) {
+    row(sdk, 'RX-F08', `DT (prompt_answer: ${label})`, want.code ? `→ ${want.code}; the prompt still shows` : `accepted; the call is ${want.outcome}`, async (t) => {
+      const x = await domainWorld(t, sdk)
+      const c = x.call(S.t, RX.command(1))
+      let prompt
+      await until(async () => { prompt = (await x.d.interactions.listPrompts()).find((p) => p.sessionId === S.t); return prompt }, 'the stock prompt to show')
+      const reply = await x.d.interactions.answerPrompt({ promptId: prompt.promptId, ...a })
+      if (want.code) {
+        assert.deepEqual(reply, { ok: false, code: want.code })
+        assert.ok((await x.d.interactions.listPrompts()).some((p) => p.promptId === prompt.promptId), 'a refused prompt answer closed the prompt')
+      } else {
+        assert.equal(reply?.ok, true, JSON.stringify(reply))
+        assert.equal(await c.outcome, want.outcome)
+      }
+    })
+  }
+}
+
+// ------------------------------------------------------------------------------------------------
+// F09 — the V2 session helpers
+
+function f09(sdk) {
+  row(sdk, 'RX-F09', 'EP (exports)', `session-info.js exports none of ${RX.removedExports.join(', ')} and still exports ${RX.keptExports.join(', ')}`, async () => {
+    const mod = await moduleOf(sdk, RX.sessionInfoEntry)
+    for (const name of RX.removedExports) assert.equal(Object.hasOwn(mod, name), false, `session-info.js still exports ${name}`)
+    for (const name of RX.keptExports) assert.equal(typeof mod[name], 'function', `session-info.js no longer exports ${name}()`)
+  })
+}
+
+// ------------------------------------------------------------------------------------------------
+// F02 — a settlement commits only for the offer's current holder
+
+function f02Settle(sdk) {
+  const offered = async (t) => {
+    const w = await routeWorld(t, sdk)
+    const A = w.principal(RX.ids.a)
+    const B = w.principal(RX.ids.b)
+    w.session(S.s)
+    assert.deepEqual(await w.managed.manage(S.s, A), { ok: true })
+    const d = descriptor(EVENT_TYPE.permission)
+    assert.equal((await w.routing.offer(S.s, EVENT_TYPE.permission, d))?.recipient, A, 'harness: the offer did not go to A')
+    return { w, A, B, d }
+  }
+  row(sdk, 'RX-F02', 'DT (settle, another principal answers)', 'A holds the offer; settle naming B as the answering principal → false; nothing settled; the offer is still live, held by A', async (t) => {
+    const { w, A, B, d } = await offered(t)
+    assert.equal(await w.routing.settle(d.offerId, principalSettlementOf(d.approvalId), { principalKey: B }), false)
+    assert.deepEqual(w.routing.liveOffers(S.s).map((o) => [o.principalKey, o.descriptor.offerId]), [[A, d.offerId]])
+    assert.deepEqual((await pendingOf(w, A)).filter((e) => e.type === EVENT_TYPE.settlement), [])
+    assert.deepEqual((await pendingOf(w, B)).filter((e) => e.type === EVENT_TYPE.settlement), [])
+  })
+  // Re-baselined by CONN-REPORT A3 (user-approved 2026-11-21): the holder's own settlement (by principal) is no longer produced;
+  // the settle still succeeds for the holder and ends the offer.
+  row(sdk, 'RX-F02', 'DT (settle, the holder answers)', 'settle by principal naming A, the holder → true; no settlement event (A3); the offer is no longer live', async (t) => {
+    const { w, A, d } = await offered(t)
+    assert.equal(await w.routing.settle(d.offerId, principalSettlementOf(d.approvalId), { principalKey: A }), true)
+    await quiet()
+    assert.deepEqual((await pendingOf(w, A)).filter((e) => e.type === EVENT_TYPE.settlement), [])
+    assert.deepEqual(w.routing.liveOffers(S.s), [])
+  })
+  row(sdk, 'RX-F02', 'DT (settle, the holder changed)', 'S taken back from A and handed to B while A\'s offer was live → A\'s settle no longer commits for A', async (t) => {
+    const { w, A, B, d } = await offered(t)
+    assert.deepEqual(await w.handover.takeBack(S.s), { ok: true })
+    assert.deepEqual(await w.managed.manage(S.s, B), { ok: true })
+    assert.equal(await w.routing.settle(d.offerId, principalSettlementOf(d.approvalId), { principalKey: A }), false)
+    assert.deepEqual((await pendingOf(w, A)).filter((e) => e.type === EVENT_TYPE.settlement), [])
+  })
+}
+
+/** Every R-FIX-CONNECTOR review row of the routing suite for `sdk`. */
+// ------------------------------------------------------------------------------------------------
+// HIGH-RISK-APPROVAL (the user, 2026-11-21): a manager may allow a high-risk request, with a reason
+// that is recorded; a grant stays low risk; the owner's switch restores the strict rule.
+
+/** The domain's info lines recording a high-risk allow (permissions.js auditHighRisk). */
+const highRiskLines = (x) => x.w.logger.lines.filter((line) => line.level === 'info' && line.text.includes(RX.highRisk.logMarker))
+const allowHigh = (reason = RX.highRisk.reason) => ({ decision: APPROVAL_DECISION.allow, risk: RISK.high, reason })
+
+function highRisk(sdk) {
+  row(sdk, 'HR-01', 'DT (allow + high + reason, setting at its default)', 'accepted; the call runs allowed once; the settlement records {allowed, principal, risk high, reason}; one info line names the session, tool, request, manager and reason', async (t) => {
+    const x = await domainWorld(t, sdk)
+    await manage(x, S.s, x.A)
+    const r = await asked(x, S.s, RX.command(1))
+    assert.deepEqual(await answer(x, r, allowHigh(RX.highRisk.reason + RX.highRisk.padding)), { ok: true })
+    assert.equal(await r.outcome, D.outcome.allowed)
+    assert.deepEqual(x.settlements, [{ approvalId: r.approvalId, outcome: SETTLEMENT_OUTCOME.allowed, by: SETTLED_BY.principal, risk: RISK.high, reason: RX.highRisk.reason }])
+    const lines = highRiskLines(x)
+    assert.equal(lines.length, 1, JSON.stringify(x.w.logger.lines))
+    for (const part of [S.s, RX.shellTool, r.approvalId, x.A, RX.highRisk.reason]) assert.ok(lines[0].text.includes(part), `the record lacks ${part}: ${lines[0].text}`)
+    assert.equal(offerFor(x, S.s, r.command), undefined)
+  })
+  for (const [label, a] of [['no reason', { decision: APPROVAL_DECISION.allow, risk: RISK.high }], ['blank reason', allowHigh(' \n\t ')], ['empty reason', allowHigh('')]]) {
+    row(sdk, 'HR-02', `DT (allow + high, ${label})`, `→ ${REFUSAL.reasonRequired}; the offer stays live; nothing recorded; a later high-risk allow with a reason is accepted`, async (t) => {
+      const x = await domainWorld(t, sdk)
+      await manage(x, S.s, x.A)
+      const r = await asked(x, S.s, RX.command(1))
+      assert.deepEqual(await answer(x, r, a), { ok: false, code: REFUSAL.reasonRequired })
+      assert.ok(offerFor(x, S.s, r.command), 'a refused answer ended the offer')
+      assert.equal(r.settled(), false)
+      assert.deepEqual([x.settlements, highRiskLines(x)], [[], []])
+      assert.deepEqual(await answer(x, r, allowHigh()), { ok: true })
+      assert.equal(await r.outcome, D.outcome.allowed)
+    })
+  }
+  for (const [label, spec] of [['exact', (command) => ({ kind: GRANT_KIND.exact, expiresAt: Date.now() + RX.grantMs })], ['prefix', (command) => ({ kind: GRANT_KIND.prefix, prefix: command, expiresAt: Date.now() + RX.grantMs })]]) {
+    row(sdk, 'HR-03', `DT (grant ${label} + high + reason)`, `→ ${REFUSAL.grantNeedsLowRisk} whatever the setting; no grant is listed; the offer stays live; the same call then allowed at high risk is not covered later`, async (t) => {
+      const x = await domainWorld(t, sdk, { highRisk: true })
+      await manage(x, S.s, x.A)
+      const r = await asked(x, S.s, RX.command(1))
+      const grant = { decision: APPROVAL_DECISION.grant, risk: RISK.high, reason: RX.highRisk.reason, grant: spec(r.command) }
+      assert.deepEqual(await answer(x, r, grant), { ok: false, code: REFUSAL.grantNeedsLowRisk })
+      x.switches.highRiskAllowed = false
+      assert.deepEqual(await answer(x, r, grant), { ok: false, code: REFUSAL.grantNeedsLowRisk })
+      assert.deepEqual(await listed(x), [])
+      assert.ok(offerFor(x, S.s, r.command), 'a refused grant ended the offer')
+      x.switches.highRiskAllowed = true
+      assert.deepEqual(await answer(x, r, allowHigh()), { ok: true })
+      assert.equal(await r.outcome, D.outcome.allowed)
+      assert.equal(await fateOf(x, S.s, r.command), 'offered', 'a high-risk allow left a standing grant behind')
+    })
+  }
+  row(sdk, 'HR-03', 'DT (grant + low + reason)', 'accepted as before; the settlement records risk low and the reason; no high-risk record', async (t) => {
+    const x = await domainWorld(t, sdk)
+    await manage(x, S.s, x.A)
+    const { grantId } = await grantFor(x, S.s, RX.command(1))
+    assert.deepEqual(await listed(x), [grantId])
+    assert.deepEqual(x.settlements.map((s) => [s.by, s.risk, s.reason]), [[SETTLED_BY.principal, RISK.low, RX.allowReason]])
+    assert.deepEqual(highRiskLines(x), [])
+  })
+  row(sdk, 'HR-04', 'ST (setting off → allow + high → setting on → allow + high)', `off: ${REFUSAL.allowNeedsLowRisk} (the earlier strict rule), the offer stays live, nothing recorded; low risk still allowed; on again (read live, no restart): accepted and recorded`, async (t) => {
+    const x = await domainWorld(t, sdk, { highRisk: false })
+    await manage(x, S.s, x.A)
+    const r = await asked(x, S.s, RX.command(1))
+    assert.deepEqual(await answer(x, r, allowHigh()), { ok: false, code: REFUSAL.allowNeedsLowRisk })
+    assert.ok(offerFor(x, S.s, r.command), 'a refused answer ended the offer')
+    assert.deepEqual(highRiskLines(x), [])
+    const low = await asked(x, S.s, RX.command(2))
+    assert.deepEqual(await answer(x, low, allow()), { ok: true })
+    assert.equal(await low.outcome, D.outcome.allowed)
+    x.switches.highRiskAllowed = true
+    assert.deepEqual(await answer(x, r, allowHigh()), { ok: true })
+    assert.equal(await r.outcome, D.outcome.allowed)
+    assert.equal(highRiskLines(x).length, 1)
+  })
+  row(sdk, 'HR-05', 'ST (Offered → escalate → allow + high + reason)', 'escalate leaves the request open; the high-risk allow closes the stock prompt and decides the call; settlement and record as HR-01; a second answer is refused (first answer wins)', async (t) => {
+    const x = await domainWorld(t, sdk)
+    await manage(x, S.s, x.A)
+    const r = await asked(x, S.s, RX.command(1))
+    assert.deepEqual(await answer(x, r, { decision: APPROVAL_DECISION.escalate }), { ok: true })
+    // The escalate's own step reaches the stock prompt asynchronously; until then the answer asks for a retry.
+    let reply
+    await until(async () => { reply = await answer(x, r, allowHigh()); return reply.code !== REFUSAL.operationFailed }, 'the escalated prompt to show')
+    assert.deepEqual(reply, { ok: true })
+    assert.equal(await r.outcome, D.outcome.allowed)
+    await until(() => x.settlements.length === 1, 'the escalated request\'s settlement')
+    assert.deepEqual([x.settlements[0].by, x.settlements[0].risk, x.settlements[0].reason], [SETTLED_BY.principal, RISK.high, RX.highRisk.reason])
+    assert.equal(highRiskLines(x).length, 1)
+    assert.equal((await answer(x, r, allow())).ok, false, 'a second answer was accepted')
+  })
+  row(sdk, 'HR-06', 'EP (allow + low; reject + high)', 'accepted; each settlement records its risk and reason; neither writes a high-risk record', async (t) => {
+    const x = await domainWorld(t, sdk)
+    await manage(x, S.s, x.A)
+    const a = await asked(x, S.s, RX.command(1))
+    assert.deepEqual(await answer(x, a, allow()), { ok: true })
+    const b = await asked(x, S.s, RX.command(2))
+    assert.deepEqual(await answer(x, b, { decision: APPROVAL_DECISION.reject, risk: RISK.high, reason: RX.reason }), { ok: true })
+    assert.deepEqual(await Promise.all([a.outcome, b.outcome]), [D.outcome.allowed, D.outcome.rejected])
+    assert.deepEqual(x.settlements.map((s) => [s.outcome, s.risk, s.reason]), [[SETTLEMENT_OUTCOME.allowed, RISK.low, RX.allowReason], [SETTLEMENT_OUTCOME.rejected, RISK.high, RX.reason]])
+    assert.deepEqual(highRiskLines(x), [])
+  })
+  row(sdk, 'HR-07', 'EP (a secret shape in the reason)', 'the record masks it; the settlement keeps the reason as given', async (t) => {
+    const x = await domainWorld(t, sdk)
+    await manage(x, S.s, x.A)
+    const r = await asked(x, S.s, RX.command(1))
+    assert.deepEqual(await answer(x, r, allowHigh(RX.highRisk.secretReason)), { ok: true })
+    const [line] = highRiskLines(x)
+    assert.equal(line.text.includes(RX.highRisk.secret), false, line.text)
+    assert.equal(x.settlements[0].reason, RX.highRisk.secretReason)
+  })
+  for (const [label, on, want] of [['setting on', true, 'accepted'], ['setting off', false, REFUSAL.allowNeedsLowRisk]]) {
+    row(sdk, 'HR-08', `DT (prompt_answer: allow + high + reason, ${label})`, on ? 'accepted; the call runs; one record names the prompt and the answering manager' : `→ ${want}; the prompt still shows; nothing recorded`, async (t) => {
+      const x = await domainWorld(t, sdk, { highRisk: on })
+      const c = x.call(S.t, RX.command(1))
+      let prompt
+      await until(async () => { prompt = (await x.d.interactions.listPrompts()).find((p) => p.sessionId === S.t); return prompt }, 'the stock prompt to show')
+      const reply = await x.d.interactions.answerPrompt({ promptId: prompt.promptId, ...allowHigh(), principalKey: x.A })
+      if (!on) {
+        assert.deepEqual(reply, { ok: false, code: want })
+        assert.ok((await x.d.interactions.listPrompts()).some((p) => p.promptId === prompt.promptId), 'a refused prompt answer closed the prompt')
+        assert.deepEqual(highRiskLines(x), [])
+        return
+      }
+      assert.equal(reply?.ok, true, JSON.stringify(reply))
+      assert.equal(await c.outcome, D.outcome.allowed)
+      const lines = highRiskLines(x)
+      assert.equal(lines.length, 1)
+      for (const part of [S.t, prompt.promptId, x.A, RX.highRisk.reason]) assert.ok(lines[0].text.includes(part), `the record lacks ${part}: ${lines[0].text}`)
+    })
+  }
+}
+
+export function registerReviewXCases(sdk) {
+  highRisk(sdk)
+  f01Domain(sdk)
+  f01Unit(sdk)
+  f04(sdk)
+  f05(sdk)
+  f08(sdk)
+  f09(sdk)
+  f02Settle(sdk)
+}

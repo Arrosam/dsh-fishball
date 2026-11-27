@@ -1,0 +1,25 @@
+{
+  "name": "dsh-connector-monorepo",
+  "private": true,
+  "description": "DSH Connector for DeepSeek Harness: dsh-agent-connector (connector + UI components), the amenities dsh-connector-adapter and dsh-connector-watchdog (and their umbrella dsh-connector-amenities), and dsh-connector-shared.",
+  "license": "MIT",
+  "type": "module",
+  "workspaces": [
+    "packages/dsh-connector",
+    "packages/dsh-connector-adapter",
+    "packages/dsh-connector-watchdog",
+    "packages/dsh-connector-amenities",
+    "packages/dsh-connector-shared",
+    "packages/dsh-connector-test-helpers",
+    "integration/*"
+  ],
+  "engines": {
+    "node": ">=22.14",
+    "dsh": ">=0.2.1-rc.5"
+  },
+  "scripts": {
+    "test:release": "node scripts/test-release.mjs",
+    "pack": "node scripts/pack.mjs",
+    "pack:check": "node scripts/pack.mjs --check"
+  }
+}
