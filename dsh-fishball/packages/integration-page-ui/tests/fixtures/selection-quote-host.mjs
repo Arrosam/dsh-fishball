@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { FAKE, FAKE_LLM_MODULE } from 'fishball-test-helpers/fake-llm'
-import { fishballPageFile } from '../support/page-files.mjs'
+import { PAGE_ROW } from '../support/page-files.mjs'
 
 export const FIXTURE = Object.freeze({
   user: 'Seed the Fishball transcript',
@@ -54,7 +54,7 @@ async function boot() {
     { id: FIXTURE.modelRow, config: { provider: FAKE.provider, model: FAKE.model } },
     { insert: [
       { id: 'quote-fake-model', name: FAKE_LLM_MODULE },
-      { id: 'quote-fishball-page', name: process.env.FBTEST_QUOTE_PAGE ?? fishballPageFile('index.js') },
+      { id: 'quote-fishball-page', name: process.env.FBTEST_QUOTE_PAGE ?? PAGE_ROW },
     ] },
   ]))
   const { ctx, shutdown } = await runProfile({

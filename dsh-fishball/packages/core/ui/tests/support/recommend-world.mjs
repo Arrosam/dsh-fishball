@@ -18,6 +18,7 @@
  */
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import vm from 'node:vm'
 import { importBound } from 'fishball-test-helpers/bind'
 import { buttons, byAttr, contains, createReactShim, deferred, findAll, idempotent, subtree, textOf } from 'fishball-test-helpers/react-shim'
@@ -32,9 +33,9 @@ export const loadUi = (relative) => importBound(UI.file(relative))
 export const CJK = /[\u3400-\u9fff]/
 
 export const RP = Object.freeze({
-  pluginDir: UI.file('fishball-recommend-plugins'),
-  clientFile: 'client.js',
-  indexModule: 'fishball-recommend-plugins/index.js',
+  pluginDir: path.dirname(fileURLToPath(import.meta.resolve('fishball-recommend-plugins/package.json'))),
+  clientFile: fileURLToPath(import.meta.resolve('fishball-recommend-plugins/client')),
+  indexModule: fileURLToPath(import.meta.resolve('fishball-recommend-plugins')),
   dataModule: 'src/recommended.js',
   moduleId: 'fishball-recommend-plugins',
   baseURI: 'http://child.test/fishball-child/',
@@ -93,10 +94,9 @@ function fakePrimitives(React) {
 
 /** The Node half's registered fetch route (index.js through its public apply). */
 export async function loadNodeRoute() {
-  const mod = await loadUi(RP.indexModule)
-  return applyNodeHalf(mod)
+  return applyNodeHalf(await importBound(RP.indexModule))
 }
-export function applyNodeHalf(mod) {
+function applyNodeHalf(mod) {
   const routes = []
   const accessed = []
   const fetchFace = { register(route) { routes.push(route); return () => {} } }
@@ -120,7 +120,7 @@ export async function createWorld({ locale = RP.locales.en, bundles = [], respon
   const { React } = shim
   const primitives = fakePrimitives(React)
   const route = (await loadNodeRoute()).routes.find((r) => r.path === RP.routePath)
-  const source = readFileSync(path.join(RP.pluginDir, RP.clientFile), 'utf8')
+  const source = readFileSync(RP.clientFile, 'utf8')
 
   const world = {
     observe, shim, React, route,
@@ -329,7 +329,7 @@ export async function createWorld({ locale = RP.locales.en, bundles = [], respon
     window.document = document
     window.fetch = browserFetch
     vm.createContext(sandbox)
-    vm.runInContext(source, sandbox, { filename: path.join(RP.pluginDir, RP.clientFile) })
+    vm.runInContext(source, sandbox, { filename: RP.clientFile })
     if (!registered || registered.id !== RP.moduleId || typeof registered.factory !== 'function') throw new Error('client.js did not call __ModuleLoader__.load({id: ' + RP.moduleId + ', factory})')
     const modules = { [RP.modules.react]: React, [RP.modules.primitives]: primitives }
     const plugin = registered.factory((name) => {

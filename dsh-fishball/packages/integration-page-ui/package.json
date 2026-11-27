@@ -8,6 +8,12 @@
     "fishball-core": "1.0.0-alpha.1",
     "fishball-ui": "1.0.0-alpha.1"
   },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "*",
+    "fishball-page": "1.0.0-alpha.1",
+    "fishball-test-helpers": "1.0.0-alpha.1",
+    "zod": "*"
+  },
   "scripts": {
     "test": "node ../../scripts/test.mjs fishball-integration-page-ui"
   }

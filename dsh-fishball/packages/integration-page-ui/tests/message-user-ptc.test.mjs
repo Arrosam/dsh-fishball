@@ -6,11 +6,11 @@ import { join } from 'node:path'
 import { caseTest } from 'fishball-test-helpers/cases'
 import { runInNewContext } from 'node:vm'
 import { dshPackageDir } from 'fishball-test-helpers/dsh'
-import { fishballPageFile } from './support/page-files.mjs'
+import { PAGE_CLIENT } from './support/page-files.mjs'
 
 const id = 'MSG-PTC'
 const UI = Object.freeze({
-  source: fishballPageFile('client.js'),
+  source: PAGE_CLIENT,
   encoding: 'utf8',
   bubbleSlot: 'conversation.chat.node',
   tool: 'message_user',

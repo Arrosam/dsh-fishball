@@ -9,7 +9,7 @@ package's tests or sources.
 
 | Export | What it is |
 | --- | --- |
-| `./runner` (`src/runner/run.mjs`) | `runPackage(dir, args)`: runs one package's suites (`tests/**/*.test.mjs`, a nested package's suites excluded) in one `node --test` process with a throwaway HOME/TMPDIR/XDG tree. No time limit. `src/runner/cli.mjs` is every package's `npm test`. |
+| `./runner` (`src/runner/run.mjs`) | `runPackage(dir, args)`: runs one package's suites (`tests/**/*.test.mjs`, a nested package's suites excluded) in one `node --test` process with a throwaway HOME/TMPDIR/XDG tree. No time limit. Workspace `npm test` uses the [root testing entry](../../../TESTING.md). |
 | `./sdk` | DSH version selection and binding: `versions()` (the current DSH, or the release matrix when `DSH_TEST_MATRIX` is set), `importBound(version, file)` / `boundUrl` (a repository module whose `@deepseek-ai/*` imports resolve to that DSH), `importSdk`, `requireSdk`, `runtimeOf`, `sdkFile`. |
 | `./cases` | `caseName`, `caseTest`, `integrationCase`, `withdrawnCase`, `forEachVersion(register)`: one naming scheme, `<id> <row> [SDK <version>] <title>`. |
 | `./wait` | `sleep`, `until`, `settle` (harness waits, never oracles). |

@@ -106,7 +106,8 @@
     "dsh-fishball-instance/integration/*"
   ],
   "scripts": {
-    "test": "node dsh-fishball/scripts/test.mjs",
+    "test": "node scripts/test.mjs",
+    "test:changed": "node scripts/test.mjs --changed",
     "test:release": "node scripts/test-release.mjs",
     "pack:v3": "node dsh-fishball/scripts/pack-v3.mjs",
     "pack:v3:check": "node dsh-fishball/scripts/pack-v3.mjs --check"

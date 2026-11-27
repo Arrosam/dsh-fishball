@@ -14,7 +14,7 @@
   },
   "type": "module",
   "scripts": {
-    "test": "node ../dsh-connector-test-helpers/src/runner/cli.mjs"
+    "test": "node ../../scripts/test-package.mjs"
   },
   "exports": {
     "./redact": "./redact.js",

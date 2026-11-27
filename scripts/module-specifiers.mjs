@@ -2,7 +2,7 @@
 const RULE = Object.freeze({
   blockComment: /\/\*[\s\S]*?\*\//g,
   lineComment: /^\s*\/\/.*$/gm,
-  specifier: /(?:\bfrom\s*|(?:\bimport|\brequire)\s*\(\s*|\bimport\s+)(['"])([^'"\n]+)\1/g,
+  specifier: /(?:\bfrom\s*|(?:\bimport|\brequire|\bimport\.meta\.resolve)\s*\(\s*|\bimport\s+)(['"])([^'"\n]+)\1/g,
 })
 
 /**
@@ -45,7 +45,7 @@ function blankLiterals(code) {
 const QUOTES = Object.freeze(["'", '"', '`'])
 /** Characters looked back over to decide a literal's position. */
 const LOOKBEHIND = 12
-const SPECIFIER_BEFORE = /(?:\bfrom|\bimport|\brequire)$/
+const SPECIFIER_BEFORE = /(?:\bfrom|\bimport|\brequire|\bresolve)$/
 const REGEX_BEFORE = /(?:^|[=(,:;!&|?{}[+\-*%<>~^]|\breturn|\btypeof|\bcase|\bdo|\belse|\bin|\bof)\s*$/
 
 export const stripComments = (raw) => raw.replace(RULE.blockComment, (m) => m.replace(/[^\n]/g, ' ')).replace(RULE.lineComment, (m) => ' '.repeat(m.length))

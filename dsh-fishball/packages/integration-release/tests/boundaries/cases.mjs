@@ -243,7 +243,7 @@ function registerShelvedBoardCases() {
   }
 }
 
-/** The test restructure (docs/testing/README.md, 2026-11-22): tests never ship; no package under test reaches fishball-test-helpers. */
+/** Tests never ship, and fishball-test-helpers is a development dependency only. */
 function registerRestructureCases() {
   caseTest(CASE.tests, 'rule', 'the tests-folder rule flags a tests/, test/ or __tests__/ segment and none of its look-alikes', () => {
     assert.deepEqual(TESTS_RULE.samples.hit.filter((s) => !TESTS_RULE.folder.test(s)), [])
@@ -271,10 +271,11 @@ function registerRestructureCases() {
     assert.equal(readManifest(dirOf(FISHBALL.helpers))[FIELDS.private], true)
   })
   for (const name of NAMES) {
-    caseTest(CASE.helpers, name, `no shipped file of ${name} imports ${FISHBALL.helpers}, and its manifest names it in no field`, async () => {
+    caseTest(CASE.helpers, name, `no shipped file of ${name} imports ${FISHBALL.helpers}, and it cannot be a runtime or bundled dependency`, async () => {
       const unit = await unitOf(name)
       const code = unit.refs.filter((r) => r.specifier !== null && bareName(r.specifier) === FISHBALL.helpers).map(describeRef)
-      const manifest = manifestNames(unit.manifest, [...FIELDS.deps, ...FIELDS.bundled]).filter((e) => e.name === FISHBALL.helpers).map((e) => 'package.json ' + e.field)
+      const manifest = manifestNames(unit.manifest, [...FIELDS.deps, ...FIELDS.bundled, FIELDS.peersMeta])
+        .filter((e) => e.name === FISHBALL.helpers && e.field !== FIELDS.dev).map((e) => 'package.json ' + e.field)
       assert.deepEqual([...code, ...manifest], [])
     })
   }

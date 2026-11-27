@@ -6,7 +6,7 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "test": "node ../../packages/dsh-connector-test-helpers/src/runner/cli.mjs"
+    "test": "node ../../scripts/test-package.mjs"
   },
   "dependencies": {
     "dsh-agent-connector": "1.0.0-alpha.1",

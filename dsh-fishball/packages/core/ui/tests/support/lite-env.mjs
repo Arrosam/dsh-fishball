@@ -13,10 +13,10 @@ import path from 'node:path'
 import { BROWSER, startEnvironment } from 'fishball-test-helpers/browser'
 import { DSH_RUNTIME, DSH_VERSION } from 'fishball-test-helpers/dsh'
 import { until } from 'fishball-test-helpers/wait'
-import { UI } from './ui-page.mjs'
+import { PAGE_CLIENT } from './page-client.mjs'
 
 export const LITE_ENV = Object.freeze({
-  pageClient: UI.file('fishball-page', 'client.js'),
+  pageClient: PAGE_CLIENT,
   harness: path.join(import.meta.dirname, 'lite-harness.js'),
   shortcutsBundle: path.join('@deepseek-ai', 'dsh-client-shortcuts', 'lib', 'client.js'),
   routes: Object.freeze({ harness: '/', harnessScript: '/harness.js', page: '/page/client.js', sdkPrefix: '/sdk/', main: '/main' }),

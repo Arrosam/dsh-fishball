@@ -42,6 +42,9 @@
   "bundleDependencies": [
     "fishball-shared"
   ],
+  "devDependencies": {
+    "fishball-test-helpers": "1.0.0-alpha.1"
+  },
   "peerDependencies": {
     "@deepseek-ai/dsh-llm": "*",
     "@deepseek-ai/dsh-storage-domain": "*",

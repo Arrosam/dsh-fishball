@@ -10,7 +10,7 @@
 - The root is both the npm workspace and the `dsh-fishball-bundle` package. Component packages are released separately. See the [root README](README.md) for the component map.
 - Fishball talks to the connector over its public MCP surface. Sharing a checkout adds no cross-side imports.
 - Use the [local test environments skill](.agents/skills/local-test-envs/SKILL.md) to open or refresh an isolated dev or staging Fishball instance. Never operate the real DSH for lab work.
-- Run only the package you changed day to day: `npm test --workspace <npm-name>` from the monorepo root. Integration suites and DSH-version matrices are release-only. Use isolated test homes, never a real DSH profile.
+- After changes run `npm run test:changed`, or run exactly one affected package with `npm test -w <npm-name>` (root package: `npm test -- dsh-fishball-bundle`). Preview the selection with `npm run test:changed -- --list`. Never run the whole repository for development or verification. Integration packages and `test:release` are release-only. Use isolated test homes, never a real DSH profile. See [Testing](TESTING.md).
 
 ## Coding principles
 Follow the user's `general-coding-principle` skill for all code and test work. In short:

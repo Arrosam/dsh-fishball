@@ -4,17 +4,17 @@ import { randomInt } from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
+import { MONOREPO, REPO as COMPONENT } from 'dsh-connector-test-helpers/repo'
+import { workspaceDirs } from 'dsh-connector-test-helpers/runner/links'
 
-const COMPONENT = path.resolve(import.meta.dirname, '../../../..')
-const MONOREPO = path.dirname(COMPONENT)
+const CONNECTOR = 'dsh-agent-connector'
 const FIXTURE = Object.freeze({
   prefix: '.pack-manifest-test-',
-  component: 'dsh-connector',
-  packageFolders: Object.freeze([
-    'dsh-connector/packages/dsh-connector', 'dsh-connector/packages/dsh-connector-shared', 'dsh-connector/packages/dsh-connector-adapter',
-    'amenities/watchdog', 'amenities/connector-amenities',
+  component: path.relative(MONOREPO, COMPONENT),
+  packages: Object.freeze([
+    CONNECTOR, 'dsh-connector-shared', 'dsh-connector-adapter',
+    'dsh-connector-watchdog', 'dsh-connector-amenities',
   ]),
-  connectorFolder: 'dsh-connector/packages/dsh-connector',
   prereleaseSequence: Object.freeze({ min: 1_000, maxExclusive: 10_000 }),
   manifest: 'package.json',
   scripts: 'scripts',
@@ -50,19 +50,26 @@ function releaseFixture(root) {
     fs.cpSync(path.join(COMPONENT, FIXTURE.scripts, name), path.join(scripts, name), { recursive: true })
   }
 
+  const workspaceManifests = new Map(workspaceDirs().map((dir) => {
+    const source = path.join(dir, FIXTURE.manifest)
+    const manifest = JSON.parse(readText(source))
+    return [manifest.name, { source, manifest }]
+  }))
   const manifests = new Map()
-  for (const folder of FIXTURE.packageFolders) {
-    const relative = path.join(folder, FIXTURE.manifest)
-    const manifest = JSON.parse(readText(path.join(MONOREPO, relative)))
+  for (const name of FIXTURE.packages) {
+    const workspace = workspaceManifests.get(name)
+    assert.ok(workspace, `missing workspace manifest: ${name}`)
+    const { source, manifest } = workspace
     // Change only the connector so this detects a hardcoded release version and a forced lockstep bump.
-    if (folder === FIXTURE.connectorFolder) {
+    if (name === CONNECTOR) {
       const { min, maxExclusive } = FIXTURE.prereleaseSequence
       manifest.version = `1.0.0-alpha.fixture.${randomInt(min, maxExclusive)}`
     }
-    const target = path.join(root, relative)
+    // The pack script expects its input manifests at their original checkout-relative paths.
+    const target = path.join(root, path.relative(MONOREPO, source))
     fs.mkdirSync(path.dirname(target), { recursive: true })
     fs.writeFileSync(target, JSON.stringify(manifest))
-    manifests.set(folder, manifest)
+    manifests.set(name, manifest)
   }
 
   const bin = path.join(root, FIXTURE.bin)
@@ -76,7 +83,7 @@ test('pack derives the release version from the connector manifest and keeps eac
   const root = fs.mkdtempSync(path.join(COMPONENT, FIXTURE.prefix))
   t.after(() => fs.rmSync(root, { recursive: true, force: true }))
   const { manifests, env, script } = releaseFixture(root)
-  const connector = manifests.get(FIXTURE.connectorFolder)
+  const connector = manifests.get(CONNECTOR)
   const run = (...args) => {
     const result = spawnSync(process.execPath, [script, ...args], {
       cwd: root, env, encoding: FIXTURE.textEncoding, timeout: FIXTURE.timeoutMs,

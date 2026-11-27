@@ -4,6 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "description": "The packed dsh-instance: scripts/pack.mjs output layout and --check, and a packed instance placing fishball-amenities then fishball-core from bundled tarballs with a dead registry.",
+  "devDependencies": {
+    "@dsh-instance/test-helpers": "0.0.0",
+    "dsh-instance": "1.0.0-alpha.1"
+  },
   "scripts": {
     "test": "node ../../scripts/test-package.mjs"
   }

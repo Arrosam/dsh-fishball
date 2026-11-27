@@ -11,7 +11,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
-import { CJK, RP, applyNodeHalf, byAttr, contains, createWorld, deferred, findAll, loadUi, openTab, settle, subtree, textOf } from '../support/recommend-world.mjs'
+import { CJK, RP, byAttr, contains, createWorld, deferred, findAll, loadNodeRoute, loadUi, openTab, settle, subtree, textOf } from '../support/recommend-world.mjs'
 import { UI } from '../support/ui-page.mjs'
 import { RECOMMENDATION_TEST_DATA } from './data.mjs'
 
@@ -171,7 +171,7 @@ export const CHECKS = Object.freeze({
     list.highlighted.length = 0
     assert.deepEqual(recommendedList(), again, 'mutating one result does not change the next')
     // Node route answers the same list (contract 2).
-    const { routes } = applyNodeHalf(await loadUi(RP.indexModule))
+    const { routes } = await loadNodeRoute()
     const route = routes.find((r) => r.path === RP.routePath)
     assert.ok(route, 'GET route registered'); assert.deepEqual(route.methods, ['GET'])
     const response = await route.fetch(new Request(new URL(RP.listPath, RP.baseURI), { method: 'GET' }))
@@ -488,7 +488,7 @@ export const CHECKS = Object.freeze({
         for (const dep of deps) assert.ok(!listed.has(dep) && !RP_CHECK.featurePlugins.includes(dep), pkg.name + ' ' + field + ' ' + dep)
       }
     }
-    const { accessed } = applyNodeHalf(await loadUi(RP.indexModule))
+    const { accessed } = await loadNodeRoute()
     assert.ok(accessed.every((name) => name === 'connection' || name === 'effect'), 'Node half needs only its route at startup: ' + accessed)
     const { world } = await openTab()
     assert.equal(world.installs.length + world.inspects.length, 0, 'activation installs nothing without an explicit Install')

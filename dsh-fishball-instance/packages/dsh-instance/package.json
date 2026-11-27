@@ -51,6 +51,9 @@
     "dsh": ">=0.2.1-rc.5"
   },
   "//peerDependencies": "Host packages are resolved from the running DSH installation (verified in spike S8). '*' because engines.dsh is the real compatibility gate. There is no dsh-connector peer (I-READY, design §1.0b; G5): the instance imports no connector module and looks the connector's services up at runtime (dshConnectorTokens).",
+  "devDependencies": {
+    "@dsh-instance/test-helpers": "0.0.0"
+  },
   "peerDependencies": {
     "@deepseek-ai/cosmokit": "*",
     "@deepseek-ai/dsh-agent": "*",

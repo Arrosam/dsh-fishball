@@ -54,8 +54,7 @@ manifest; fishball-core's tests never run fishball-ui's and the reverse.
 
 ## Running
 
-Run the scripts below from `dsh-fishball/`. From the monorepo root, use
-`npm test --workspace <npm-name>` for one package, or prefix the script path with `dsh-fishball/`.
+Run from the monorepo root. See the [root testing guide](../../../TESTING.md) for change-based routing and package boundaries. The component scripts remain compatibility wrappers.
 
 ```bash
 node scripts/test.mjs fishball-taskboard          # one package, current DSH
@@ -63,7 +62,7 @@ node scripts/test.mjs fishball-core --list        # its files, nothing run
 node scripts/test.mjs fishball-core -- --test-name-pattern=MULTI-NAME
 node scripts/test.mjs fishball-core --file=link   # one entry file
 node scripts/test.mjs fishball-heartbeat --against=<git-ref>   # today's tests on this package's code at <ref>
-node scripts/test-release.mjs                     # release: everything, in parallel, every DSH of the matrix
+npm run test:release                             # release only: all package and integration workers
 node scripts/test-release.mjs --dsh=current       # release run on the current DSH only
 ```
 
@@ -82,7 +81,7 @@ it (`[DSH 0.2.2-rc.3]`), so a report says what it ran on.
 Each worker runs its package's tests once per DSH of the matrix
 (`fishball-test-helpers/dsh` `RELEASE_MATRIX`: the supported versions from the root README plus the
 current one), one version after another, each version in a fresh isolated environment. Logs go to
-`.runtime/test-release/<stamp>/<worker>.<dsh>.log`; the script prints one summary table and exits
+`.runtime/test-release/<stamp>/<worker>.log` at the monorepo root; the script prints a summary and exits
 non-zero if any worker failed.
 
 ### Environment isolation
@@ -104,7 +103,7 @@ that root and the scripted model (no network).
 `scripts/test.mjs` checks a package's test files before it runs them. A test file may import only:
 `node:` modules, files inside its own package folder (its `tests/` and the code under test),
 `fishball-test-helpers/*`, and the public exports (by package name) of the packages its manifest lists as
-dependencies or peers. A relative import that leaves the package folder, or a path into another
+dependencies, peers, optional dependencies or dev dependencies. Helpers are declared as dev dependencies. A relative import that leaves the package folder, or a path into another
 package, stops the run with the offending line. fishball-test-helpers itself imports no package under
 test.
 

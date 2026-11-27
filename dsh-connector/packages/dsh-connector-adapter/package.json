@@ -18,7 +18,7 @@
     "directory": "dsh-connector/packages/dsh-connector-adapter"
   },
   "scripts": {
-    "test": "node ../dsh-connector-test-helpers/src/runner/cli.mjs"
+    "test": "node ../../scripts/test-package.mjs"
   },
   "main": "./index.js",
   "exports": {
@@ -57,7 +57,7 @@
   },
   "//devDependencies": "Test-only: the adapter's tests speak the connector's published MCP and OAuth contract (dsh-agent-connector/mcp-schema) to their fake connector, and use the shared test helpers. Neither ships.",
   "devDependencies": {
-    "dsh-agent-connector": "1.0.0-alpha.1",
+    "dsh-agent-connector": "1.0.0-alpha.2",
     "dsh-connector-test-helpers": "1.0.0-alpha.1"
   }
 }

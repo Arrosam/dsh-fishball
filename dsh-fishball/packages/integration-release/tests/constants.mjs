@@ -47,6 +47,7 @@ export const tarballName = (name) => name + '-' + VERSION + '.tgz'
 /** Manifest and dependency vocabulary (npm's and DSH's own field names). */
 export const FIELDS = Object.freeze({
   deps: Object.freeze(['dependencies', 'peerDependencies', 'optionalDependencies', 'devDependencies']),
+  dev: 'devDependencies',
   runtime: 'dependencies',
   bundled: Object.freeze(['bundleDependencies', 'bundledDependencies']),
   peersMeta: 'peerDependenciesMeta',

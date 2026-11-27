@@ -1,5 +1,6 @@
 {
   "name": "fishball-child-plugins",
+  "scripts": { "test": "node ../../../../../scripts/test.mjs fishball-child-plugins" },
   "version": "1.0.0-alpha.1",
   "private": true,
   "type": "module",

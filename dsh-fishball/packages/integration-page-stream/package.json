@@ -10,6 +10,9 @@
     "fishball-taskboard": "1.0.0-alpha.1",
     "fishball-shared": "1.0.0-alpha.1"
   },
+  "devDependencies": {
+    "fishball-test-helpers": "1.0.0-alpha.1"
+  },
   "scripts": {
     "test": "node ../../scripts/test.mjs fishball-integration-page-stream"
   }

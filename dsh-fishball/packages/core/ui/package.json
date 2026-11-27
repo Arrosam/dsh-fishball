@@ -27,6 +27,12 @@
     "./core-missing": "./src/core-missing.js",
     "./package.json": "./package.json"
   },
+  "devDependencies": {
+    "fishball-page": "1.0.0-alpha.1",
+    "fishball-recommend-plugins": "1.0.0-alpha.1",
+    "fishball-shared": "1.0.0-alpha.1",
+    "fishball-test-helpers": "1.0.0-alpha.1"
+  },
   "dsh": {
     "client": {
       "platform": "web"

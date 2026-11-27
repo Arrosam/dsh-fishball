@@ -5,7 +5,6 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { test } from 'node:test'
 import { gunzipSync, gzipSync } from 'node:zlib'
-import { REPO } from '@dsh-instance/test-helpers/constants'
 import { cleanups, tempRoot } from '@dsh-instance/test-helpers/scratch'
 import { INSTANCE, PACK, check, flipByte, isolatedEnv, sha256, tail } from './support/release.mjs'
 
@@ -28,7 +27,7 @@ function makeRelease(scratch) {
   const input = path.join(scratch, FIXTURE.archiveInput)
   const pkg = path.join(input, PACK.prefix)
   fs.mkdirSync(pkg, { recursive: true })
-  fs.copyFileSync(path.join(REPO, INSTANCE.folder, FIXTURE.manifest), path.join(pkg, FIXTURE.manifest))
+  fs.copyFileSync(INSTANCE.manifestFile, path.join(pkg, FIXTURE.manifest))
   const archive = execFileSync('tar', ['-cf', '-', '-C', input, PACK.prefix], { cwd: scratch, env: isolatedEnv(scratch) })
   const pristine = gzipSync(archive)
   const tarball = path.join(out, INSTANCE.tarball)

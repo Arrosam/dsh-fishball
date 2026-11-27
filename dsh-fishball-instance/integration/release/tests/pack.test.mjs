@@ -25,9 +25,8 @@ import { caseTest, eachSdk } from '@dsh-instance/test-helpers/cases'
 import { SDK } from '@dsh-instance/test-helpers/constants'
 import { canonicalTmp, cleanups, tempRoot } from '@dsh-instance/test-helpers/scratch'
 import { runtimeOf } from '@dsh-instance/test-helpers/sdk'
-import { REPO } from '@dsh-instance/test-helpers/constants'
 import {
-  INSTANCE, NOT_STANDALONE, PACK, SET, VERSION, build, check, filesOf, fishballRelease, isJunk, isolatedEnv, listing, memberOf, missingRelease, run, sha256, tail,
+  INSTANCE, INSTANCE_MANIFEST, NOT_STANDALONE, PACK, SET, VERSION, build, check, filesOf, fishballRelease, isJunk, isolatedEnv, listing, memberOf, missingRelease, run, sha256, tail,
 } from './support/release.mjs'
 
 const skip = missingRelease()
@@ -91,10 +90,9 @@ eachSdk((sdk) => {
   // ---------------------------------------------------------------- REL-EP-04, REL-DT-01: the manifest
   caseTest(sdk, 'REL-EP-04', INSTANCE.name, `${INSTANCE.tarball} package.json: name, version ${VERSION}, engines.node, license, description, repository, publishConfig, not private, host peers '*'`, () => {
     const m = manifest()
-    const repo = JSON.parse(fs.readFileSync(path.join(REPO, INSTANCE.folder, 'package.json'), 'utf8'))
     assert.equal(m.name, INSTANCE.name)
     assert.equal(m.version, VERSION)
-    assert.equal(m.engines?.node, repo.engines.node)
+    assert.equal(m.engines?.node, INSTANCE_MANIFEST.engines.node)
     assert.equal(m.license, 'MIT')
     assert.ok(typeof m.description === 'string' && m.description.trim() !== '')
     assert.deepEqual(m.repository, {
@@ -161,7 +159,7 @@ eachSdk((sdk) => {
 
   // ---------------------------------------------------------------- REL-EP-09: npm's own list
   caseTest(sdk, 'REL-EP-09', INSTANCE.name, `npm pack --dry-run of ${INSTANCE.folder} lists ${INSTANCE.tarball}'s paths (less the staged bundled/*.tgz)`, async (t) => {
-    const r = await run('npm', ['pack', '--dry-run', '--json', '--ignore-scripts'], { env: isolatedEnv(tempRoot(cleanups(t))), cwd: path.join(REPO, INSTANCE.folder) })
+    const r = await run('npm', ['pack', '--dry-run', '--json', '--ignore-scripts'], { env: isolatedEnv(tempRoot(cleanups(t))), cwd: INSTANCE.dir })
     assert.equal(r.code, 0, tail(r.output))
     const listed = JSON.parse(r.stdout.slice(r.stdout.indexOf('['))) [0].files.map((f) => f.path).sort()
     assert.deepEqual(filesOf(tarball()).filter((f) => !PACK.staged.test(f)).sort(), listed)

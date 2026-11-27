@@ -26,11 +26,11 @@ import { DSH_RUNTIME } from 'fishball-test-helpers/dsh'
 import { primitivesFor } from 'fishball-test-helpers/dsh-primitives'
 import { createReactShim, findAll, idempotent, textOf } from 'fishball-test-helpers/react-shim'
 import { settle as settleRounds } from 'fishball-test-helpers/wait'
-import { UI } from './ui-page.mjs'
+import { PAGE_CLIENT } from './page-client.mjs'
 
 /** The fake page of the navigation rows (nav-page.mjs): LITE harness values. */
 export const NAV_PAGE = Object.freeze({
-  pageClient: UI.file('fishball-page', 'client.js'),
+  pageClient: PAGE_CLIENT,
   pageModule: 'fishball-page',
   shortcutsBundle: path.join('@deepseek-ai', 'dsh-client-shortcuts', 'lib', 'client.js'),
   shortcutsModule: '@deepseek-ai/dsh-client-shortcuts',

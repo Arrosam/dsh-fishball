@@ -62,7 +62,7 @@ npm test --workspace dsh-agent-connector
 To run the component alone:
 
 ```bash
-node packages/dsh-connector-test-helpers/src/runner/cli.mjs packages/dsh-connector/ui
+node scripts/test-package.mjs packages/dsh-connector/ui
 ```
 
 | `tests/` folder | What it checks |

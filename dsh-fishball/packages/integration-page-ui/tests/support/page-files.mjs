@@ -1,6 +1,5 @@
-import { join } from 'node:path'
-import { packageByName } from 'fishball-test-helpers/packages'
-import { NAMES } from './names.mjs'
+import { fileURLToPath } from 'node:url'
 
-/** fishball-ui ships the Fishball page as a Cordis sub-package, not a Node subpath export. */
-export const fishballPageFile = (entry) => join(packageByName(NAMES.ui).abs, 'fishball-page', entry)
+/** The Fishball page has its own package exports, including its separate classic script. */
+export const PAGE_CLIENT = fileURLToPath(import.meta.resolve('fishball-page/client'))
+export const PAGE_ROW = fileURLToPath(import.meta.resolve('fishball-page'))

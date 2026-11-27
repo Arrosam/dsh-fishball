@@ -5,6 +5,8 @@ description: Pick, open, refresh, and collect evidence from the isolated local F
 
 # Local Fishball test environments
 
+For code changes, use `npm run test:changed` or `npm test -w <npm-name>` from the monorepo root. This does not require opening a lab slot. Do not run all repository tests or release integrations during development. See [the root testing guide](../../../TESTING.md).
+
 Use the installed controller, not a worktree script: `/Volumes/SSD1/DSH-TestLab/fb-env`. The three slots are normally left running.
 
 | Slot | Use it for | Parent Web GUI | Connector approval |

@@ -25,6 +25,9 @@
     "*.js",
     "LICENSE"
   ],
+  "devDependencies": {
+    "fishball-test-helpers": "1.0.0-alpha.1"
+  },
   "engines": {
     "node": ">=22.14"
   }

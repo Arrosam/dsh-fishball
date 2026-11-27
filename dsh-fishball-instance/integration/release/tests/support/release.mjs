@@ -11,12 +11,22 @@ import { execFile, execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { REPO } from '@dsh-instance/test-helpers/constants'
 import { fishballComponent } from '@dsh-instance/test-helpers/siblings'
 
-const INSTANCE_MANIFEST = JSON.parse(fs.readFileSync(path.join(REPO, 'packages', 'dsh-instance', 'package.json'), 'utf8'))
+// Resolve the workspace package by its public manifest export without loading host code.
+const instanceManifestFile = fileURLToPath(import.meta.resolve('dsh-instance/package.json'))
+const instanceDir = path.dirname(instanceManifestFile)
+export const INSTANCE_MANIFEST = JSON.parse(fs.readFileSync(instanceManifestFile, 'utf8'))
 export const VERSION = INSTANCE_MANIFEST.version
-export const INSTANCE = Object.freeze({ name: INSTANCE_MANIFEST.name, tarball: INSTANCE_MANIFEST.name + '-' + VERSION + '.tgz', folder: 'packages/dsh-instance' })
+export const INSTANCE = Object.freeze({
+  name: INSTANCE_MANIFEST.name,
+  tarball: INSTANCE_MANIFEST.name + '-' + VERSION + '.tgz',
+  manifestFile: instanceManifestFile,
+  dir: instanceDir,
+  folder: path.relative(REPO, instanceDir),
+})
 const SHARED = 'fishball-shared'
 const AMENITY_PACKAGES = Object.freeze(['fishball-board', 'fishball-consultant', 'fishball-heartbeat', 'fishball-taskboard'])
 const setMember = (name, libraries) => Object.freeze({ name, tarball: name + '-' + VERSION + '.tgz', libraries: Object.freeze(libraries) })

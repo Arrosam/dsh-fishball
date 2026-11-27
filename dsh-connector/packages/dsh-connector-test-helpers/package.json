@@ -10,9 +10,13 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "test": "node ./src/runner/cli.mjs"
+    "test": "node ../../scripts/test-package.mjs"
   },
   "engines": {
     "node": ">=22.14"
+  },
+  "devDependencies": {
+    "@deepseek-ai/schemastery": "*",
+    "dsh-agent-connector": "1.0.0-alpha.2"
   }
 }

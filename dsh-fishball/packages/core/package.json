@@ -39,6 +39,9 @@
     "ui/",
     "!ui/tests/"
   ],
+  "devDependencies": {
+    "fishball-test-helpers": "1.0.0-alpha.1"
+  },
   "engines": {
     "node": ">=22.14",
     "dsh": ">=0.2.1-rc.5"

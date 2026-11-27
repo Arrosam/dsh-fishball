@@ -34,6 +34,27 @@ was retired, or the integration package that covers it.
 These totals describe the original baseline only. See [staging additions](<staging-f8bcb158.md>)
 for the tests that landed on staging after that snapshot.
 
+## Current entry-file counts
+
+Static count of `*.test.mjs` files owned by each workspace under `dsh-fishball/packages/`.
+These are entry files, not registered cases or execution results.
+
+| Workspace | Entry files |
+|---|---:|
+| fishball-core | 17 |
+| fishball-ui | 10 |
+| fishball-shared | 2 |
+| fishball-test-helpers | 11 |
+| fishball-integration-amenities | 3 |
+| fishball-integration-core-ui | 5 |
+| fishball-integration-page-stream | 2 |
+| fishball-integration-page-ui | 6 |
+| fishball-integration-release | 2 |
+| **Total** | **58** |
+
+The nested fishball-child-plugins, fishball-page and fishball-recommend-plugins workspaces have no
+entry files of their own; their existing coverage stays in fishball-ui or the integration suites.
+
 ## Baseline results
 
 Of the 3995 behaviours, the baseline showed 3247 passing on both SDKs. The rest were:

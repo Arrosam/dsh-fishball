@@ -29,13 +29,13 @@
 
 ## Commands
 
-Run workspace tests from the monorepo root. Run the release command from `dsh-connector/`.
+Run workspace tests from the monorepo root. See the [monorepo testing guide](../../../TESTING.md) for change-based testing and release commands.
 
 | What | Command |
 | --- | --- |
 | One package (day to day) | `npm test --workspace <npm name>`, or `npm test` inside the package folder |
 | One package, some cases | `npm test --workspace <npm name> -- --test-name-pattern="MAILBOX"` |
-| The connector's UI component only | `node dsh-connector/packages/dsh-connector-test-helpers/src/runner/cli.mjs dsh-connector/packages/dsh-connector/ui` |
+| The connector's UI component only | `node dsh-connector/scripts/test-package.mjs dsh-connector/packages/dsh-connector/ui` |
 | Before a release (everything, release matrix, in parallel) | `npm run test:release` |
 
 `packages/dsh-connector/ui` (`dsh-connector-ui`) is a component that ships inside the

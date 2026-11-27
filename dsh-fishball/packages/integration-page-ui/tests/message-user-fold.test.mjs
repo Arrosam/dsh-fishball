@@ -4,7 +4,7 @@ import { caseTest } from 'fishball-test-helpers/cases'
 import { setImmediate as settle } from 'node:timers/promises'
 import { createBrowserSandbox } from 'fishball-test-helpers/browser-sandbox'
 import { createReactShim, findAll } from 'fishball-test-helpers/react-shim'
-import { fishballPageFile } from './support/page-files.mjs'
+import { PAGE_CLIENT } from './support/page-files.mjs'
 
 const id = 'MSG-FOLD'
 const HOST = {
@@ -24,7 +24,7 @@ const COPY = {
   reasoning: 'Check the latest run.', group: 'Called tools', lookup: 'get_build_status',
   blank: ' \n\t ', markdown: '**Build passed.**',
 }
-const chunk = fishballPageFile('client.js')
+const chunk = PAGE_CLIENT
 const noop = () => {}
 const subscribe = () => noop
 const tKey = (key) => key

@@ -18,7 +18,7 @@
     "directory": "amenities/watchdog"
   },
   "scripts": {
-    "test": "node ../../dsh-connector/packages/dsh-connector-test-helpers/src/runner/cli.mjs"
+    "test": "node ../../dsh-connector/scripts/test-package.mjs"
   },
   "main": "./index.js",
   "exports": {

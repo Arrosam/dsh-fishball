@@ -1,5 +1,8 @@
 {
   "name": "fishball-amenities",
+  "devDependencies": {
+    "fishball-test-helpers": "1.0.0-alpha.1"
+  },
   "scripts": {
     "test": "node ../../dsh-fishball/scripts/test.mjs fishball-amenities"
   },

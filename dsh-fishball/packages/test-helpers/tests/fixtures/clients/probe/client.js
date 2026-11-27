@@ -1,9 +1,9 @@
 // A probe browser half for fishball-test-helpers' scripted-page cases: a classic script as DSH serves
 // one. It registers a settings page over DSH's form model, an entry while either of its namespaces
 // is served, and an entry from its package-local chunk.
-window.__ModuleLoader__.load({ id: 'fbtest-probe', factory: (require) => {
-  const React = require('react')
-  const P = require('@deepseek-ai/dsh-client-ui-primitives')
+window.__ModuleLoader__.load({ id: 'fbtest-probe', factory: (load) => {
+  const React = load('react')
+  const P = load('@deepseek-ai/dsh-client-ui-primitives')
   const h = React.createElement
   const PROBE = {
     ns: 'fbtest-probe', other: 'fbtest-probe-other', bundle: 'fbtest-probe', locale: 'fbtest-probe', field: 'greeting',
@@ -33,7 +33,7 @@ window.__ModuleLoader__.load({ id: 'fbtest-probe', factory: (require) => {
     ctx.effect(() => {
       let off = null
       let live = true
-      require.async(PROBE.part).then((part) => { if (live) off = ctx.slots.register({ name: PROBE.mainSlot, key: 'part', word: part.word }, () => null) })
+      load.async(PROBE.part).then((part) => { if (live) off = ctx.slots.register({ name: PROBE.mainSlot, key: 'part', word: part.word }, () => null) })
       return () => { live = false; off?.() }
     })
   }
