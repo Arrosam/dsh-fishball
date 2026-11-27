@@ -13,9 +13,11 @@ in a temp root and a real `SessionStore`. Fakes only for the host services: `con
 recording registry; routes are called with real `Request`s), `fishballInstance` (apiVersion 2, its own
 fiber so it can arrive and leave; X2 `registerSetup` runs each setup as a fiber on the manager's agent
 context with a fiber-tied `tools.register`; `notify` records and answers queued / held / rejects; the
-live agent's `inject` records) and `appReady`. A restart closes the whole DSH and opens a new one over
-the same root. Every case runs once, on the current DSH (`fishball-test-helpers/dsh`); the release run
-repeats them over the DSH matrix (docs/testing/README.md).
+live agent's `inject` records) and `appReady`. The manager's agent context is a real `dsh-scope` scope with
+the SDK's real `SystemPrompt` service, so the prompt guide is observed through `systemPrompt.assemble`;
+a resume disposes the generation's scope and runs every setup on a new one.
+A restart closes the whole DSH and opens a new one over the same root. Each case runs on the current
+DSH (`fishball-test-helpers/dsh`); release repeats them over the DSH matrix (docs/testing/README.md).
 
 **Provisional.** The four PENDING choices (statuses, memo, limits, delete) are each one constant in
 [constants.mjs](constants.mjs) (`STATUS`/`UNFINISHED`, `LIMIT`, the memo forms, the delete rows); a case that
@@ -50,6 +52,14 @@ are DOC §3's one exception to "the tools never throw": DSH's own registry rejec
 | TB-EP-08 (5) | core: apiVersion 2 / absent / apiVersion 1; absent + appReady (line at ready, not at load); present + appReady (no line) |
 | TB-EP-09 (1) | storage write fails → tool `board-unavailable`, POST 503 |
 | TB-EP-12 (2) | surface: `name`, `inject` (storage, storageDomain, connection), `apply`; its own package's patch row (named by the package) and manifest |
+
+## Prompt guide (TB-PG, 7; DOC §3a, the user 2026-11-22)
+
+| Id | Technique | Rows |
+|---|---|---|
+| TB-PG-01 (3) | EP core | apiVersion 2 → exactly one `fishball-taskboard` section in the manager scope with §3a's exact 5-line text; no core / apiVersion 1 → no section in the manager scope nor globally |
+| TB-PG-02 (2) | EP scope | manager scope has it, the global view and a worker scope do not; a global section of the same name is shadowed in the manager scope only |
+| TB-PG-03 (2) | BVA order | probes at order 1, 2 (name before), 2 (name after), 3 bracket the guide right after the persona prefix (order = `DEPLOYMENT_PERSONA_PREFIX` + 2); DSH's anchor value is 0 |
 
 ## Boundary Value Analysis (TB-BVA, 46; limits provisional)
 
@@ -88,7 +98,7 @@ are DOC §3's one exception to "the tools never throw": DSH's own registry rejec
   depth, `tasks: []` → refused whole, nothing created; a valid nested call → one write, `created`
   depth-first in item order, appended at the end (Q22).
 
-## State Transitions (TB-ST, 6)
+## State Transitions (TB-ST, 9)
 
 - **TB-ST-01 (system)** one task across two restarts: todo → in_progress → blocked (Fishball) → restart →
   done (user, notice) → todo again (Fishball) → a sibling dropped (user, notice) → restart → compaction →
@@ -99,11 +109,13 @@ are DOC §3's one exception to "the tools never throw": DSH's own registry rejec
   after a reload the save commits r+2.
 - **TB-ST-04** X2 binding: core absent → arrives (tools, reminders) → leaves (tools withdrawn, no
   reminder) → arrives again; the row removed → no tools, no reminders.
+- **TB-ST-06 (3)** prompt guide: core absent (none) → arrives (one) → leaves (withdrawn with the tools)
+  → arrives again (one); the row removed → withdrawn; two resumes → the new scope has exactly one, the
+  old scope none, the tools still run.
 - **TB-ST-05** SSE: first frame = GET body; one frame per tool change and per user save; none for a no-op
   save or a refused call.
 
 ## Totals
 
-154 cases: UC 5, EP 55 (2 of them the package-surface rows), BVA 46, DT 42, ST 6. Baseline (old
-`test/v3/fishball-taskboard`, 0377153f): 0.2.1-rc.5 154/154 pass, 0.2.2-rc.1 154/154 pass. After the
-port (2026-11-22, `node scripts/test.mjs fishball-taskboard`): DSH 0.2.2-rc.5 154/154 pass.
+164 cases: UC 5, EP 55 (2 of them the package-surface rows), PG 7, BVA 46, DT 42, ST 9.
+The 10 prompt-guide rows are ported from 90807687.

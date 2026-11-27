@@ -17,14 +17,15 @@ packages/
     contracts/                  K3/K3a types and constants.js (runtime values, core's copy of the connector's MCP surface)
     src/                        main/ manager/ link/ targets/ events/ asks/ bridge/ guards/ identity/ session/ settings/ status/ page/
     ui/                         plugin fishball-ui, its own package shipped inside core's tarball: every UI change in a Fishball DSH
-      client.js client.{asks,brand,entries,model,strip}.js   flat browser chunks
+      client.js client.{asks,brand,entries,strip}.js   flat browser chunks
       fishball-page/ fishball-recommend-plugins/ fishball-child-plugins/   its sub-packages
       tests/                    fishball-ui's tests (not shipped)
     tests/                      fishball-core's tests (not shipped)
   fishball-board/               plugin: the session-linked work board (shelved in core's view; ships in the umbrella)
   fishball-heartbeat/           plugin: cache-warming heartbeat turns
   fishball-taskboard/           plugin: task board and memo pad, with its own client.js (the Task board tab)
-  fishball-amenities/           umbrella: depends on and bundles the three amenities and inserts their rows
+  fishball-consultant/          plugin: opt-in cross-DSH skill consultation
+  fishball-amenities/           umbrella: depends on and bundles the four amenities and inserts their rows
   shared/                       library fishball-shared (no dsh field): ui-seam, instance-follower
   test-helpers/                 private, never shipped: fishball-test-helpers, the shared test tools
   integration-*/                private, never shipped: cross-package integration test packages
@@ -34,7 +35,7 @@ scripts/
   pack-v3.mjs release/          the release tarballs
 ```
 
-Every package except the two private test packages has a `tests/` folder of its own tests
+Each shipped package has a `tests/` folder of its own tests
 ([testing](<testing/README.md>)); `tests/` is never in a package's `files` (fishball-core's `files`
 lists `ui/` and excludes `ui/tests/`), and the release stage drops any `tests` folder.
 

@@ -21,8 +21,8 @@ export const SYS = Object.freeze({
   coreMissingLine: 'fishball-core-missing',
   members: Object.freeze(['manager', 'events', 'ui', 'bridge', 'attention', 'page']),
   uiMembers: Object.freeze(['managerSessionId', 'targets', 'guards', 'asks']),
-  /** Core's own manager tools (the wire suite's list: the reminders and message_user) and its private Skills prefix. */
-  coreTools: Object.freeze(['schedule_create', 'schedule_list', 'schedule_update', 'schedule_delete', 'message_user']),
+  /** Core's own direct manager tools (reminders, message_user, ask_user) and its private Skills prefix. */
+  coreTools: Object.freeze(['schedule_create', 'schedule_list', 'schedule_update', 'schedule_delete', 'message_user', 'ask_user']),
   privateSkill: /^private_skill_/,
   managerTools: GUARDS.managerTools,
   impossibleEngine: '>=99.0.0',

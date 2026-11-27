@@ -30,5 +30,6 @@ the repository's root manifest, not a package: an integration row.
 | AM-EP-04 | the umbrella depends on and bundles every member and fishball-shared, pinned |
 | AM-EP-05 | every member depends on and bundles fishball-shared, pinned |
 | AM-EP-06 | the umbrella's `files` and packed files hold no member folder |
+| AM-COLLECTION | Consultant dependency pinned and bundled once; both install modes insert the same exact Consultant row |
 | AM-EP-08 | fishball-shared exports ./instance-follower and ./ui-seam |
 | AM-SC-01…03 | no member import leaves its root, none imports another member, each imports fishball-shared/instance-follower |

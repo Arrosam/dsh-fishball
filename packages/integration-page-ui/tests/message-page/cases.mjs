@@ -32,7 +32,7 @@ import { chromeBinary, stopBrowser } from 'fishball-test-helpers/browser'
 import { caseTest } from 'fishball-test-helpers/cases'
 import { scenario } from 'fishball-test-helpers/dsh-world'
 import { until } from 'fishball-test-helpers/wait'
-import { EXTENSION, corePackages } from '../support/world.mjs'
+import { pageWorld } from '../support/world.mjs'
 import { BUDGET, HOME, PAGE, RESULT_ROWS, SKIP_NO_CHROME, TOOL, TURNS } from './constants.mjs'
 import { controlOf, managerSession, messages, openFishballPage, replies, rowsOf, show, turnOf } from './facts.mjs'
 
@@ -114,7 +114,7 @@ export function registerMessagePageCases() {
       f.reloadedOn = await tab.until((s) => s.page && messages(s, doneTurn).length > 0)
       await tab.close()
     },
-  ], { packages: corePackages(), extension: EXTENSION })
+  ], pageWorld())
   const read = async (...keys) => {
     const f = await facts()
     for (const key of keys) if (f[key] === undefined) throw f.error ?? new Error('fact ' + key + ' was not collected')

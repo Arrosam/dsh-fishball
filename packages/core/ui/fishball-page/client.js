@@ -156,7 +156,7 @@ window.__ModuleLoader__.load({
     /**
      * Fishball's messages to the user (the user, 2026-11-21): on this page only what Fishball sends
      * with core's `message_user` tool is in view; its other output is folded (REPLY_FOLD).
-     * - Each dispatched call (`tool/call`, so never a half-streamed argument) becomes a chat Node of its
+     * - Each send starts from the recorded call, never a half-streamed argument, and becomes a chat Node of its
      *   own `kind`, drawn by this page's `conversation.chat.node` renderer as Fishball's bubble. The
      *   Node stands at the Turn's `groupTree` position `turn` (dsh-client-ui-chat group-tree.d.ts,
      *   both SDKs: "stays in its Turn outside the Turn's process disclosure"), so DSH's own fold never
@@ -169,9 +169,12 @@ window.__ModuleLoader__.load({
      */
     const MESSAGE = Object.freeze({
       tool: 'message_user', argument: 'message',
-      kind: 'fishball-message', target: 'chat', groupTree: 'turn', visibility: 'visible',
-      event: 'tool/call', role: 'start', slot: 'conversation.chat.node', locale: 'chat',
-      bubble: 'data-fishball-message',
+      kind: 'fishball-message', target: 'chat', groupTree: 'turn',
+      visibility: Object.freeze({ visible: 'visible', hidden: 'hidden' }),
+      event: Object.freeze({ direct: 'tool/call', program: 'tool/ptc-dispatch-start', result: 'tool/result' }),
+      role: Object.freeze({ start: 'start', update: 'update' }),
+      unknownTool: 'UNKNOWN_TOOL', slot: 'conversation.chat.node', locale: 'chat',
+      bubble: 'data-fishball-message', textInteractionSource: 'data-text-interaction-source',
       // After the call's own tool row: on a reloaded page that row also anchors at the `tool/call` seq
       // (no streamed delta is left), and a tie leaves the order to the engine. DSH places its own
       // synthetic rows the same way (ui-chat CHAT_SYNTHETIC_SEQ_OFFSETS, at most ±0.9).
@@ -184,10 +187,13 @@ window.__ModuleLoader__.load({
      * Fishball's ordinary text replies, folded by default (the user: "collapse all other assistant
      * output, expandable on click"). The expansion is DSH's own whole-Turn control (TurnProcessNodeView,
      * `button[data-turn-process="<turn>"]`, both SDKs), not a new disclosure: a Turn's reply seats
-     * (`data-chat-turn`) show while its control is open (`data-open`) or disabled. DSH disables it
-     * when it has nothing to fold or keeps the Turn open (stopped, failed, verbose details): there is
-     * no click that could reveal the replies then, so they are not hidden. A running Turn has no
-     * control yet, so its replies stay folded. Reasoning and tool rows keep DSH's own folding.
+     * (`data-chat-turn`) normally show while its control is open (`data-open`) or disabled. DSH
+     * forces the whole Turn open for interleaved input and disables its control without
+     * `aria-expanded` (ChatNodeSeat / TurnProcessNodeView). That is not a reveal: if the Turn already
+     * has a Fishball message, keep its replies hidden. Preserve the fallback when no message was
+     * sent, and the open/disabled controls that still declare expandable process content (e.g. a
+     * stopped Turn with tool calls). A running Turn has no control yet, so its replies stay folded.
+     * Reasoning and tool rows keep DSH's own folding.
      * `reply` is the response half of an assistant step (ChatNodeSeat `data-chat-group-part`).
      *
      * A folded seat gets the `hidden` attribute, as DSH folds its own process rows (ui-chat
@@ -205,7 +211,7 @@ window.__ModuleLoader__.load({
       flowKind: 'data-chat-flow-kind', groupPart: 'data-chat-group-part',
       assistant: 'assistant-step', response: 'response',
       turnOf: 'data-chat-turn',
-      control: 'button[data-turn-process]', controlTurn: 'data-turn-process', open: 'data-open', disabled: 'disabled',
+      control: 'button[data-turn-process]', controlTurn: 'data-turn-process', open: 'data-open', disabled: 'disabled', expandable: 'aria-expanded',
       hidden: 'hidden', hiddenValue: '', dshHidden: 'data-turn-process-hidden', dshHiddenValue: 'until-found',
       folded: 'data-fishball-folded',
     })
@@ -213,7 +219,7 @@ window.__ModuleLoader__.load({
     const REPLY_SEAT = `[${REPLY_FOLD.flowKind}="${REPLY_FOLD.assistant}"][${REPLY_FOLD.groupPart}="${REPLY_FOLD.response}"]`
     const FOLD_RELEVANT = `[${REPLY_FOLD.flowKind}],${REPLY_FOLD.control}`
     /** The attributes whose change can change the fold: the control's state, a seat's turn and part, and `hidden`. */
-    const FOLD_WATCHED = Object.freeze([REPLY_FOLD.open, REPLY_FOLD.disabled, REPLY_FOLD.turnOf, REPLY_FOLD.groupPart, REPLY_FOLD.hidden])
+    const FOLD_WATCHED = Object.freeze([REPLY_FOLD.open, REPLY_FOLD.disabled, REPLY_FOLD.expandable, REPLY_FOLD.turnOf, REPLY_FOLD.groupPart, REPLY_FOLD.hidden])
     /**
      * The reply's avatar follows the sidebar logo's theme (core's `brandStyle`, LOGO-BUTTON; the user,
      * 2026-11-21): the Fishball theme draws Fishball's fish, V1's FISH_MARK (tag v0.1.0
@@ -602,35 +608,50 @@ window.__ModuleLoader__.load({
       }
     }
 
-    /** The message of one `message_user` call's raw argument JSON, as sent; null when it is blank after trimming or unreadable. */
-    function messageOf(rawArguments) {
-      let args
-      try { args = JSON.parse(rawArguments) } catch { return null }
+    /** Direct calls record JSON text; a PTC dispatch records already normalized arguments. */
+    function messageOf(args) {
+      if (typeof args === 'string') {
+        try { args = JSON.parse(args) } catch { return null }
+      }
       const text = args?.[MESSAGE.argument]
       return typeof text === 'string' && text.trim() !== '' ? text : null
     }
 
     /**
      * The Conversation Definition that turns each `message_user` call into a message Node (MESSAGE).
-     * It matches only `tool/call`, beside DSH's own tool Definition (no exclusive claim), so the
-     * call's ordinary tool row is unchanged. A Node is rebuilt only when its text or Location changes.
+     * Keep start-based bubbles for interrupted sends. DSH also records direct attempts it rejects
+     * before dispatch, so retract those on the correlated UNKNOWN_TOOL result, not on generic errors.
+     * This matches beside DSH's own tool Definition (no exclusive claim).
      */
     function messageDefinition() {
+      const match = (event) => event.data?.name === MESSAGE.tool
+        ? { id: String(event.data.subCallId ?? event.data.callId), role: MESSAGE.role.start }
+        : null
       return {
         kind: MESSAGE.kind,
         target: MESSAGE.target,
-        match: { [MESSAGE.event]: (event) => event.data?.name === MESSAGE.tool ? { id: String(event.data.callId), role: MESSAGE.role } : null },
-        start: (_context, match) => messageOf(match.event.data.arguments),
-        update: (context) => context.state,
+        match: {
+          [MESSAGE.event.direct]: match,
+          [MESSAGE.event.program]: match,
+          [MESSAGE.event.result]: ({ data }) => data?.message?.isError === true
+            && data.error?.code === MESSAGE.unknownTool && typeof data.message.toolCallId === 'string'
+            ? { id: data.message.toolCallId, role: MESSAGE.role.update }
+            : null,
+        },
+        start: (_context, match) => ({ text: messageOf(match.event.data.arguments), visibility: MESSAGE.visibility.visible }),
+        update: (context, match) => match.event.type === MESSAGE.event.result
+          ? { ...context.state, visibility: MESSAGE.visibility.hidden }
+          : context.state,
         buildViewNode(context) {
-          const text = context.state
+          const { text, visibility } = context.state ?? {}
           if (text === null || text === undefined || context.start === undefined) return null
           const location = context.start.location
           const current = context.current.get(MESSAGE.target)
-          if (current?.data.text === text && current.location === location) return current
+          // DSH requires an existing node to keep its key and switch to hidden, not be withdrawn.
+          if (current?.data.text === text && current.location === location && current.visibility === visibility) return current
           return {
             key: context.key, kind: MESSAGE.kind, id: context.id, target: MESSAGE.target,
-            anchorSeq: context.start.event.seq + MESSAGE.anchorOffset, location, visibility: MESSAGE.visibility, groupTree: MESSAGE.groupTree,
+            anchorSeq: context.start.event.seq + MESSAGE.anchorOffset, location, visibility, groupTree: MESSAGE.groupTree,
             data: Object.freeze({ text }),
           }
         },
@@ -643,7 +664,9 @@ window.__ModuleLoader__.load({
         const L = MESSAGE.labels
         return { code: { copyLabel: t(L.copy), copiedLabel: t(L.copied), toolbarLabels: { codeLabel: t(L.code), wrapLabel: t(L.wrap), unwrapLabel: t(L.unwrap) } }, footnotes: t(L.footnotes) }
       }, [t])
-      return h('div', { [MESSAGE.bubble]: '' }, h(MarkdownText, { text: node.data.text, labels }))
+      // Opt this custom bubble into DSH's text interactions. DSH owns the quote pill,
+      // composer insertion and Markdown serialization, just as for its native bubbles.
+      return h('div', { [MESSAGE.bubble]: '', [MESSAGE.textInteractionSource]: '' }, h(MarkdownText, { text: node.data.text, labels }))
     }
 
     /** Fold one reply seat (REPLY_FOLD): DSH's own `hidden`, with the page's mark saying it set it. */
@@ -666,8 +689,7 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * Fold Fishball's ordinary replies (REPLY_FOLD): each reply seat whose Turn's control is neither
-     * open nor disabled is folded. Synchronous in the observer, which runs before the next paint, so
+     * Apply the per-Turn reply fold (REPLY_FOLD). Synchronous in the observer, before the next paint, so
      * a new reply never flashes. The observer watches the body, not the conversation element, because
      * DSH replaces that element when the main view changes; only changes to seats and Turn controls
      * (FOLD_RELEVANT, FOLD_WATCHED) run it. Its own writes are a no-op the second time: a seat that
@@ -680,8 +702,11 @@ window.__ModuleLoader__.load({
         const shown = new Set()
         const next = new Set()
         if (scope !== null) {
+          const messaged = new Set([...scope.querySelectorAll(MESSAGE_ROW)].map(seat => seat.getAttribute(REPLY_FOLD.turnOf)))
           for (const control of scope.querySelectorAll(REPLY_FOLD.control)) {
-            if (control.hasAttribute(REPLY_FOLD.open) || control.disabled) shown.add(control.getAttribute(REPLY_FOLD.controlTurn))
+            const turn = control.getAttribute(REPLY_FOLD.controlTurn)
+            if (control.disabled && !control.hasAttribute(REPLY_FOLD.expandable) && messaged.has(turn)) continue
+            if (control.hasAttribute(REPLY_FOLD.open) || control.disabled) shown.add(turn)
           }
           for (const reply of scope.querySelectorAll(REPLY_SEAT)) {
             if (!shown.has(reply.getAttribute(REPLY_FOLD.turnOf))) next.add(reply)

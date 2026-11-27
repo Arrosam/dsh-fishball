@@ -94,6 +94,23 @@ No field is marked required in the schema (each description says "Required."), s
   `memos` for `limit-reached`, and `title|note|status|progress` for an update naming no field.
 - Titles, notes and memo texts are stored trimmed.
 
+## 3a. The prompt guide
+
+The same X2 setup registers one section in the manager's system prompt (name
+`fishball-taskboard`, order `DEPLOYMENT_PERSONA_PREFIX` + 2: right after the persona and core's
+private-skills section). The user asked for it (2026-11-22) because Fishball often forgot to keep
+the board current. Its text:
+
+```
+**Task board.** Keep your task board up to date.
+- When the user gives you a new task, add it with taskboard_add right away. Break multi-part work into subtasks.
+- Whenever a task or subtask makes progress or finishes, update its status and progress with taskboard_update right away, in the same turn.
+- When a session you manage finishes work, update the matching task before or together with reporting to the user.
+- Never leave finished work in todo or in_progress.
+```
+
+Without core there is no manager setup, so there is no section either (§7).
+
 ## 4. The UI
 
 A **right sidebar tab** "Task board" (kind `fishball-taskboard`), opened from a checklist header
@@ -200,3 +217,40 @@ Nothing is queued for a failed compaction, for another session, or when no task 
 As the board (R-FB-06): with no compatible `fishballInstance` (`apiVersion` 2) the row registers no
 tools and logs one `fishball-core-missing` line at app ready. Its routes still serve the board, so
 the user can see and edit it; a save then answers `notified: false`.
+
+## 8. Auto-update
+
+Auto-update is **off until the board owner selects and saves an eligible model** under Task board
+→ Auto-update settings. It neither changes Fishball's own model nor starts a work session. The chosen
+provider receives the certified final text and the whole task tree (including closed and unrelated
+rows: ID, parent ID, title, status, progress and note). It receives no memo, history, attachment or
+tool result from the task board. A task note or final message can itself contain sensitive text.
+
+- Only new, ordinary managed work started using native connector MCP can be certified on the same
+  live connector. Existing/restored sessions and arbitrary handovers still report normally, but
+  cannot authorize auto-update. Final text attached to the legacy field is not input to this feature.
+- The model sees no tools. At most one attempt runs at a time per board of 1–20 rows, with at most six
+  sent attempts per rolling hour, 30 seconds, no retries, and 8,192 input / 1,024 output tokens. Only
+  explicitly supported standalone facts can change a task; unsupported wording is skipped.
+- A batch commits at one revision. It changes only evidenced open status, nondecreasing progress,
+  or an appended note fragment. A completion proposal remains pending review; a review-only batch
+  does not wake Fishball. Each actual batch sends at most one notice with each task's stored progress
+  and direct parent's stored progress (no rollup). Accepted delivery does not mean Fishball read it.
+- Manager-only `taskboard_read({})` returns optional `autoReviews` when pending. Use
+  `taskboard_resolve_review({reviewId,expectedReviewVersion,baseRevision,decision})` with `"reject"`
+  or `{confirm:["status","progress","noteAppend"]}` listing only independently verified fields
+  from the suggestion. A fresh reject may discard stale evidence without touching the board.
+- The owner can inspect and undo an unchanged latest batch in history. Undo never crosses any
+  unrelated board edit. Completed batch history expires after 30 days; unresolved reviews and
+  unconfirmed notices are retained. Archived unknown notices are not marked sent or retried.
+- Models are restricted to verifiable official DeepSeek Flash/Pro Messages routes. The model picker
+  offers no routes when the host cannot exclude request extensions. In particular, stock DSH
+  0.2.2-rc.3 can attach installed-plugin inventory and does not offer a per-call opt-out; on that
+  host the automatic path stays unavailable, without affecting manual editing.
+
+The private v2 storage envelope keeps the old board document and automation records in one atomic
+value. A compatible v1 board opens without writing. A first write upgrades it; switching the model
+off does not downgrade the format. Before a downgrade stop writes, back up the full private domain,
+export and validate the v1 board, and explicitly restore it with version 1. Never open a v2 domain
+with a v1-only binary and assume that an empty board is recoverable. If a storage write reports an
+uncertain outcome, further writes pause until a restart reconciles the durable domain.

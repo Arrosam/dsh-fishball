@@ -302,6 +302,7 @@ export const MCP = Object.freeze({
     pair: 'pair',
     setName: 'set_name',
   }),
+  workTurn: Object.freeze({ version: 1, purpose: 'work', checkField: 'checkTurn', noHistory: 0 }),
   eventTypes: Object.freeze({
     permission: 'permission',
     question: 'question',
@@ -463,9 +464,8 @@ export const CONNECT = Object.freeze({
 /**
  * Fishball's own model choice (the user, 2026-11-16: "同步只是同步model list，至于fishball用什么还要在
  * fishball内设置"; "所有版本：先用DSH的默认模型"): a field of core's own row settings, `{provider, model,
- * reasoningEffort?}`; absent means this DSH's default model, and nothing ever blocks on it. Only
- * core's settings page and fishball-ui's model dialog write it (no DSH-side package reads it, the
- * user's cancellation of U-MODEL, 2026-11-16). `settingsNamespace` is core's main row id, the
+ * reasoningEffort?}`; absent means this DSH's default model, and nothing ever blocks on it. Written
+ * by core's settings page (and `dsh-instance`'s onboarding wizard). `settingsNamespace` is core's main row id, the
  * namespace DSH's `settings.mutate` addresses; `path` is the field inside it.
  */
 export const FISHBALL_MODEL = Object.freeze({
@@ -510,11 +510,8 @@ export const GUARDS = Object.freeze({
   triggers: Object.freeze(['settings/document-updated', 'plugin-manager/changed']),
   /** The IntendedPolicy key whose value is the manager's agent preset (core's patch sets it). */
   managerPresetKey: 'defaultAgentPreset',
-  /**
-   * ManagerTool: the manager's model tools, exactly (R-FB-13). `ask_user_question` is DSH's
-   * ask-user plugin in core's preset (the user, 2026-11-18: Fishball asks with DSH's own tool).
-   */
-  managerTools: Object.freeze(['read', 'read_image', 'working_directory', 'ask_user_question']),
+  /** ManagerTool: the singleton's base model tools, excluding Fishball's own contributions. */
+  managerTools: Object.freeze(['read', 'read_image', 'working_directory']),
   /**
    * Core's own model tools, by module (relative to `src/guards/`) and exported name table (user
    * decision 2026-11-14: core's tools are not the preset's and are left out of the R-FB-13 check).

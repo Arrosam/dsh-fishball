@@ -18,6 +18,7 @@ export const PKG = Object.freeze({
   board: pkg('fishball-board'),
   heartbeat: pkg('fishball-heartbeat'),
   taskboard: pkg('fishball-taskboard'),
+  consultant: pkg('fishball-consultant'),
   core: pkg('fishball-core'),
   /**
    * fishball-ui (core's inner package) declares no manifest icon; it ships this asset (its manifest

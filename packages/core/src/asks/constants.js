@@ -26,6 +26,25 @@ export const CARD_STATE = Object.freeze({ open: 'open', answered: 'answered', cl
  */
 export const ASK_TOOL = Object.freeze({ fileCard: 'ask_user' })
 
+export const QUESTION_CARD = Object.freeze({
+  kind: 'question',
+  idPrefix: 'question-',
+  nativeTool: 'ask_user_question',
+  domain: 'fishball_core_questions',
+  table: 'questions',
+  version: 1,
+  replySource: Object.freeze({ kind: 'user' }),
+  event: Object.freeze({ session: 'session/event', admitted: 'user/message' }),
+  services: Object.freeze({ sessions: 'sessions', agents: 'agents' }),
+  running: 'running',
+  description: 'Show a question card in Fishball and return its cardId immediately. Do not wait or poll; the user’s reply arrives later as a normal user message carrying that cardId and the question ids.',
+  answerPrefix: 'Fishball question card answer: ',
+  answerUnavailable: 'Fishball question answer could not be durably queued',
+  invalidQuestions: 'Provide a nonempty list of questions with distinct IDs and valid options.',
+  fileUnavailable: 'Fishball question card could not be saved',
+  malformed: 'fishball-core: malformed local question card',
+})
+
 export const ASKS = Object.freeze({
   /** One DSH storage-domain table in the Fishball DSH: one record per ask `approvalId`. */
   domain: 'fishball_core_asks',
@@ -37,7 +56,7 @@ export const ASKS = Object.freeze({
    * after C-WIRE-2 removed `ask_agent` ("不给ask_agent工具"), which left no producer of `ask`: a
    * permission request Fishball cannot decide may become a card on the Fishball page (e2e R2-06),
    * answered Allow once / Reject as Fishball's `approval_answer`. `ask` stays: K1 keeps the type
-   * frozen. Questions and plan reviews never become cards (R-FB-11: the user answers them in the session).
+   * frozen. Managed-session questions and plan reviews are not cards in this layer yet.
    */
   eventTypes: Object.freeze([MCP.eventTypes.permission, MCP.eventTypes.ask]),
   /** The filing tool's one argument. */
@@ -59,10 +78,10 @@ export const ASKS = Object.freeze({
    * a reject is sent as high.
    */
   riskOf: Object.freeze({ [DECISION.allow]: RISK.low, [DECISION.reject]: RISK.high }),
-  /**
-   * The reason sent when the user gave none (the broker requires a non-empty one for both; the
-   * user's choice, 2026-11-16). Model- and audit-facing English, like every K1 reason (Q7).
-   */
+  /** Correlated connector notice and the user-facing text for its action notification. */
+  permissionEscalated: 'permission-escalated',
+  automaticNotice: 'A permission request needs your decision in Fishball.',
+  /** The connector requires a reason, even when the user leaves it blank. */
   defaultReason: 'The user answered on Fishball\'s card.',
   /** Connector answers that mean the ask is no longer open there: the card closes. */
   closingCodes: Object.freeze([REFUSAL.alreadySettled, REFUSAL.expired]),
@@ -79,7 +98,7 @@ export const ASK_CODE = Object.freeze({ unknownOffer: 'unknown-offer' })
 
 /** The filing tool's model-facing texts (English only, Q7). PROPOSED wording. */
 export const ASK_TEXT = Object.freeze({
-  description: 'Show a permission request (a `permission` event) you cannot decide to the user as a card in your own conversation. '
+  description: 'Legacy fallback: show a permission request in this chat only if its offer does not enable automatic permission cards. If automatic cards are enabled, escalate instead; do not call this tool for the same request. '
     + 'Give the event\'s offer id. The user answers Allow once or Reject, with an optional reason; their answer is sent for you, '
     + 'and the request\'s settlement event tells you the outcome. Do not answer the request yourself after filing it.',
   offerArgument: 'The `offer.offerId` of the permission event to show.',
@@ -129,6 +148,8 @@ export const ASK_HTTP = Object.freeze({
 export const ASK_LOG = Object.freeze({
   malformed: 'offer event %s ignored: malformed payload',
   commitFailed: 'ask card %s: the answer could not be sent (%s)',
+  handoffFailed: 'permission handoff failed (%s)',
+  noticeFailed: 'permission action notice failed (%s)',
   writeFailed: 'ask card store write failed (%s)',
   reconciled: 'ask card reconciliation: %d ended unfiled ask(s) deleted, %d kept',
   reconcileFailed: 'ask card reconciliation: a session\'s asks were kept (%s)',

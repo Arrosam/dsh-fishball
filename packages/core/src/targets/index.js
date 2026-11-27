@@ -393,6 +393,16 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
     return runtime === undefined ? Promise.resolve({ ok: false, code: LINK.disconnected }) : runtime.link.callTool(name, args)
   }
 
+  async function isCurrentWorkTurn(source, sessionId, assignmentId, turnSeq, signal) {
+    const runtime = runtimeOf(source)
+    if (runtime === undefined) return false
+    const result = await runtime.link.probeTool(MCP.tools.sessionRead, {
+      sessionId, maxMessages: MCP.workTurn.noHistory, maxBytes: MCP.workTurn.noHistory,
+      [MCP.workTurn.checkField]: { assignmentId, turnSeq },
+    }, { signal, capability: MCP.workTurn.checkField })
+    return runtimeOf(source) === runtime && result?.ok === true && result.current === true
+  }
+
   /**
    * X12 / X8 bound to one target epoch, captured at creation (MULTI-0 `FishballTargetBound`,
    * `TargetSelector`): the
@@ -478,6 +488,7 @@ export function createTargets(ctx, { tables, identityRecords, asks, events, reco
     settingsChanged,
     live: (source) => runtimeOf(source) !== undefined,
     callTool,
+    isCurrentWorkTurn,
     ack: (receipts, source) => callTool(source, MCP.tools.inboxAck, { receipts }),
     /** Resolves once the parent follows the instance's current setting (a start or change in flight). */
     settled: () => parentSync,

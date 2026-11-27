@@ -10,9 +10,9 @@ export const CORE_WORLD = Object.freeze({
   /** core's main row module (its `./main` export) and the hosted child's row (K3a HOSTED_IMPORT.targetSetting). */
   main: 'fishball-core/main', childRow: 'dsh-instance-child', childField: 'targetUrl',
   services: Object.freeze({ instance: 'fishballInstance', status: 'fishballStatus' }),
-  env: Object.freeze({ homePatch: 'FBTEST_CORE_HOME_PATCH', handoff: 'FBTEST_HANDOFF_TOKEN' }),
+  env: Object.freeze({ homePatch: 'FBTEST_CORE_HOME_PATCH', profileConfig: 'FBTEST_CORE_PROFILE_CONFIG', handoff: 'FBTEST_HANDOFF_TOKEN' }),
   /** DSH's names: the launcher (dsh-app-boot's profile functions take it), its home patch file. */
-  dshName: 'dsh', appBoot: 'dsh-app-boot', patchFile: 'cordis.patch.yml',
+  dshName: 'dsh', appBoot: 'dsh-app-boot', patchFile: 'cordis.patch.yml', yaml: 'yaml/dist/index.js', encoding: 'utf8',
   toolRole: 'tool', eventSource: 'fishball-event', userMessage: 'user/message', functionWord: 'function', shapeDepth: 3,
   budget: Object.freeze({ readyMs: 60000, pollMs: 100 }),
 })

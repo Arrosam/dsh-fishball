@@ -67,3 +67,34 @@ export interface AskCard {
  * decision 2026-11-16). A choice the card does not offer is refused `invalid-arguments`.
  */
 export type AskCardAnswer = { readonly choice: 'allow' | 'reject'; readonly text?: string }
+
+export interface FishballQuestion {
+  readonly id: string
+  readonly question: string
+  readonly header?: string
+  readonly options?: readonly { readonly label: string; readonly description?: string }[]
+  readonly multi_select?: boolean
+}
+
+/** One manager-local batch; keeps the common handle used by the card layer. */
+export interface FishballQuestionCard {
+  readonly kind: 'question'
+  readonly cardId: string
+  readonly handle: string
+  readonly sessionId: string
+  readonly questions: readonly FishballQuestion[]
+  readonly askedAt: number
+  readonly state: 'open'
+}
+
+/** POST to the existing owner-only asks answer route. A skip is an empty selection without custom text. */
+export interface FishballQuestionReply {
+  readonly cardId: string
+  readonly answers: readonly { readonly id: string; readonly selected: readonly string[]; readonly custom?: string }[]
+}
+
+/** Snapshot on the asks-only SSE route and the shared page stream's asks topic. */
+export interface AskCardFrame {
+  readonly managerSessionId: string | null
+  readonly cards: readonly (AskCard | FishballQuestionCard)[]
+}

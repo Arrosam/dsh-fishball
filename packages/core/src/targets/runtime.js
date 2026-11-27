@@ -8,7 +8,7 @@
  * first taken by the ask cards and only then handed to the interception service event by event, with
  * this epoch's trusted `source`. A page waits for the ledger's recovery before any intake.
  */
-import { MCP, TARGETS } from '../../contracts/constants.js'
+import { APPROVAL, MCP, TARGETS } from '../../contracts/constants.js'
 import { createBridge } from '../bridge/index.js'
 import { codeOf } from '../events/diagnostics.js'
 import { createPairing, createRecords } from '../identity/index.js'
@@ -83,7 +83,9 @@ export function createTargetRuntime(ctx, options) {
 
   // Fishball's own accepted answer settles its request; the connector sends no settlement for it (asks/index.js `answered`).
   const called = (toolName, args, result) => {
-    if (toolName === MCP.tools.approvalAnswer && result?.ok === true) void asks.answered(source(), args)
+    if (toolName === MCP.tools.approvalAnswer && args.answer?.decision !== APPROVAL.decision.escalate && result?.ok === true) {
+      void asks.answered(source(), args)
+    }
     sessions.called(toolName)
   }
   const bridge = createBridge({ link, naming, locals, called, ...bridgeOptions })
@@ -121,7 +123,9 @@ export function createTargetRuntime(ctx, options) {
   // The ask cards' reconciliation of this epoch, once, at its first `connected` (as F-WIRE's).
   let reconciled = false
   disposers.push(link.onStatus((status) => {
-    if (reconciled || status.state !== LINK.state.connected) return
+    if (status.state !== LINK.state.connected) return
+    void pipeline.then(() => asks.retryHandoffs?.(source())).catch((error) => logger?.warn(TARGET_LOG.failed, TARGET_LOG.reconcile, codeOf(error)))
+    if (reconciled) return
     reconciled = true
     void pipeline.then(() => asks.drained()).then(() => asks.reconcile(source())).catch((error) => logger?.warn(TARGET_LOG.failed, TARGET_LOG.reconcile, codeOf(error)))
   }))

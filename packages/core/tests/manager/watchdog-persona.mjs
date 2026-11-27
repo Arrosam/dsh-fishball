@@ -8,10 +8,9 @@
  * conditional, and the existing session_start guidance (placement, models) is unchanged.
  *
  * Black box: PERSONA_ROLE and the contract tables are imported as published; the system row reads
- * the manager's real model request from the suite's scenario. Two rows import persona.js from a
- * temporary export outside the repo: the persona before the change (the parent of the commit that
- * brought WATCHDOG into persona.js), and the working tree with WATCHDOG's names swapped in the
- * contract copy (so the names are shown to come from the contract, not from literals).
+ * the manager's real model request from the suite's scenario. Historical snapshots isolate the
+ * Watchdog change from staging's later persona amendments. A working-tree copy swaps WATCHDOG's
+ * contract names to show the persona uses the contract, not literal tool names.
  */
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
@@ -173,13 +172,18 @@ export function registerWatchdogPersonaCases({ read, name, test }) {
     assert.deepEqual(Object.entries(want).filter(([, re]) => !has(re)).map(([k]) => k), [])
   })
   const ref = baselineRef()
-  test(name('WD-PERSONA-ST-01', 'before → after the change: every line of the earlier persona is still there in the same order, and the only new line is the Watchdog one'), ref ? {} : { skip: WD.skipNoBaseline }, async () => {
+  test(name('WD-PERSONA-ST-01', 'Watchdog adds one line without altering earlier guidance; the merged persona preserves Watchdog and the staging amendments'), ref ? {} : { skip: WD.skipNoBaseline }, async () => {
     const before = personaLines(await baselinePersona(ref))
-    const now = personaLines(await persona())
+    const preStaging = await baselinePersona(B.preStaging)
+    const watchdog = startLine(preStaging)
     assert.equal(before.some((l) => l.includes(WATCHDOG.tools.sessionStart)), false, 'harness: the baseline already has the Watchdog line')
-    const added = now.filter((l) => !before.includes(l))
-    assert.deepEqual(added, [startLine(now.join(PERSONA_BOLD.lineBreak))], 'lines added besides the Watchdog one')
-    assert.deepEqual(now.filter((l) => before.includes(l)), before, 'an earlier line was changed, removed or moved')
+    assert.deepEqual(personaLines(preStaging).filter((l) => l !== watchdog), before, 'the Watchdog change modified, removed, moved or added another line')
+
+    // Compare the entire merged persona with the approved staging text, not with a broad exclusion
+    // for the amended sections: a missing or extra line anywhere must still fail.
+    const now = await persona()
+    assert.equal(startLine(now), watchdog, 'staging amendments must preserve the Watchdog instruction')
+    assert.deepEqual(personaLines(now), personaLines(await baselinePersona(B.staging)), 'the merged persona differs from the authorized staging text')
   })
 
   // ------------------------------------------------------------------ persona style (the bold rule, R-B1/R-B2)

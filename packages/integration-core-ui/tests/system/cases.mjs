@@ -36,6 +36,8 @@ const rowGuard = (id) => GUARDS.code.rowPrefix + id
 const isOk = (r) => r?.status === GUARDS.status.ok && r.overridden.length === 0
 const BUG = ' (CORE-WIRE-B1 on DSH >= 0.2.2-rc.3: dsh-tool-agent-team\'s conditional team_task_* tools are counted; docs/testing/failures.md)'
 const BOARD_DIR = path.join(import.meta.dirname, '..', 'fixtures', 'fishball-board')
+// These rows assert directly offered tools, not the default PTC transport.
+const NATIVE_MANAGER = [{ id: NAMES.core, config: { ptc: false } }]
 
 async function waitReport(h, test, ms = SYS.recomposeMs) {
   let last
@@ -91,7 +93,7 @@ const tokenRefOf = ({ targetId, endpointEpoch }) => {
 
 export function registerSystemCases() {
   const both = scenario(SYS.home.both, [async (boot, f) => {
-    const h = await boot()
+    const h = await boot({ overlay: NATIVE_MANAGER })
     f.started = await h.call('startedBundles')
     f.rows = await h.call('activeRows', { ids: [...ROWS.guards, ...Object.keys(ROWS.component), ROWS.coreMissing, SYS.modelRow] })
     f.notice = await h.call('rowConfig', { id: NOTICE.row, field: NOTICE.field })
@@ -137,7 +139,7 @@ export function registerSystemCases() {
   }], { packages: corePackages(), extension: EXTENSION })
 
   const board = scenario(SYS.home.board, [async (boot, f) => {
-    const h = await boot()
+    const h = await boot({ overlay: NATIVE_MANAGER })
     f.rows = await h.call('rows', { ids: [NAMES.board] })
     f.set = await settledSet(h)
     f.shape = await h.call('shape')

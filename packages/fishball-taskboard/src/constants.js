@@ -49,6 +49,7 @@ export const CODE = Object.freeze({
 export const STORE = Object.freeze({
   domain: 'fishball_taskboard',
   version: 1,
+  envelopeVersion: 2,
   emptyRevision: 0,
 })
 
@@ -58,6 +59,19 @@ export const TOOL = Object.freeze({
   add: 'taskboard_add',
   update: 'taskboard_update',
   memo: 'taskboard_memo',
+  resolveReview: 'taskboard_resolve_review',
+})
+
+/**
+ * The manager-scoped prompt section that tells Fishball to keep the board current (§3a). Placed
+ * right after the persona prefix (dsh-system-prompt's `DEPLOYMENT_PERSONA_PREFIX`), so the model
+ * reads it with its role rules, which govern the same moments (a new task, a finished session).
+ * The offset is past core's private-skills section (prefix + 1), which stays next to the persona.
+ */
+export const GUIDE = Object.freeze({
+  sectionName: NAMESPACE,
+  anchor: 'DEPLOYMENT_PERSONA_PREFIX',
+  offset: 2,
 })
 
 /** The UI's routes (§4); the browser half restates them (a chunk imports no module). */

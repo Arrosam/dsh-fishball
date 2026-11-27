@@ -14,7 +14,7 @@ import fs from 'node:fs'
 import { pathToFileURL } from 'node:url'
 import { caseTest } from 'fishball-test-helpers/cases'
 import { scenario } from 'fishball-test-helpers/dsh-world'
-import { CORE_EXTENSION, CORE_WORLD, corePackages, post } from '../support/core-world.mjs'
+import { CORE_EXTENSION, CORE_WORLD, NATIVE_MANAGER, coreEnv, corePackages, post } from '../support/core-world.mjs'
 import { HOME_LABEL, MODEL_PATH, PERSONA, RESULT_ROWS, ROUTABLE, SYS, TOOL } from './constants.mjs'
 
 const show = (v) => JSON.stringify(v)
@@ -43,7 +43,7 @@ export function registerMessageUserCases() {
       f.ordinary = { sessionId, requests: await h.call('turn', { sessionId }) }
       f.guards = await h.call('guards')
     },
-  ], { packages: corePackages(), extension: CORE_EXTENSION })
+  ], { packages: corePackages(), extension: CORE_EXTENSION, env: coreEnv({ profileConfig: NATIVE_MANAGER }) })
   const read = async (...keys) => {
     const f = await facts()
     for (const key of keys) if (f[key] === undefined) throw f.error ?? new Error('fact ' + key + ' was not collected')

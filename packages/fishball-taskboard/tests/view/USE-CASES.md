@@ -115,10 +115,16 @@ duplicate rendering, and that a task in place is not in the group.
 | TBV-E2-DT-01 (7) | DT | Changed and told / changed and not told / nothing changed → view mode plus the line. Stale → edit mode, the exact text, the draft kept. `invalid-input` / `limit-reached` on `tasks[1]` → only that row `aria-invalid`, and its title named. `invalid-input` on `memos[0]` → that memo row marked. |
 | TBV-E2-ST-01 (1) | ST | A board frame arrives during edit → the "changed while you were editing" notice, the draft untouched and not mixed with the frame; Reload → the new board, draft dropped. |
 
+## Automatic updates
+
+| Row | Technique | What it covers |
+|---|---|---|
+| TBV-AUTO-01 (1) | EP | Settings before enabling: discloses the entire task tree and excluded data; opening settings does not write. |
+| TBV-AUTO-02 (1) | ST | Batch details and explicit undo confirmation; POST carries only the batch ID/version and board revision; a stale response directs the user to edit manually. |
+
 ## Totals
 
-112 cases: B1 10, V1 13, form and colour 43, V6 5, V7 5, V8 7, V9 10, V10–V11 6, V12 2, E 11.
-Port run (2026-11-22, DSH 0.2.2-rc.5): 112/112 pass.
+114 cases: B1 10, V1 13, form and colour 43, V6 5, V7 5, V8 7, V9 10, V10–V11 6, V12 2, E 11, AUTO 2.
 
 ## Regression
 
@@ -130,7 +136,7 @@ p > 0; at p = 0 a 0×0 fill is the right width), and `--against=746a18e0` passes
 ## Not here
 
 - Rows that need fishball-ui's page carrier (the `fishballPageStream` service, one connection for every Fishball view):
-  none of these 112. The old harness's `boardOnlyPage` already loaded the board without fishball-ui. The board
+  none of these 114. The old harness's `boardOnlyPage` already loaded the board without fishball-ui. The board
   on the carrier (fishball-ui.connections CONN-TB-*) is an integration concern.
 - The page-stream topic registration port-taskboard-board noted (the row registering its board as core's topic
   `fishball-taskboard`) is a server-side seam with fishball-core, not a component case of the tab: left to integration.

@@ -6,6 +6,7 @@
  */
 import { createRequire } from 'node:module'
 import path from 'node:path'
+import { PAGE_CORE_PATCH } from '../message-page/constants.mjs'
 import { NAMES } from './names.mjs'
 
 const own = createRequire(path.join(import.meta.dirname, '..', '..', 'package.json'))
@@ -13,4 +14,8 @@ const CORE_DIR = path.dirname(own.resolve(NAMES.core + '/package.json'))
 const SHARED_DIR = path.dirname(createRequire(path.join(CORE_DIR, 'package.json')).resolve(NAMES.shared + '/package.json'))
 
 export const EXTENSION = path.join(import.meta.dirname, 'world-ext.mjs')
-export const corePackages = () => [{ dir: SHARED_DIR, name: NAMES.shared, selected: false }, { dir: CORE_DIR, name: NAMES.core }]
+export const pageWorld = () => ({
+  packages: [{ dir: SHARED_DIR, name: NAMES.shared, selected: false }, { dir: CORE_DIR, name: NAMES.core }],
+  extension: EXTENSION,
+  overlay: [PAGE_CORE_PATCH],
+})

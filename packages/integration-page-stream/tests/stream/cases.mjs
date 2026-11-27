@@ -1,7 +1,7 @@
 /**
  * Core's one page stream with fishball-ui and fishball-taskboard installed (DESIGN §34; old
  * fishball-ui.connections system rows CONN-SYS-*, and the coverage gap PS-TB: fishball-taskboard
- * registers its board as the page-stream topic `fishball-taskboard` while it is bound to the instance).
+ * registers both its board and auto-update audit topics while bound to the instance).
  *
  * Levels: system. A real standalone DSH (fishball-test-helpers/dsh-world) with fishball-core,
  * fishball-ui (core's ./ui component row) and fishball-taskboard installed as DSH's add installs them;
@@ -16,8 +16,8 @@
  * PS-TB is meaningful only if it fails where the condition is absent. `--against` cannot show that here
  * (it swaps only the package under test, this integration package), so a controlled world stands in:
  * the same DSH with fishball-taskboard NOT bound (its row switched off through DSH's plugin manager, and
- * a second home where it is not installed at all) must carry no `fishball-taskboard` topic, while the
- * core and ui topics stay; switching the row back on brings the topic back.
+ * a second home where it is not installed at all) must carry neither taskboard topic, while the
+ * core and ui topics stay; switching the row back on brings both topics back.
  */
 import assert from 'node:assert/strict'
 import { after } from 'node:test'
@@ -33,13 +33,18 @@ const show = (v) => JSON.stringify(v)
 const zone = Intl.DateTimeFormat().resolvedOptions().timeZone
 const query = (lang) => '?' + new URLSearchParams({ [CARRIER.langParam]: lang, [CARRIER.tzParam]: zone })
 const quiet = () => new Promise((resolve) => setTimeout(resolve, BUDGET.quietMs))
-const BUILT_IN = Object.freeze([TOPIC.asks, TOPIC.strip, TOPIC.taskboard])
+const BASE_TOPICS = Object.freeze([TOPIC.asks, TOPIC.strip])
+// Audit is a topic on the same carrier even when auto-update is off by default.
+const TASKBOARD_TOPICS = Object.freeze([TOPIC.taskboard, TOPIC.taskboardAudit])
+const BUILT_IN = Object.freeze([...BASE_TOPICS, ...TASKBOARD_TOPICS])
+const OPEN_TOPICS = Object.freeze([...BUILT_IN, TOPIC.fake(0)])
 const topicsOf = (messages) => [...new Set(messages.map((m) => m?.topic))].sort()
+const hasTopics = (messages, wanted) => wanted.every((topic) => messages.some((m) => m?.topic === topic))
 
-/** One carrier opened and read until the built-in core/ui topics arrived; answers its messages at open. */
+/** Open one carrier, wait for the expected topics, and return its messages at open. */
 async function atOpen(h, want) {
   const wire = await openWire(h, query('en'))
-  await wire.wait((m) => want.every((t) => m.some((x) => x?.topic === t)))
+  await wire.wait((m) => hasTopics(m, want))
   await quiet()
   const messages = [...wire.messages]
   await wire.close()
@@ -71,7 +76,7 @@ export function registerStreamCases() {
       // R4: one carrier (en), changes, a second carrier (zh).
       const en = await openWire(h, query('en'))
       f.wireStatus = { status: en.status, type: en.type }
-      await en.wait((m) => [...BUILT_IN, TOPIC.fake(0)].every((topic) => m.some((x) => x?.topic === topic)))
+      await en.wait((m) => hasTopics(m, OPEN_TOPICS))
       await quiet()
       f.atOpen = [...en.messages]
       f.board = (await h.request(TASKBOARD.board)).json
@@ -99,7 +104,7 @@ export function registerStreamCases() {
       await quiet()
       f.throwing = { thrower: en.of(TOPIC.fake(1)).map((m) => m.frame), other: en.of(TOPIC.fake(0)).map((m) => m.frame) }
       const zh = await openWire(h, query('zh'))
-      await zh.wait((m) => m.some((x) => x?.topic === TOPIC.strip) && m.some((x) => x?.topic === TOPIC.fake(0)))
+      await zh.wait((m) => hasTopics(m, OPEN_TOPICS))
       await quiet()
       f.zhAtOpen = [...zh.messages]
       await h.call('pageThrow', { topic: TOPIC.fake(1), throws: false })
@@ -113,10 +118,10 @@ export function registerStreamCases() {
       await zh.close()
       await h.call('pageDisposeAll')
 
-      // PS-TB-ST-01: the taskboard row switched off (unbound) → no topic; on again (bound) → the topic is back.
+      // PS-TB-ST-01: switching the taskboard row off withdraws both topics; switching it on restores them.
       await h.call('setRowEnabled', { id: NAMES.taskboardRow, enabled: false })
       f.offRows = await h.call('rows', { ids: [NAMES.taskboardRow] })
-      f.whenOff = await atOpen(h, [TOPIC.asks, TOPIC.strip])
+      f.whenOff = await atOpen(h, BASE_TOPICS)
       await h.call('setRowEnabled', { id: NAMES.taskboardRow, enabled: true })
       f.whenOn = await atOpen(h, BUILT_IN)
       if (!browser) return
@@ -153,7 +158,7 @@ export function registerStreamCases() {
     async (boot, f) => {
       const h = await boot()
       f.rows = await h.call('rows', { ids: [NAMES.taskboardRow] })
-      f.atOpen = await atOpen(h, [TOPIC.asks, TOPIC.strip])
+      f.atOpen = await atOpen(h, BASE_TOPICS)
     },
   ], { packages: corePackages(), extension: EXTENSION })
 
@@ -168,24 +173,22 @@ export function registerStreamCases() {
   const pageTest = (id, row, title, fn) => caseTest(id, row, title, browser ? { timeout: BUDGET.caseMs } : { skip: BROWSER.skipNoChrome }, fn)
   const frameOf = (messages, topic) => messages.find((m) => m.topic === topic)?.frame
 
-  // ------------------------------------------------------------------ PS-TB: the taskboard's topic (coverage gap, DESIGN §34)
-  wireTest('PS-TB-DT-01', 'bound', 'fishball-taskboard installed and bound to the instance: the carrier sends a fishball-taskboard topic at open, its frame equal to GET /api/fishball-taskboard/board', async () => {
+  // ------------------------------------------------------------------ PS-TB: the taskboard's topics (coverage gap, DESIGN §34)
+  wireTest('PS-TB-DT-01', 'bound', 'fishball-taskboard bound with auto-update off: the carrier sends board and audit topics at open; the board frame equals GET /api/fishball-taskboard/board', async () => {
     const f = await read('atOpen', 'board')
-    assert.ok(f.atOpen.some((m) => m.topic === TOPIC.taskboard), 'no fishball-taskboard topic: ' + show(topicsOf(f.atOpen)))
+    assert.ok(hasTopics(f.atOpen, TASKBOARD_TOPICS), 'missing taskboard topic: ' + show(topicsOf(f.atOpen)))
     assert.deepEqual(frameOf(f.atOpen, TOPIC.taskboard), f.board)
   })
-  wireTest('PS-TB-DT-01', 'not installed', 'controlled world, fishball-taskboard not installed: the carrier sends asks and strip and no fishball-taskboard topic', async () => {
+  wireTest('PS-TB-DT-01', 'not installed', 'controlled world, fishball-taskboard not installed: the carrier sends only asks and strip', async () => {
     const f = await readUnbound('atOpen', 'rows')
     assert.equal(f.rows[0].present, false, 'precondition: no taskboard row ' + show(f.rows))
-    const topics = topicsOf(f.atOpen.messages)
-    assert.ok([TOPIC.asks, TOPIC.strip].every((t) => topics.includes(t)), show(topics))
-    assert.equal(topics.includes(TOPIC.taskboard), false, show(topics))
+    assert.deepEqual(topicsOf(f.atOpen.messages), [...BASE_TOPICS].sort())
   })
-  wireTest('PS-TB-ST-01', 'row off → on', "controlled world: fishball-taskboard's row switched off through DSH's plugin manager (unbound) → a new carrier has no fishball-taskboard topic; switched on again → it is back", async () => {
+  wireTest('PS-TB-ST-01', 'row off → on', "controlled world: fishball-taskboard's row off → a new carrier has only asks and strip; on again → both taskboard topics return", async () => {
     const f = await read('whenOff', 'whenOn', 'offRows')
     assert.equal(f.offRows[0].disabled, true, 'precondition: the row is off ' + show(f.offRows))
-    assert.equal(topicsOf(f.whenOff.messages).includes(TOPIC.taskboard), false, 'off: ' + show(topicsOf(f.whenOff.messages)))
-    assert.ok(topicsOf(f.whenOn.messages).includes(TOPIC.taskboard), 'on again: ' + show(topicsOf(f.whenOn.messages)))
+    assert.deepEqual(topicsOf(f.whenOff.messages), [...BASE_TOPICS].sort(), 'row off')
+    assert.deepEqual(topicsOf(f.whenOn.messages), [...BUILT_IN].sort(), 'row back on')
   })
   wireTest('PS-TB-ST-02', 'board change', 'a committed board change (POST /api/fishball-taskboard/board) sends one more fishball-taskboard frame, equal to the new GET body', async () => {
     const f = await read('boardFrames', 'boardAfter', 'boardSave')
@@ -213,19 +216,19 @@ export function registerStreamCases() {
       assert.equal(f.badProviders[shape]?.name, TOPIC.typeError, show(f.badProviders[shape]))
     })
   }
-  wireTest('CONN-SYS-EP-04', 'duplicate', 'registering a topic name already registered throws (a fake topic twice, and each built-in name: asks, strip, fishball-taskboard)', async () => {
+  wireTest('CONN-SYS-EP-04', 'duplicate', 'registering a topic name already registered throws (a fake topic twice, and each built-in name, including the taskboard audit topic)', async () => {
     const f = await read('duplicate', 'builtinDuplicate')
     assert.equal(f.duplicate.ok, false, show(f.duplicate))
     for (const [name, answer] of Object.entries(f.builtinDuplicate)) assert.equal(answer.ok, false, name + ': ' + show(answer))
   })
 
   // ------------------------------------------------------------------ R4: the wire
-  wireTest('CONN-SYS-UC-01', 'open', `GET ${CARRIER.path}?lang&tz → 200 text/event-stream; at open exactly one {topic, frame} message per registered topic (asks, strip, fishball-taskboard and the fake one)`, async () => {
+  wireTest('CONN-SYS-UC-01', 'open', `GET ${CARRIER.path}?lang&tz → 200 text/event-stream; at open exactly one {topic, frame} message per registered topic (asks, strip, both taskboard topics and the fake one)`, async () => {
     const f = await read('wireStatus', 'atOpen')
     assert.equal(f.wireStatus.status, 200)
     assert.match(String(f.wireStatus.type), /^text\/event-stream/)
     for (const m of f.atOpen) assert.deepEqual(Object.keys(m ?? {}).sort(), [...TOPIC.wireKeys], 'not {topic, frame}: ' + show(m))
-    assert.deepEqual(f.atOpen.map((m) => m.topic).sort(), [...BUILT_IN, TOPIC.fake(0)].sort(), 'not one message per topic')
+    assert.deepEqual(f.atOpen.map((m) => m.topic).sort(), [...OPEN_TOPICS].sort(), 'not one message per topic')
   })
   wireTest('CONN-SYS-EP-05', 'built-in frames', 'asks frame is {managerSessionId: the manager, cards: [...]}; strip frame carries on and brandStyle', async () => {
     const f = await read('atOpen', 'manager')
@@ -263,7 +266,7 @@ export function registerStreamCases() {
     assert.deepEqual(f.throwing.thrower, [fakeFrame(1)], 'the throwing topic sent something')
     assert.deepEqual(f.throwing.other.at(-1), fakeFrame(0, 2), 'the other topic stopped')
     const zhTopics = f.zhAtOpen.map((m) => m.topic)
-    assert.ok([...BUILT_IN, TOPIC.fake(0)].every((topic) => zhTopics.includes(topic)), show(zhTopics))
+    assert.ok(hasTopics(f.zhAtOpen, OPEN_TOPICS), show(zhTopics))
     assert.equal(zhTopics.includes(TOPIC.fake(1)), false, 'the throwing topic was sent at open')
   })
   wireTest('CONN-SYS-ST-04', 'disposed topic', 'after its dispose a topic sends nothing more, while another still does', async () => {

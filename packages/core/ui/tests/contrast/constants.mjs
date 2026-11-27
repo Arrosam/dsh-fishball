@@ -29,12 +29,13 @@ export const HOOK = Object.freeze({
 })
 
 /**
- * RESHOOT fix 1 (the user, 2026-11-18): the ask card's state badge, a DSH Tag. An open card's Tag
- * reads the `open` words in `warning` tone. Light theme: the open badge's text at least 4.5:1 against
- * its own fill (it was #F59E0B on #FDEACC, ≈1.8:1); dark theme: DSH's warning Tag look unchanged.
+ * RESHOOT fix 1 (the user, 2026-11-18): the badge's contrast and DSH warning Tag styling. The
+ * question-card accordion (bdcccc66) replaces the visible waiting words with a count. The existing
+ * permission/ask fixtures each represent a single request. Light: at least 4.5:1 against the
+ * badge's own fill (previously ≈1.8:1); dark: DSH's warning Tag look unchanged.
  */
 export const ASK_BADGE = Object.freeze({
-  open: Object.freeze({ en: 'Fishball is waiting for your answer', zh: 'Fishball 正在等你回答' }),
+  singleRequestCount: '1',
   openTone: 'warning',
   settledTone: 'neutral',
   cardAttr: 'data-fishball-ask',

@@ -102,10 +102,15 @@ export function registerPackageCases() {
     const { registrations } = loadClient()
     assert.deepEqual(registrations.map((r) => [r.id, r.chunk]), [[CLIENT.moduleId, undefined]])
   })
-  // Re-baselined (F-WIRE: four parts; R-FIX-FUI F1: five; MULTI-3 D: four; LOGO-BUTTON: the brand part, five).
+  // The legacy model dialog is no longer a loadable or shipped chunk.
   caseTest('UI-UC-04', 'main 2', `its plugin loads ${CLIENT.partOrder.map((f) => CLIENT.localPrefix + f).join(', ')} in that order and starts each part`, async (t) => {
     const r = await startClient(t)
     assert.deepEqual([...r.loads], CLIENT.partOrder.map((f) => CLIENT.localPrefix + f))
+    for (const removed of CLIENT.removedParts) {
+      assert.equal(r.loads.includes(CLIENT.localPrefix + removed), false, `client.js must not load removed chunk ${removed}`)
+      assert.equal(fs.existsSync(path.join(UI_PACKAGE.dir, removed)), false, `removed chunk ${removed} still exists on disk`)
+      assert.equal((manifestOf().files ?? []).includes(removed), false, `removed chunk ${removed} still listed in package.json files`)
+    }
     assert.deepEqual([...r.started].sort(), Object.values(CLIENT.parts).map((p) => p.file).sort())
     assert.deepEqual(r.failed, [])
   })

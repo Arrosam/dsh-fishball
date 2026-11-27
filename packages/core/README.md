@@ -19,15 +19,17 @@ row; in a standalone DSH you install it yourself, last (see the [root README](<.
   Connect, pairing, bridge façade and running-sessions list per DSH target), the interception service,
   the ask cards, status, the Fishball page's one live connection (`/api/fishball/page/events`, DESIGN
   §34), and the one manager session with its persona, reminders (`schedule_*`), `message_user` (its one
-  way to speak to the user on the Fishball page, §32) and private Skills. It provides `fishballInstance`
+  way to speak to the user on the Fishball page, §32), `ask_user` (question cards) and private Skills. It provides `fishballInstance`
   (apiVersion 2) and `fishballStatus`.
 - `fishball-core-session` (`src/session/route.js`): `GET|POST /api/fishball/session`, the manager
   session the Fishball page opens.
 - `fishball-core-guards` (`src/guards/`): the guard check, the `guards-overridden` report and, in a
   standalone DSH, the self-reorder to the end of `dsh.profile.bundles`.
-- `preset-fishball`: core's own agent preset (`read` and `read_image` only, plus DSH's
-  `ask_user_question`), carrying DSH's `compaction-basic` with `auto: false`, so only an explicit
-  `compactNow` (fishball-heartbeat's, DESIGN §30) compacts.
+- `preset-fishball`: core's agent preset. It includes `read`, `read_image` and DSH's
+  `ask_user_question`. Only the Fishball singleton denies the inherited question tool with
+  `tools.restrict`: it is absent from both native tools and the PTC SDK. Other sessions, including
+  those using `preset-fishball`, retain it. It uses DSH's `compaction-basic` with `auto: false`,
+  so only an explicit `compactNow` (fishball-heartbeat's, DESIGN §30) compacts.
 - Guard rows: the session-creating service rows (`schedule`, `open-in-app`, `terminal-controller`),
   `dsh-instance` (no nested hosted Fishball), every DSH-shipped agent preset (switched off, never
   deleted), and the read-only sandbox, `ask` approval and read-only permission preset. fishball-ui's UI
@@ -73,9 +75,9 @@ Core's own page on DSH's Plugins page (`client.js` with `client.settings.js`, in
 - **Connect**: browser OAuth through the connector's approval page. A loopback target may be plain
   http; any other target must be https. From a browser on another machine, Fishball's page must be
   served over https (callback `/api/fishball/connect/callback`), else `web-callback-insecure`.
-- **Fishball's model** (`model`: provider, model, reasoning effort): the model the manager session uses.
-  Unset means this DSH's default model; nothing blocks. Only this page and fishball-ui's model dialog
-  write it. The instance's model sync copies providers and model lists only and never sets it.
+- **Fishball's model** (`model`: provider, model, reasoning effort): the model the manager session
+  uses. Unset means this DSH's default model; nothing blocks. Written from this page or from
+  `dsh-instance`'s first-run onboarding wizard. The instance's model sync copies providers and model lists only and never sets it.
 - **Sidebar logo** (`brandStyle`): Fishball's fish or DeepSeek's whale in fishball-ui's sidebar brand
   row; absent or unknown reads as Fishball.
 - **Waking Fishball** (`wake.quietWindowSeconds`, default 10, ≥ 0; `wake.maxBatch`, default 20, ≥ 1;
@@ -83,13 +85,60 @@ Core's own page on DSH's Plugins page (`client.js` with `client.settings.js`, in
   Fishball in batches, one turn per batch (DESIGN §29). A save applies from the next event. A message
   you send is never delayed.
 
+### Programmatic tool calling
+
+On DSH 0.2.2, Fishball uses the built-in PTC executor by default. Only its manager session
+changes: it keeps the restricted Fishball preset and calls its existing tools from `run_code`.
+Other sessions keep their own executor. Fishball rejects requests to widen the program's sandbox.
+DSH 0.2.1 keeps its existing tool mode.
+
+To opt out, set `ptc: false` in the `fishball-core` row of the Fishball profile's
+`cordis.patch.yml`, preserving any other `config` keys on that row. In a hosted child this is
+`~/.dsh/fishball/runtime/dsh-home/profiles/fishball/cordis.patch.yml` with the default DSH home:
+
+```yaml
+- id: fishball-core
+  config:
+    ptc: false
+```
+
+Restart the Fishball host process after changing the setting; an open Agent does not switch
+executors mid-turn. Keep the existing session and profile: DSH replays old direct calls and results
+as history, and the new executor governs only future calls. Previously compacted context stays
+compacted; no migration or extra compaction is needed. Fishball’s own `ask_user` returns as soon as
+it files the card, so PTC programs do not wait for user input.
+
 ### Model tools
 
-Every tool of a target is offered to the manager under a name of its own,
-`mcp__<readable target name>__<tool>_<digest>` (at most 64 characters), so two DSHs' `sessions_list`
-never collide. Each target has its own `ask_user` too. A tool's description names its target. A renamed
-target's tools are renamed together; an old name is never reused for another target. Reminder, private
-Skill and `message_user` tools are unprefixed and exist once.
+Every tool of a target is offered to the manager as `mcp__<target>__<tool>_<id>` (at most 64
+characters), so two DSHs' `sessions_list` never collide. Each target has its own namespaced
+`ask_user({offer_id})` for permission offers. A tool's description names its target. A renamed
+target's tools are renamed together; an old name is never reused for another target. Fishball's own
+`ask_user`, `message_user`, reminder and private Skill tools are unprefixed and exist once.
+
+### Fishball’s own question cards
+
+For its own clarifications, Fishball calls
+`ask_user({questions: [{id, question, header?, options?: [{label, description?}], multi_select?}]})`.
+The tool persists one local card for the batch and returns `{cardId}` without waiting. The card
+uses the same ask-card layer and page stream as permission cards. Only the Fishball owner can
+see and answer it. The accordion switches between permission and question cards. Each question
+card shows the batch count and summary; expanding it reveals a separate fieldset for each question.
+
+Submitting the card queues an ordinary user-role follow-up message in Fishball’s chat. It
+contains `cardId` and the answers (`id`, `selected`, optional `custom`) in the original question
+order. If Fishball is idle, the message wakes it; if it is busy, the current turn finishes first.
+Nothing is sent to a connector. Forwarded managed-session questions and plan reviews still use
+their own session cards and the existing answer flow.
+
+### Automatic permission cards
+
+When a current connector enables automatic permission cards, Fishball files the existing
+**Allow once / Reject** card on escalation and sends an action notice through Connector UI
+if available. If the model leaves an opted-in permission undecided in the turn that received
+it, Fishball escalates it automatically. The first answer wins, including from the requesting
+session's approval prompt. The target’s namespaced `ask_user({offer_id})` remains a manual
+fallback for older or opted-out targets.
 
 While a Fishball page holds the page stream, core re-reads each connected target's running managed
 sessions every 15 s for the sidebar (DESIGN §35); with no page open it sends no such call.
@@ -98,7 +147,7 @@ sessions every 15 s for the sidebar (DESIGN §35); with no page open it sends no
 
 Core runs normally without `fishball-ui` (no page, no strip) and reports nothing about it. Core's
 status's set check has no member in 1.0.0-alpha.1, so it always reports the set `ok`. Core and
-fishball-ui name the amenities nowhere (`fishball-board`, `fishball-heartbeat`, `fishball-taskboard` ship
+fishball-ui name the amenities nowhere (`fishball-board`, `fishball-heartbeat`, `fishball-taskboard`, `fishball-consultant` ship
 through the [`fishball-amenities`](<../fishball-amenities/README.md>) umbrella and bind to
 `fishballInstance` themselves).
 

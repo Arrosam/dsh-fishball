@@ -20,7 +20,9 @@ import { mkdir, readFile, realpath, rename, writeFile } from 'node:fs/promises'
 import { installModelSelection } from '@deepseek-ai/dsh-agent'
 import { setApprovalPolicy } from '@deepseek-ai/dsh-user-approval'
 import { setSandboxMode } from '@deepseek-ai/dsh-sandbox-policy'
+import { QUESTION_CARD } from '../asks/constants.js'
 import { applyPersona } from './persona.js'
+import { installManagerPtc, MANAGER_PTC } from './ptc.js'
 import { emitIsolated, subscribe } from '../link/listeners.js'
 
 const MANAGER_SESSION = Object.freeze({
@@ -51,6 +53,7 @@ const MANAGER_SESSION = Object.freeze({
     // dsh-workspace's registry, composed by the dsh-web-app bundle in both SDKs.
     workspaceRegistry: 'workspaceRegistry',
   }),
+  agentCreated: 'agent/created',
   logger: 'fishball-manager-session',
   writerHeld: 'SessionAlreadyOwnedError',
   /** dsh-session-persistence's refusal for an id with no durable log (both SDKs). */
@@ -151,6 +154,26 @@ function failureDetail(error) {
   return { name, ...(code === undefined ? {} : { code }), message: clamp(message, MANAGER_SESSION.limits.detailChars) }
 }
 
+// The executor and persona live with the Agent, which can outlive a core-row reload.
+// The replacement row rebinds its contributions, but must not register a second executor.
+const agentPresentations = new WeakMap()
+
+function composePresentation(agentCtx, live, ptc) {
+  let presentation = agentPresentations.get(live)
+  if (presentation === undefined) {
+    presentation = (async () => {
+      // The preset stays unchanged for other sessions. Both executors read this inherited-tool mask.
+      const tools = agentCtx.get(MANAGER_PTC.tools)
+      const nativeAsk = QUESTION_CARD.nativeTool
+      if (tools?.get?.(nativeAsk, live) !== undefined) tools.restrict({ deny: [nativeAsk] })
+      const programmatic = await installManagerPtc(agentCtx, ptc())
+      applyPersona(agentCtx.systemPrompt, programmatic)
+    })()
+    agentPresentations.set(live, presentation)
+  }
+  return presentation
+}
+
 /**
  * Create the Fishball manager session over one row context.
  *
@@ -163,6 +186,7 @@ function failureDetail(error) {
  *   and composed; recovery that may drive the agent belongs here, never in setup.
  * @param {() => ({provider: string, model: string, reasoningEffort?: string}|undefined)} options.model
  *   - core's own Fishball model setting, or undefined when unset.
+ * @param {() => (boolean|undefined)} [options.ptc] - Fishball's stored PTC setting.
  * @param {object} [options.logger] - defaults to `ctx.logger(MANAGER_SESSION.logger)`.
  * @returns {Readonly<{start(): Promise<void>, close(): void, activate(): Promise<object>,
  *   activateAttached(): Promise<object>, sessionId(): string|undefined,
@@ -173,7 +197,7 @@ function failureDetail(error) {
  */
 export function createManagerSession(ctx, options) {
   if (!ctx || typeof ctx.get !== 'function') throw usage(MANAGER_SESSION.message.context)
-  const { setup, published, model } = options ?? {}
+  const { setup, published, model, ptc = () => MANAGER_PTC.default } = options ?? {}
   if (typeof setup !== 'function' || typeof published !== 'function' || typeof model !== 'function') {
     throw usage(MANAGER_SESSION.message.options)
   }
@@ -204,6 +228,7 @@ export function createManagerSession(ctx, options) {
   let latestRead
   let started = false
   let closed = false
+  let stopWatchingAgents
 
   /**
    * X1 (manager.sessionId(), GET api/fishball/session) names the manager only once it is
@@ -356,14 +381,17 @@ export function createManagerSession(ctx, options) {
   }
 
   /**
-   * The persona and the contributions alone: what an already composed and published agent gets (a
-   * manager session another owner, such as DSH's controller, resumed first). The preset registry's
-   * `mount` is for an unpublished agent only, so it is never called on one; that agent keeps the
-   * preset it was composed with.
+   * Add Fishball's executor, persona and contributions without remounting the preset of an Agent
+   * another owner, such as DSH's controller, has already composed.
    */
-  async function composeOwn(agentCtx, live) {
-    applyPersona(agentCtx.systemPrompt)
-    await setup(agentCtx, live)
+  const compositions = new WeakMap()
+  function composeOwn(agentCtx, live) {
+    let composition = compositions.get(live)
+    if (composition === undefined) {
+      composition = composePresentation(agentCtx, live, ptc).then(() => setup(agentCtx, live))
+      compositions.set(live, composition)
+    }
+    return composition
   }
 
   /**
@@ -566,7 +594,9 @@ export function createManagerSession(ctx, options) {
     const existing = sessionId === undefined ? undefined : agents.get(sessionId)
     const live = existing ?? await (sessionId === undefined ? createSession(agents, chosen) : resumeSession(agents, sessionId, chosen))
     if (closed) unavailable()
-    if (existing && agent !== existing) await composeOwn(existing.ctx, existing)
+    // A competing DSH resume can also win after the registry lookup above. Its presentation
+    // is installed by the creation hook, but core still owns the contribution setup.
+    await composeOwn(live.ctx, live)
     if (closed) unavailable()
     // A read of the setting made while the Session opened (`applyModel`) is newer: the latest is
     // applied, never the choice this open started with.
@@ -674,12 +704,20 @@ export function createManagerSession(ctx, options) {
   async function start() {
     if (started) return
     await readRecord()
+    if (closed || started) return
+    // An external resume can drive a turn before core adopts the manager. Select its presentation
+    // before DSH releases queued work, but leave contribution setup and recovery to activation:
+    // setting up the manager service here would put it in an unpublished state with no owner to finish it.
+    stopWatchingAgents = ctx.on?.(MANAGER_SESSION.agentCreated, async ({ agent: live }) => {
+      if (!closed && live.id === sessionId) await composePresentation(live.ctx, live, ptc)
+    })
     started = true
   }
 
   function close() {
     if (closed) return
     closed = true
+    stopWatchingAgents?.()
     listeners.clear()
   }
 
@@ -689,6 +727,7 @@ export function createManagerSession(ctx, options) {
     activate,
     activateAttached,
     sessionId: managerId,
+    ownsSession: (id) => !closed && id !== undefined && id === sessionId,
     /** Calls `fn(sessionId)` after each change of sessionId(). Returns its disposer. A throwing listener affects no other. */
     onChange: (fn) => subscribe(listeners, fn),
     resolveAgent,

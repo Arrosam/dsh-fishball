@@ -138,6 +138,8 @@ export async function makeSubject({ ctx, agent, link, second, seam = {} }) {
     /** Acks core sent for another source than this world's (MULTI-1: must stay empty). */
     misrouted,
     intercept: (registration, onEvent) => events.service.intercept(registration, onEvent),
+    observeTurnFinished: (handler) => events.service.observeTurnFinished(handler),
+    intake: (event, source = targets[0].source) => events.intake(event, source),
     async start() {
       recovering = true
       try { await events.recover() } finally { recovering = false }

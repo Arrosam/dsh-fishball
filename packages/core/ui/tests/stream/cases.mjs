@@ -44,6 +44,12 @@ export function registerStreamCases() {
   const within = (p) => p.within(p.root())
   /** Ask-card controls: the choice buttons and the reason box. */
   const askControls = (p) => [...p.byHook(ASK.choice, undefined, within(p)).filter((n) => n.tag === 'button'), ...within(p).filter((n) => n.tag === 'textarea')]
+  async function disclose(p, card) {
+    const [root] = p.byHook(ASK.card, card.handle)
+    const toggle = p.within(root).find((n) => n.props[ASK.expanded] !== undefined)
+    assert.ok(toggle, 'cached card must remain readable through its disclosure')
+    if (String(toggle.props[ASK.expanded]) === 'false') await p.press(toggle)
+  }
 
   caseTest('HEALTH-ST-00', 'initial', 'no frame yet and no error: no notice anywhere', async (c) => {
     const p = await dockPage(c)
@@ -56,7 +62,12 @@ export function registerStreamCases() {
         const p = await dockPage(c, { lang })
         const cards = askCards(2)
         await p.deliverAsks(askFrame(cards))
-        assert.ok(askControls(p).length > 0 && askControls(p).every((n) => n.props.disabled !== true), 'precondition: live controls enabled')
+        for (const card of cards) {
+          await disclose(p, card)
+          const controls = askControls(p)
+          assert.equal(controls.length, CONTROLS_PER_CARD)
+          assert.ok(controls.every((n) => n.props.disabled !== true), 'precondition: live controls enabled')
+        }
         await p.fail(closed)
         const root = p.root()
         assert.ok(root, 'the asks dock is gone')
@@ -65,9 +76,13 @@ export function registerStreamCases() {
         assert.equal(notices.length, 1, show(noticeOf(p).map((n) => n.props[HEALTH_HOOK.notice])))
         assert.ok(p.text(notices[0]).includes(NOTICE_TEXT[health][lang]))
         for (const card of cards) assert.ok(p.text(root).includes(card.question), 'a cached card is not readable')
-        const controls = askControls(p)
-        assert.equal(controls.length, cards.length * CONTROLS_PER_CARD, `controls ${controls.length}`)
-        assert.deepEqual(controls.filter((n) => n.props.disabled !== true).map((n) => n.tag + ':' + (n.props[ASK.choice] ?? '')), [], 'enabled while ' + health)
+        // A multi-card dock exposes only the expanded card's controls; check each in turn.
+        for (const card of cards) {
+          await disclose(p, card)
+          const controls = askControls(p)
+          assert.equal(controls.length, CONTROLS_PER_CARD, `controls ${controls.length}`)
+          assert.deepEqual(controls.filter((n) => n.props.disabled !== true).map((n) => n.tag + ':' + (n.props[ASK.choice] ?? '')), [], 'enabled while ' + health)
+        }
         assert.equal(p.byHook(HEALTH_HOOK.retry, undefined, within(p)).length, closed ? 1 : 0)
       })
     }

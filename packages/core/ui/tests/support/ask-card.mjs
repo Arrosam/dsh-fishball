@@ -9,6 +9,7 @@
 /** The ask card's public hooks and the contract's words. */
 export const ASK = Object.freeze({
   card: 'data-fishball-ask',
+  expanded: 'aria-expanded',
   choice: 'data-fishball-ask-choice',
   state: Object.freeze({ open: 'open', answered: 'answered', closed: 'closed', voided: 'voided' }),
   choices: Object.freeze({ allow: 'allow', reject: 'reject' }),

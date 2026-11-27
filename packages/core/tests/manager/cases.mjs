@@ -15,7 +15,7 @@ import { caseTest } from 'fishball-test-helpers/cases'
 import { scenario } from 'fishball-test-helpers/dsh-world'
 import { startFakeTarget } from 'fishball-test-helpers/fake-connector'
 import { sleep, until } from 'fishball-test-helpers/wait'
-import { CORE_EXTENSION, corePackages, post } from '../support/core-world.mjs'
+import { CORE_EXTENSION, NATIVE_MANAGER, coreEnv, corePackages, post } from '../support/core-world.mjs'
 import {
   BUDGET, CONNECT_INPUT, FISHBALL_MODEL, GUARD_OK, HTTP, IDENTITY, MCP, MODEL, OP, PERSONA, PERSONA_FIX, PRESET, REMINDER, ROLE,
   RETIRED, ROUTE, TOOLS, WORLD,
@@ -200,7 +200,7 @@ export function registerManagerCases() {
       await mutate(h, [unset(IDENTITY.path)])
       f.guardsB = await h.call('guards')
     },
-  ], { packages: corePackages(), extension: CORE_EXTENSION })
+  ], { packages: corePackages(), extension: CORE_EXTENSION, env: coreEnv({ profileConfig: NATIVE_MANAGER }) })
   /** The facts, failing the case with the scenario's own error when a step failed before them. */
   const read = async (...keys) => {
     const f = await facts()
@@ -307,6 +307,7 @@ export function registerManagerCases() {
   test(name('MGR-SET-EP-02', 'the manager\'s tools are exactly read, read_image, working_directory plus core\'s own'), async () => {
     const f = await read('managerTurn')
     const tools = f.managerTurn[0]?.tools ?? []
+    assert.ok(tools.includes(TOOLS.ask), 'the manager should offer its own nonblocking question tool')
     assert.deepEqual(tools.filter((t) => !isCoreTool(t)).sort(), [...TOOLS.base].sort())
   })
   test(name('MGR-SET-EP-03', 'the persona names session_message and approval_answer and none of the V2 names'), async () => {

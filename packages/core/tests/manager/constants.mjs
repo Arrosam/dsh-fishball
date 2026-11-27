@@ -57,9 +57,7 @@ export const HTTP = Object.freeze({ get: 'GET', post: 'POST', ok: 200, json: 'ap
 
 /** The manager's model-visible tools (R-FB-02 base set; interface "Manager scope tools"). */
 export const TOOLS = Object.freeze({
-  // `ask_user_question` is DSH's own ask tool in core's preset (the user, 2026-11-18:
-  // "用DSH自带的提问工具").
-  base: Object.freeze(['read', 'read_image', 'working_directory', 'ask_user_question']),
+  base: Object.freeze(['read', 'read_image', 'working_directory']),
   reminders: Object.freeze(['schedule_create', 'schedule_list', 'schedule_update', 'schedule_delete']),
   ask: 'ask_user',
   privateSkill: /^private_skill_/,
@@ -125,6 +123,9 @@ export const PERSONA_WATCHDOG = Object.freeze({
     /** persona.js inside core's folder, and core's own folders a copy needs (core is the git pathspec root). */
     file: path.join('src', 'persona.js'),
     marker: 'WATCHDOG',
+    /** The common merge base already had Watchdog; staging adds authorized persona amendments. */
+    preStaging: '0377153f',
+    staging: 'f8bcb158',
     copied: Object.freeze(['src', 'contracts', 'package.json']),
     /** The bare import persona.js reaches through its imports: linked to the current fishball-shared (by name). */
     sharedPackage: 'fishball-shared',

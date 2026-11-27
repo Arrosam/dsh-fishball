@@ -172,21 +172,21 @@ their baseline results, and one sample title. **Where now** is filled in by the 
 
 | case id | behaviours | baseline | sample | where now |
 |---|---|---|---|---|
-| CAT-BVA-01 | 1 | pass 1 | CAT-BVA-01 one read per opening two openings → exactly two reads; re-renders and window focus while open read nothing more | packages/core/ui/tests/model-dialog.test.mjs |
-| CAT-EP-01 | 5 | pass 5 | CAT-EP-01 refused en (en) the read refused → the failed alert and a [data-fishball-model-retry] button "Try again"; pressing it reads again; its success shows t | packages/core/ui/tests/model-dialog.test.mjs |
-| CAT-ST-01 | 1 | pass 1 | CAT-ST-01 A then B open (catalog A) → closed → opened again with DSH now answering catalog B: B's models, none of A's | packages/core/ui/tests/model-dialog.test.mjs |
-| CAT-ST-02 | 1 | pass 1 | CAT-ST-02 reopen paints loading catalog A shown → reopened, the new read pending: the first paint is loading, no model of A | packages/core/ui/tests/model-dialog.test.mjs |
-| CAT-ST-03 | 1 | pass 1 | CAT-ST-03 pending → loading while the first read is pending the dialog shows loading and no choice | packages/core/ui/tests/model-dialog.test.mjs |
-| CAT-ST-04 | 2 | pass 2 | CAT-ST-04 late answer after close read pending → the dialog closes (page closed) → the read answers: nothing changes (no dialog, no state update of an unmounted | packages/core/ui/tests/model-dialog.test.mjs |
-| MODEL-BVA-01 | 2 | pass 2 | MODEL-BVA-01 en zero catalog models explains and opens DSH Settings | packages/core/ui/tests/model-dialog.test.mjs |
-| MODEL-EP-01 | 2 | pass 2 | MODEL-EP-01 en unset model prompts with all catalog models | packages/core/ui/tests/model-dialog.test.mjs |
-| MODEL-EP-02 | 2 | pass 2 | MODEL-EP-02 en configured core model does not prompt | packages/core/ui/tests/model-dialog.test.mjs |
-| MODEL-ST-01 | 2 | pass 2 | MODEL-ST-01 en choose writes core model path | packages/core/ui/tests/model-dialog.test.mjs |
-| MODEL-ST-02 | 2 | pass 2 | MODEL-ST-02 en dismiss stays dismissed in page; fresh page prompts | packages/core/ui/tests/model-dialog.test.mjs |
+| CAT-BVA-01 | 1 | pass 1 | CAT-BVA-01 one read per opening two openings → exactly two reads; re-renders and window focus while open read nothing more | retired: legacy in-page picker removed in 1a67b63d; see the staging supplement for its absence regression |
+| CAT-EP-01 | 5 | pass 5 | CAT-EP-01 refused en (en) the read refused → the failed alert and a [data-fishball-model-retry] button "Try again"; pressing it reads again; its success shows t | retired: legacy in-page picker removed in 1a67b63d; see the staging supplement for its absence regression |
+| CAT-ST-01 | 1 | pass 1 | CAT-ST-01 A then B open (catalog A) → closed → opened again with DSH now answering catalog B: B's models, none of A's | retired: legacy in-page picker removed in 1a67b63d; see the staging supplement for its absence regression |
+| CAT-ST-02 | 1 | pass 1 | CAT-ST-02 reopen paints loading catalog A shown → reopened, the new read pending: the first paint is loading, no model of A | retired: legacy in-page picker removed in 1a67b63d; see the staging supplement for its absence regression |
+| CAT-ST-03 | 1 | pass 1 | CAT-ST-03 pending → loading while the first read is pending the dialog shows loading and no choice | retired: legacy in-page picker removed in 1a67b63d; see the staging supplement for its absence regression |
+| CAT-ST-04 | 2 | pass 2 | CAT-ST-04 late answer after close read pending → the dialog closes (page closed) → the read answers: nothing changes (no dialog, no state update of an unmounted | retired: legacy in-page picker removed in 1a67b63d; see the staging supplement for its absence regression |
+| MODEL-BVA-01 | 2 | pass 2 | MODEL-BVA-01 en zero catalog models explains and opens DSH Settings | retired: legacy in-page picker removed in 1a67b63d; see the staging supplement for its absence regression |
+| MODEL-EP-01 | 2 | pass 2 | MODEL-EP-01 en unset model prompts with all catalog models | retired: legacy in-page picker removed in 1a67b63d; see the staging supplement for its absence regression |
+| MODEL-EP-02 | 2 | pass 2 | MODEL-EP-02 en configured core model does not prompt | retired: legacy in-page picker removed in 1a67b63d; see the staging supplement for its absence regression |
+| MODEL-ST-01 | 2 | pass 2 | MODEL-ST-01 en choose writes core model path | retired: legacy in-page picker removed in 1a67b63d; see the staging supplement for its absence regression |
+| MODEL-ST-02 | 2 | pass 2 | MODEL-ST-02 en dismiss stays dismissed in page; fresh page prompts | retired: legacy in-page picker removed in 1a67b63d; see the staging supplement for its absence regression |
 | MODEL-ST-03 | 1 | pass 1 | MODEL-ST-03 HMR disable core removes core and its UI component rows; picker restored, no strip or Connect | integration: booted standalone DSH with fishball-core + its ./ui component (fishball-test-helpers/dsh-world) + HMR disable of fishball-core: UI rows go, picker restored, strip 404, Connect 404/503 |
-| MODEL-ST-04 | 2 | pass 2 | MODEL-ST-04 en page not open (no data-fishball-page) with unset model: no dialog | packages/core/ui/tests/model-dialog.test.mjs |
-| MODEL-ST-05 | 2 | pass 2 | MODEL-ST-05 en closed → data-fishball-page set: dialog shows | packages/core/ui/tests/model-dialog.test.mjs |
-| MODEL-ST-06 | 2 | pass 2 | MODEL-ST-06 en dismiss → page closed → page opened again: dialog shows again | packages/core/ui/tests/model-dialog.test.mjs |
+| MODEL-ST-04 | 2 | pass 2 | MODEL-ST-04 en page not open (no data-fishball-page) with unset model: no dialog | retired: legacy in-page picker removed in 1a67b63d; see the staging supplement for its absence regression |
+| MODEL-ST-05 | 2 | pass 2 | MODEL-ST-05 en closed → data-fishball-page set: dialog shows | retired: legacy in-page picker removed in 1a67b63d; see the staging supplement for its absence regression |
+| MODEL-ST-06 | 2 | pass 2 | MODEL-ST-06 en dismiss → page closed → page opened again: dialog shows again | retired: legacy in-page picker removed in 1a67b63d; see the staging supplement for its absence regression |
 | MODEL-SYS-01 | 1 | pass 1 | MODEL-SYS-01 composer picker off with core | integration: booted standalone DSH with fishball-core + its ./ui component (fishball-test-helpers/dsh-world): ui-model-selection row disabled |
 | SES-SB-DT-01 | 3 | pass 3 | SES-SB-DT-01 no session no session → no sessions list | packages/core/ui/tests/model-dialog.test.mjs |
 | SES-SB-EP-01 | 2 | pass 2 | SES-SB-EP-01 shown en (en) a connected target with running sessions → its list under the row without a press, named "Running sessions", one item per session wit | packages/core/ui/tests/model-dialog.test.mjs |
@@ -239,10 +239,10 @@ their baseline results, and one sample title. **Where now** is filled in by the 
 | TGT-VIEW-EP-05 | 2 | pass 2 | TGT-VIEW-EP-05 identity en (en) identity pending / live / unsupported / stale → one identity line each, four different texts | packages/core/ui/tests/model-dialog.test.mjs |
 | TGT-VIEW-EP-06 | 8 | pass 8 | TGT-VIEW-EP-06 pairing need-token en (en) pairing need-token → exactly pairingView(target.pairing, en, tz) | packages/core/ui/tests/model-dialog.test.mjs |
 | TGT-VIEW-EP-07 | 1 | pass 1 | TGT-VIEW-EP-07 title and words en/zh title and words are non-empty and differ between en and zh | packages/core/ui/tests/model-dialog.test.mjs |
-| UIPF-MODEL-BVA-01 | 1 | pass 1 | UIPF-MODEL-BVA-01 one group a catalog of one group with one model → one heading, one choice "<group> / <model>" | packages/core/ui/tests/model-dialog.test.mjs |
-| UIPF-MODEL-EP-01 | 4 | pass 4 | UIPF-MODEL-EP-01 aria-labels en (en) every choice button's aria-label is "<group> / <model>" or "<group> / <model> · <effort>"; one per model, one per effort | packages/core/ui/tests/model-dialog.test.mjs |
-| UIPF-MODEL-EP-02 | 2 | pass 2 | UIPF-MODEL-EP-02 headings each provider (group) name is shown once as a heading, before its choices; a choice comes after its own group's heading and before the | packages/core/ui/tests/model-dialog.test.mjs |
-| UIPF-MODEL-EP-03 | 2 | pass 2 | UIPF-MODEL-EP-03 none an empty catalog → no choice, and the Open DSH settings button | packages/core/ui/tests/model-dialog.test.mjs |
+| UIPF-MODEL-BVA-01 | 1 | pass 1 | UIPF-MODEL-BVA-01 one group a catalog of one group with one model → one heading, one choice "<group> / <model>" | retired: legacy in-page picker removed in 1a67b63d; see the staging supplement for its absence regression |
+| UIPF-MODEL-EP-01 | 4 | pass 4 | UIPF-MODEL-EP-01 aria-labels en (en) every choice button's aria-label is "<group> / <model>" or "<group> / <model> · <effort>"; one per model, one per effort | retired: legacy in-page picker removed in 1a67b63d; see the staging supplement for its absence regression |
+| UIPF-MODEL-EP-02 | 2 | pass 2 | UIPF-MODEL-EP-02 headings each provider (group) name is shown once as a heading, before its choices; a choice comes after its own group's heading and before the | retired: legacy in-page picker removed in 1a67b63d; see the staging supplement for its absence regression |
+| UIPF-MODEL-EP-03 | 2 | pass 2 | UIPF-MODEL-EP-03 none an empty catalog → no choice, and the Open DSH settings button | retired: legacy in-page picker removed in 1a67b63d; see the staging supplement for its absence regression |
 | UIPF-STRIP-DT-01 | 20 | skip 20 | UIPF-STRIP-DT-01 authorizing en (en) first line authorizing: root [role=status][data-fishball-strip-state=connecting], heading = card.title, badge "Connecting"  | retired: withdrawn (MULTI-3 D03 / requirement D: no chat-top status card) |
 | UIPF-STRIP-DT-02 | 6 | skip 6 | UIPF-STRIP-DT-02 cancel en (en) control cancel → one button[data-fishball-strip-control=cancel] "Cancel" with the outline look | retired: withdrawn (MULTI-3 D03 / requirement D: no chat-top status card) |
 | UIPF-STRIP-EP-01 | 2 | skip 2 | UIPF-STRIP-EP-01 tools chip en (en) the contributed-tools line is a chip: data-fishball-strip-line=contributed-tools, tabIndex 0, Tooltip label = toolsHint, ari | retired: withdrawn (MULTI-3 D03 / requirement D: no chat-top status card) |

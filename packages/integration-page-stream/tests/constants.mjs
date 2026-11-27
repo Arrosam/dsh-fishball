@@ -25,6 +25,7 @@ export const TOPIC = Object.freeze({
   asks: SEAM_PAGE_STREAM.topic.asks,
   strip: SEAM_PAGE_STREAM.topic.strip,
   taskboard: NAMES.taskboardTopic,
+  taskboardAudit: 'fishball-taskboard-auto',
   fake: (i) => 'fbtest-topic-' + i,
   wireKeys: Object.freeze([SEAM_PAGE_STREAM.field.frame, SEAM_PAGE_STREAM.field.topic].sort()),
   service: NAMES.instance,
@@ -48,7 +49,8 @@ export const NO_WARNING = Object.freeze({ prefix: 'fishball-ui: more live stream
 export const PAGE = Object.freeze({ root: '/', blank: 'about:blank', viewport: Object.freeze({ width: 1280, height: 900 }) })
 export const UI = Object.freeze({
   editor: '[data-composer-card] [contenteditable=true]', sending: '[data-sending]', fileInput: 'input[type=file]', composerImage: '[data-composer-card] img',
-  sendLabel: 'Send message', pageMark: 'data-fishball-page', openRight: 'Open right sidebar', collapseRight: 'Collapse right sidebar', taskBoard: 'Task board',
+  sendLabel: 'Send message', pageMark: 'data-fishball-page', collapseRight: 'Collapse right sidebar',
+  openTaskBoard: 'Open task board', taskBoard: '[data-fishball-taskboard]',
   previewContinue: /^(Continue|继续)$/, dialog: '[role=dialog]', noticeTries: 3,
   text: 'fbtest-ps send', imageText: 'fbtest-ps send with an image',
   png: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', pngName: 'fbtest-ps.png', tempPrefix: 'fbtest-ps-',

@@ -19,7 +19,7 @@ Entry: [`../model-dialog.test.mjs`](<../model-dialog.test.mjs>). Ported from `te
   (the `sidebar.workspaces` winner, row / item finders), [`../support/b-targets.mjs`](<../support/b-targets.mjs>)
   (MULTI-3 vocabulary, `targetView` / `snapshotOf` fixtures in the contracts' shape). Shared support by
   port-ui-a: `ui-page.mjs`, `page-stream.mjs`, `ask-card.mjs`, `pairing.mjs`, `seam.mjs` (ui-seam's values,
-  copied: fishball-ui's manifest declares no dependency, so its tests may not import fishball-shared).
+  imported by name through core's declared dependency).
 - A user's view: row buttons are buttons with `aria-expanded`; a target's item is the largest subtree around
   its row holding no other row (plus its `aria-controls` element); text nodes are read as text, so markup in a
   name must stay text.
@@ -28,23 +28,8 @@ Entry: [`../model-dialog.test.mjs`](<../model-dialog.test.mjs>). Ported from `te
 
 | Id | Technique | Expected outcome |
 | --- | --- | --- |
-| MODEL-EP-01 en/zh | EP | Unset core model, two catalog models: dialog visible and catalog listed |
-| MODEL-ST-01 en/zh | ST | Choose a model → configForms mutation at fishball-core `['model']` with provider/model (and optional reasoningEffort) only |
-| MODEL-ST-02 en/zh | ST | Dismiss → no write; a window focus does not reopen; a fresh page opens the dialog again |
-| MODEL-ST-04 en/zh | ST | No page mark + model unset → no dialog, no mutation |
-| MODEL-ST-05 en/zh | ST | Mark absent → set → dialog with the catalog |
-| MODEL-ST-06 en/zh | ST | Dismiss → mark removed → mark set → dialog again; no mutation |
-| MODEL-EP-02 en/zh | EP | Configured core model → no dialog, no mutation |
-| MODEL-BVA-01 en/zh | BVA | Zero models → the explanation and DSH's Settings launcher pressed; no write |
-| UIPF-MODEL-EP-01 aria-labels / visible × en/zh | EP | Each choice's aria-label is `<group> / <model>` or `… · <effort>`; the model name shown, the effort as a DSH Tag, not the group |
-| UIPF-MODEL-EP-02 headings / role group | EP | Group names are headings before their choices, in catalog order; each group is `role="group"` named by its heading, holding exactly its choices |
-| UIPF-MODEL-BVA-01 one group | BVA | One group, one model → one choice |
-| UIPF-MODEL-EP-03 refused / none | EP | Refused read: one `role=alert`, no choice. Empty catalog: no choice, the Settings button |
-| CAT-ST-01 | ST | Opened with catalog A → closed → opened with B: B's models, none of A's |
-| CAT-BVA-01 | BVA | One read per opening; focus and re-renders read nothing |
-| CAT-ST-02 / CAT-ST-03 | ST | Pending → loading, no choice; the reopening's first paint is loading |
-| CAT-ST-04 after close / after reopen | ST | A read settling after close changes nothing (no stale state update); a late read of an earlier opening is never shown |
-| CAT-EP-01 refused / rejects × en/zh; retry fails again | EP | The failed alert and `[data-fishball-model-retry]` "Try again" / "重试"; it reads again; success shows the models |
+| MODEL-REMOVED-01 en/zh | ST | With core model unset, there is no picker slot entry or dialog, no catalog read and no settings mutation; reopening the page still shows no dialog |
+| MODEL-REMOVED-02 en/zh | BVA | With core model unset and no catalog models, there is no dialog, Settings launcher click or settings mutation |
 | TGT-VIEW-EP-01 shape / order | EP | Frame keys exactly on, title, empty, notices, targets, words, brandStyle; target keys exactly the 12 of the frame; snapshot order kept |
 | TGT-VIEW-EP-03 brandStyle (5) / off | EP | absent, unknown, other case → fishball; deepseek → deepseek; core off → fishball |
 | TGT-VIEW-DT-01 core absent / off / undefined × en/zh | DT | on false, notices `[fishball-off]`, targets [], empty null |
@@ -93,5 +78,7 @@ Entry: [`../model-dialog.test.mjs`](<../model-dialog.test.mjs>). Ported from `te
 
 - **Integration** (they need fishball-core running): MODEL-SYS-01, STRIP-SYS-01, MODEL-ST-03 (a real standalone
   DSH with core and its ./ui component); STRIP-DT-02 (core's per-target Connect route).
+- **Retired**: the in-page picker's MODEL-EP/BVA and MODEL-ST-01/02/04/05/06, UIPF-MODEL-* and CAT-* rows.
+  DSH onboarding superseded the page picker; core's Settings model/effort controls have their own [tests](<../../../tests/settings/model-picker.mjs>).
 - **Retired**: STRIP-DT-01 and every UIPF-STRIP-* row (withdrawn: MULTI-0 review S6, MULTI-3 D03 — no status card);
   the "browser page reload and settings navigation" todo (E2E, no subject here).

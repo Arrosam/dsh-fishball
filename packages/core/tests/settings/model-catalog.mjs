@@ -2,10 +2,11 @@
  * E-FIX-3 (B5) black-box rows: core's settings page reads DSH's model catalog under Cordis's inject
  * rule, as a real DSH (and a hosted child) applies it. Requirement (relayed by Fishball,
  * 2026-11-17): with DSH's `remote.session` service and a catalog, the "Fishball's model" select
- * lists the catalog's choices (one option per model, or one per reasoning effort) and never says
- * "The models could not be read." / "无法读取模型。"; an empty catalog says "No model is configured
- * in this DSH yet."; no `remote.session`, a rejected read or `{ok:false}` → the page still renders
- * and says the models could not be read; the page never needs `remote.session` to register.
+ * lists each catalog model once, and a separate "Reasoning effort" select lists only the selected
+ * model's efforts. A successful read never says "The models could not be read." / "无法读取模型。";
+ * an empty catalog says "No model is configured in this DSH yet."; no `remote.session`, a rejected
+ * read or `{ok:false}` → the page still renders and says the models could not be read; the page
+ * never needs `remote.session` to register.
  *
  * Level: fishball-test-helpers' scripted page with core's client alone (page.mjs) and `remoteSession`
  * set: the current DSH's real Cordis applies the real client.js / client.settings.js, the Remote service carries Cordis's
@@ -23,7 +24,7 @@ import { importDsh } from 'fishball-test-helpers/dsh'
 import { cordisRemote, createWorld } from 'fishball-test-helpers/scripted-page'
 import { textOf } from 'fishball-test-helpers/react-shim'
 import { until } from 'fishball-test-helpers/wait'
-import { CATALOG, CATALOG_ANSWER, DSH, HARNESS, MARK, MODEL_SELECT, SUBJECT } from './constants.mjs'
+import { CATALOG, CATALOG_ANSWER, CORE, DSH, HARNESS, MARK, MODEL_SELECT, SUBJECT } from './constants.mjs'
 import { corePage, settle } from './page.mjs'
 
 const CORDIS = 'cordis'
@@ -57,8 +58,9 @@ async function catalogPage(t, { lang = DSH.locales[0], session, chunk } = {}) {
   await settle()
   return page
 }
-const options = (page) => page.find((n) => n.tag === MODEL_SELECT.option)
-const optionsNaming = (page, name) => options(page).filter((n) => textOf(n).includes(name))
+const options = (page, nodes) => page.find((n) => n.tag === MODEL_SELECT.option, nodes)
+const matchingOptions = (choices, name) => choices.filter((n) => textOf(n).includes(name))
+const optionsNaming = (page, name) => matchingOptions(options(page), name)
 const pageText = (page) => page.text(page.tree())
 const failedShown = (page, lang) => pageText(page).includes(MODEL_SELECT.failed[lang])
 /** Every model and effort name of a catalog, and how many options each must have. */
@@ -67,7 +69,7 @@ function expectedChoices(catalog) {
     ? m.reasoning.efforts.map((e) => ({ label: `${m.name} / ${e.name}`, model: m.name, effort: e.name }))
     : [{ label: m.name, model: m.name }])))
 }
-/** The oracle "the catalog's choices are listed": each choice has exactly one option. */
+/** The historical combined-choice oracle, kept for the boundary and base-commit checks. */
 function listedProblems(page, catalog) {
   const problems = []
   for (const c of expectedChoices(catalog)) {
@@ -80,6 +82,70 @@ function listedProblems(page, catalog) {
     if (n && optionsNaming(page, m.name).length !== n) problems.push(`${m.name}: ${optionsNaming(page, m.name).length} options for ${n} efforts`)
   }
   return problems
+}
+
+const PICKER = {
+  field: 'model',
+  en: { model: "Fishball's model", effort: 'Reasoning effort', dshDefault: "This DSH's default model" },
+  zh: { model: 'Fishball 的模型', effort: '推理强度', dshDefault: '此 DSH 的默认模型' },
+}
+
+// Keep the original two providers and mixed catalog, adding destinations for each resolution rule.
+const [plainProvider, reasoningProvider] = CATALOG.mixed.groups
+const [plain] = plainProvider.models
+const [thinker] = reasoningProvider.models
+const [quick, deep] = thinker.reasoning.efforts
+const fast = { id: 'e-fast', name: 'Fbtest Fast Effort' }
+const peak = { id: 'e-peak', name: 'Fbtest Peak Effort' }
+const thinkingModel = (id, name, efforts, defaultEffort) => ({ id, name, reasoning: { efforts, defaultEffort: defaultEffort.id } })
+const overlap = thinkingModel('m-overlap', 'Fbtest Overlap Model', [quick, deep], quick)
+const fallback = thinkingModel('m-fallback', 'Fbtest Default Effort Model', [fast, peak], peak)
+const invalidDefault = thinkingModel('m-invalid', 'Fbtest Unsupported Default Model', [quick, deep], peak)
+const pickerCatalog = { groups: [
+  { ...plainProvider, models: [...plainProvider.models, overlap] },
+  { ...reasoningProvider, models: [...reasoningProvider.models, fallback, invalidDefault] },
+] }
+
+function dropdowns(page, caption) {
+  const labels = page.find((n) => n.tag === 'label' && textOf(n) === caption)
+  return page.find((n) => n.tag === MODEL_SELECT.select
+    && (n.props['aria-label'] === caption || (n.props.id && labels.some((label) => label.props.htmlFor === n.props.id))))
+}
+function exactlyOne(items, description) {
+  assert.equal(items.length, 1, description)
+  return items[0]
+}
+const dropdown = (page, caption) => exactlyOne(dropdowns(page, caption), 'expected one dropdown: ' + caption)
+const namedOption = (choices, name) => exactlyOne(matchingOptions(choices, name), 'expected one option: ' + name)
+const selectedOption = (select, choice) => assert.equal(select.props.value, choice.props.value, 'expected selected option: ' + textOf(choice))
+
+async function choose(select, choice) {
+  assert.ok(!select.props.disabled && !choice.props.disabled && !choice.props.hidden, 'option is not selectable: ' + textOf(choice))
+  const { value } = choice.props
+  select.props.onChange({ target: { value }, currentTarget: { value } })
+  await settle()
+}
+
+function assertEffort(page, caption, model, expected) {
+  const efforts = model?.reasoning?.efforts ?? []
+  if (efforts.length === 0) {
+    assert.equal(dropdowns(page, caption).length, 0, 'effort dropdown rendered without supported efforts')
+    return
+  }
+  const select = dropdown(page, caption)
+  assert.ok(!select.props.disabled, 'the effort dropdown must be selectable')
+  const choices = options(page, select.children)
+  assert.deepEqual(choices.map(textOf).sort(), efforts.map((effort) => effort.name).sort(), 'expected only supported efforts, each listed once')
+  for (const choice of choices) assert.ok(!choice.props.disabled && !choice.props.hidden, 'supported effort is not selectable: ' + textOf(choice))
+  selectedOption(select, namedOption(choices, expected.name))
+}
+
+function modelWrite(group, model, effort) {
+  const path = [PICKER.field]
+  const op = model
+    ? { op: DSH.op.set, path, value: { provider: group.id, model: model.id, ...(effort && { reasoningEffort: effort.id }) } }
+    : { op: DSH.op.unset, path }
+  return { ns: CORE.namespace, ops: [op] }
 }
 /** The page itself rendered (its root and its form), whatever the catalog did. */
 function assertPageRendered(page) {
@@ -132,14 +198,46 @@ export function registerModelCatalogCases() {
 
   // ---------------------------------------------------------------- EFIX3-SET-UC-01: the catalog is listed (main flow), en and zh
   for (const lang of DSH.locales) {
-    caseTest('EFIX3-SET-UC-01', `main ${lang}`, `remote.session provided (own fiber, Cordis's rule): two groups, plain models and a model with two efforts → one option per model / per effort; no "${MODEL_SELECT.failed[lang]}"`, async (t) => {
-      const session = sessionFace(CATALOG.mixed)
+    caseTest('EFIX3-SET-UC-01', `main ${lang}`, `remote.session provided (own fiber, Cordis's rule): one option per model, a separate supported-effort dropdown, and unchanged model writes; no "${MODEL_SELECT.failed[lang]}"`, async (t) => {
+      const session = sessionFace(pickerCatalog)
       const page = await catalogPage(t, { lang, session })
       assertPageRendered(page)
       assert.ok(session.calls >= 1, 'the page never asked for the catalog')
-      assert.ok(page.find((n) => n.tag === MODEL_SELECT.select).length > 0, 'no model select on the page')
-      assert.deepEqual(listedProblems(page, CATALOG.mixed), [], 'options: ' + show(options(page).map(textOf)))
       assert.equal(failedShown(page, lang), false, 'the page says the models could not be read')
+
+      const labels = PICKER[lang]
+      const modelSelect = () => dropdown(page, labels.model)
+      const choices = options(page, modelSelect().children)
+      const models = pickerCatalog.groups.flatMap((group) => group.models)
+      const defaultChoice = namedOption(choices, labels.dshDefault)
+      const listed = new Set([defaultChoice, ...models.map((model) => namedOption(choices, model.name))])
+      assert.equal(listed.size, models.length + 1, 'each model and the DSH default need distinct options')
+      assert.equal(choices.length, listed.size, 'expected only catalog models and the DSH default: ' + show(choices.map(textOf)))
+      for (const effort of [quick, deep, fast, peak]) {
+        assert.deepEqual(matchingOptions(choices, effort.name), [], 'effort listed in the model dropdown: ' + effort.name)
+      }
+      selectedOption(modelSelect(), defaultChoice)
+      assertEffort(page, labels.effort)
+      assert.deepEqual(page.world.mutations, [], 'displaying the catalog must not save')
+
+      const expectedWrites = []
+      for (const [caption, choiceName, group, model, effort] of [
+        [labels.model, thinker.name, reasoningProvider, thinker, quick], // No default: first supported.
+        [labels.effort, deep.name, reasoningProvider, thinker, deep],
+        [labels.model, overlap.name, plainProvider, overlap, deep], // Keep deep even though quick is the default.
+        [labels.model, fallback.name, reasoningProvider, fallback, peak], // Deep is unsupported; use peak, not first-listed fast.
+        [labels.model, invalidDefault.name, reasoningProvider, invalidDefault, quick], // Both current and advertised default are unsupported.
+        [labels.model, plain.name, plainProvider, plain], // Hide the effort dropdown and save without reasoningEffort.
+        [labels.model, labels.dshDefault],
+      ]) {
+        const select = dropdown(page, caption)
+        await choose(select, namedOption(options(page, select.children), choiceName))
+        const modelPicker = modelSelect()
+        selectedOption(modelPicker, namedOption(options(page, modelPicker.children), model?.name ?? labels.dshDefault))
+        assertEffort(page, labels.effort, model, effort)
+        expectedWrites.push(modelWrite(group, model, effort))
+        assert.deepEqual(page.world.mutations.map(({ ns, ops }) => ({ ns, ops })), expectedWrites)
+      }
     })
   }
 
@@ -180,7 +278,7 @@ export function registerModelCatalogCases() {
     assert.deepEqual(listedProblems(page, CATALOG.one), [])
   })
 
-  // ---------------------------------------------------------------- EFIX3-SET-MUT-01: the base commit fails the same oracle
+  // ---------------------------------------------------------------- EFIX3-SET-MUT-01: the base commit fails the historical catalog oracle
   caseTest('EFIX3-SET-MUT-01', 'base c4845000', `mutating-test sanity: client.settings.js at ${MODEL_SELECT.baseRef} in the same world (catalog provided) does NOT list the catalog and says "could not be read" (the B5 bug, reproduced)`, async (t) => {
     const page = await catalogPage(t, { session: sessionFace(CATALOG.mixed), chunk: baseChunk(t) })
     assert.equal(page.entries().length, 1, 'the base page did not register')

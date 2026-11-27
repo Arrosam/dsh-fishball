@@ -8,21 +8,16 @@
  * - `data-fishball-logo-state` and `data-fishball-logo-theme` on the mark;
  * - `data-fishball-brand-style` on the settings control (fishball-core.settings rows).
  */
+import { CLIENT } from '../package/constants.mjs'
 import { PAGE_STREAM } from './page-stream.mjs'
 
 /**
  * fishball-ui's client parts, each a package-local chunk the client loads and the factory it exports
- * (F-UI, LOGO-BUTTON: the brand part between the strip and the model dialog). The fault rows deliver
- * every other part inert, so only the brand part owns the resources they count.
+ * (F-UI, LOGO-BUTTON). The fault rows deliver every other part inert, so only the brand part owns
+ * the resources they count.
  */
-export const UI_PARTS = Object.freeze([
-  Object.freeze({ file: 'client.entries.js', export: 'entriesPart' }),
-  Object.freeze({ file: 'client.asks.js', export: 'asksPart' }),
-  Object.freeze({ file: 'client.strip.js', export: 'stripPart' }),
-  Object.freeze({ file: 'client.brand.js', export: 'brandPart' }),
-  Object.freeze({ file: 'client.model.js', export: 'modelPart' }),
-])
-export const BRAND_PART = UI_PARTS.find((part) => part.file === 'client.brand.js')
+export const UI_PARTS = Object.freeze(Object.values(CLIENT.parts))
+export const BRAND_PART = CLIENT.parts.brand
 
 export const SLOT = Object.freeze({ mark: 'sidebar.brand.mark', name: 'sidebar.brand.name' })
 

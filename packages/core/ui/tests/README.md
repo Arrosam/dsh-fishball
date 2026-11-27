@@ -9,7 +9,7 @@ core runs: what core would serve (page-stream frames, routes, its settings names
 Shared page and browser support for several areas is in [support/](<support/>).
 
 ```bash
-node scripts/test.mjs fishball-ui                  # all 9 entry files
+node scripts/test.mjs fishball-ui                  # all entry files
 node scripts/test.mjs fishball-ui --list           # the entry files, nothing run
 node scripts/test.mjs fishball-ui --file=pairing   # one entry file
 node scripts/test.mjs fishball-ui --against=<ref> -- --test-name-pattern=<ID>
@@ -17,17 +17,16 @@ node scripts/test.mjs fishball-ui --against=<ref> -- --test-name-pattern=<ID>
 
 ## Areas
 
-Counts are the cases each entry registers on DSH 0.2.2-rc.3 (`node scripts/test.mjs fishball-ui
---file=<area>`, 2026-11-27): 687 in all, every one passing. Browser rows skip (never fail) where no
-Chromium exists.
+Counts are the cases each entry registers. Browser rows skip where no Chromium exists.
 
 | entry | area README | what it covers | case-id prefixes | cases |
 |---|---|---|---|---|
 | `brand.test.mjs` | [brand/](<brand/README.md>) | the sidebar brand row: mark, wordmark, states, the manager-session button, accessible names, slot faults, the reply avatar | BRAND-*, LOGO-FIX, AVATAR-* | 103 |
 | `connections.test.mjs` | [connections/](<connections/README.md>) | the page's one live connection, whatever readers are mounted; demultiplexing, health, Reconnect | CONN-* | 31 |
 | `contrast.test.mjs` | [contrast/](<contrast/README.md>) | WCAG contrast of the ask card's reason placeholder and open badge, light and dark; DSH tokens only | UIFF-*, RESHOOT-ASKBADGE-* | 25 |
-| `model-dialog.test.mjs` | [model-dialog/](<model-dialog/README.md>) | the model dialog and catalog, the sidebar DSH targets and their actions, ask-card sources, running sessions | MODEL-*, UIPF-MODEL-*, CAT-*, TGT-VIEW/SB/DOCK/ASK-*, SES-VIEW/SB-* | 242 |
-| `package.test.mjs` | [package/](<package/README.md>) | manifests and shipped specifiers, the part loader, fishball-page's navigation, the narrow bar and sheet | UI-*, EFIX3-UI-GUARD-01, FRAME-READY, UIPF-NAV-*, MULTI-NAV/BAR/SHEET/DRAWER-*, R3B-07, NARROW-*, LOGO-FIX, SHOT-TARGET-URL-* | 101 |
+| `model-dialog.test.mjs` | [model-dialog/](<model-dialog/README.md>) | absence of the legacy picker, the sidebar DSH targets and their actions, ask-card sources, running sessions | MODEL-REMOVED-*, TGT-VIEW/SB/DOCK/ASK-*, SES-VIEW/SB-* | 210 |
+| `package.test.mjs` | [package/](<package/README.md>) | manifests and shipped specifiers, the part loader, fishball-page's navigation, the narrow bar and sheet | UI-*, EFIX3-UI-GUARD-01, FRAME-READY, UIPF-NAV-*, MULTI-NAV/BAR/SHEET/DRAWER-*, R3B-07, NARROW-*, LOGO-FIX, SHOT-TARGET-URL-* | 98 |
+| `question-cards.test.mjs` | — | manager-only question cards: collapse/expand, settling, and free-text and single/multiple-choice answers | ASK-QUESTIONS-ST-* | 2 |
 | `page.test.mjs` | [page/](<page/README.md>) | fishball-page's LITE guards in a real browser: shortcut remapping, launchers kept out of reach, the return to the manager | LITE-*, B3-* | 36 |
 | `pairing.test.mjs` | [pairing/](<pairing/README.md>) | the pure pairing view model; the Node row registers no pairing route | PAIR-* | 68 |
 | `recommended.test.mjs` | [recommended/](<recommended/README.md>) | the Fishball Recommended tab: data, the `plugins.tab` seam, Install, presence | TC-20…34, RV-01…10 | 65 |

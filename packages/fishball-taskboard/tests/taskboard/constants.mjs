@@ -27,6 +27,8 @@ export const DSH = Object.freeze({
   storage: 'dsh-storage',
   storageJson: 'dsh-storage-json',
   storageDomain: 'dsh-storage-domain',
+  systemPrompt: 'dsh-system-prompt',
+  scope: 'dsh-scope',
   /** dsh-storage-json's backend name: the domain facility's default route. */
   jsonBackend: 'json',
   /** A loader row naming a built-in plugin. */
@@ -36,7 +38,7 @@ export const DSH = Object.freeze({
   /** cordis FiberState.ACTIVE: the row is up. */
   fiberActive: 2,
   /** SURFACE: the services the row injects, and those it looks up at runtime. */
-  services: Object.freeze({ connection: 'connection', instance: 'fishballInstance', appReady: 'appReady' }),
+  services: Object.freeze({ connection: 'connection', instance: 'fishballInstance', appReady: 'appReady', systemPrompt: 'systemPrompt' }),
   /** SURFACE: the root event an appended session event is published on. */
   sessionEvent: 'session/event',
   /** dsh-session known event types. */
@@ -74,7 +76,7 @@ export const RECEIPT = Object.freeze({ queued: 'queued', held: 'held' })
 export const NOTIFY = Object.freeze({ queued: 'queued', held: 'held', reject: 'reject' })
 
 /** DOC §3: the tools; DOC §3/§4: the refusal codes. */
-export const TOOL = Object.freeze({ read: 'taskboard_read', add: 'taskboard_add', update: 'taskboard_update', memo: 'taskboard_memo' })
+export const TOOL = Object.freeze({ read: 'taskboard_read', add: 'taskboard_add', update: 'taskboard_update', memo: 'taskboard_memo', resolveReview: 'taskboard_resolve_review' })
 export const CODE = Object.freeze({
   notManager: 'not-manager', invalidInput: 'invalid-input', notFound: 'not-found', limitReached: 'limit-reached',
   unavailable: 'board-unavailable', stale: 'stale',
@@ -213,12 +215,47 @@ export const REMINDER = Object.freeze({
   role: 'user',
 })
 
+/**
+ * DOC §3a (the user, 2026-11-22): the one manager-scope prompt section the X2 setup registers. order is
+ * DSH's getSectionOrder('DEPLOYMENT_PERSONA_PREFIX') + 2; DSH's value for that name is 0 (both SDKs).
+ */
+const GUIDE_ORDER_ANCHOR = 0
+const GUIDE_ORDER_OFFSET = 2
+export const GUIDE = Object.freeze({
+  name: 'fishball-taskboard',
+  orderAnchor: 'DEPLOYMENT_PERSONA_PREFIX',
+  orderAnchorValue: GUIDE_ORDER_ANCHOR,
+  order: GUIDE_ORDER_ANCHOR + GUIDE_ORDER_OFFSET,
+  text: [
+    '**Task board.** Keep your task board up to date.',
+    '- When the user gives you a new task, add it with taskboard_add right away. Break multi-part work into subtasks.',
+    '- Whenever a task or subtask makes progress or finishes, update its status and progress with taskboard_update right away, in the same turn.',
+    '- When a session you manage finishes work, update the matching task before or together with reporting to the user.',
+    '- Never leave finished work in todo or in_progress.',
+  ].join('\n'),
+})
+/** DSH's own section names (dsh-system-prompt), which a case tells apart from the guide. */
+export const DSH_SECTION = Object.freeze({ personaPrefix: 'deployment:persona-prefix' })
+
 /** DOC §7 / SURFACE: the one warn line without core, through ctx.logger('fishball-taskboard'). */
 export const LOG = Object.freeze({ logger: 'fishball-taskboard', coreMissing: 'fishball-core-missing', warn: 'warn' })
 
 /** Fixture data; every value is a test value, not a product one. */
 export const FIXTURE = Object.freeze({
   tempPrefix: 'fbtest-taskboard-',
+  /** The host plugin the manager's agent scope is minted from (world.mjs). */
+  agentHost: 'fbtest-taskboard-agent-host',
+  /** TB-ST-06: resumes in a row (more than one, so a second resume is not a first one again). */
+  resumes: 2,
+  /** Another agent's scope key (a worker), which must not see the manager-scope section. */
+  workerKey: Object.freeze({ id: 'fbtest-taskboard-worker' }),
+  /** A global section a case registers, to show the guide's name shadows only in the manager scope. */
+  globalGuideText: 'fbtest: a global section of the same name',
+  /**
+   * Global probe sections around the guide's order (BVA: order − 1, the same order with a name that
+   * sorts before / after 'fishball-taskboard' in code units, order + 1).
+   */
+  probe: Object.freeze({ step: 1, below: 'fbtest-probe-below', sameBefore: 'fbtest-probe-same', sameAfter: 'fishball-taskboard~fbtest', above: 'fbtest-probe-above' }),
   domainDir: 'domain',
   callIdPrefix: 'fbtest-tb-call-',
   compactionId: 'fbtest-compaction-',

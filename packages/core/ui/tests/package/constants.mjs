@@ -46,20 +46,21 @@ export const FORBIDDEN = Object.freeze({
 export const UI_PACKAGES = Object.freeze({ 'fishball-page': 'fishball-page', 'fishball-recommend-plugins': 'fishball-recommend-plugins' })
 export const NESTED_CLIENT = './client'
 
-/** Interface item 8 (as amended by F-WIRE, R-FIX-FUI F1, LOGO-BUTTON, MULTI-3 D): the browser entry and its five parts. */
+/** Interface item 8 (as amended by F-WIRE, R-FIX-FUI F1, LOGO-BUTTON, MULTI-3 D and the removal of the legacy model dialog): the browser entry and its four parts. */
 export const CLIENT = Object.freeze({
   moduleId: 'fishball-ui',
   entry: 'client.js',
   parts: Object.freeze({
     entries: Object.freeze({ file: 'client.entries.js', export: 'entriesPart', plugin: 'fishball-ui: entries' }),
     asks: Object.freeze({ file: 'client.asks.js', export: 'asksPart', plugin: 'fishball-ui: asks' }),
-    // F-WIRE lead, 2026-11-17: the strip and model-dialog parts' plugin names are not specified (null: a non-empty name).
+    // F-WIRE lead, 2026-11-17: the strip part's plugin name is not specified (null: a non-empty name).
     strip: Object.freeze({ file: 'client.strip.js', export: 'stripPart', plugin: null }),
     brand: Object.freeze({ file: 'client.brand.js', export: 'brandPart', plugin: null }),
-    model: Object.freeze({ file: 'client.model.js', export: 'modelPart', plugin: null }),
   }),
-  /** The order client.js loads its parts in (the brand part after the strip, before the model dialog). */
-  partOrder: Object.freeze(['client.entries.js', 'client.asks.js', 'client.strip.js', 'client.brand.js', 'client.model.js']),
+  /** The order client.js loads its parts in. */
+  partOrder: Object.freeze(['client.entries.js', 'client.asks.js', 'client.strip.js', 'client.brand.js']),
+  /** The legacy page picker was superseded by dsh-instance onboarding. */
+  removedParts: Object.freeze(['client.model.js']),
   localPrefix: './',
   /** The kit member a part gets (`mountStyle(id, cssText) → dispose`). */
   kitStyle: 'mountStyle',

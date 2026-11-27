@@ -92,9 +92,12 @@
 - { id: entry-customization, disabled: *with-ui }
 - { id: ui-open-in-app, disabled: *with-ui }
 - { id: ui-sidebar-terminal, disabled: *with-ui }
+# The files plugin owns the Start card, the files tab and its shortcut/palette command.
+# Turn off the contribution at the source; individual document previews are a separate row.
+- { id: ui-sidebar-files, disabled: *with-ui }
 # ui-model-selection: the composer's model seat and the /model popup (dsh-web-app, both SDKs). Only
 # core's settings choose Fishball's model (the user, 2026-11-16: "Hide it. Only core's settings
-# choose the model"); fishball-ui's model dialog and core's settings page write it. No other row
+# choose the model"); core's settings page (and dsh-instance's onboarding) write it. No other row
 # injects its `modelDirectories` service (checked in 0.2.1-rc.5 and 0.2.2-rc.1).
 - { id: ui-model-selection, disabled: *with-ui }
 
@@ -106,9 +109,9 @@
 
 - insert:
     # Core's own agent preset for the manager: `read` and `read_image` (tool-fs with no write or
-    # edit); `working_directory` is DSH's global tool (dsh-base); `ask_user_question` is DSH's
-    # ask-user plugin, so Fishball asks with the same inline question card as any DSH session
-    # (the user, 2026-11-18). No persona row: core composes the manager's persona in code on
+    # edit); `working_directory` is DSH's global tool (dsh-base). Keep DSH's native ask tool in
+    # the preset for other sessions. Core masks it on the singleton manager's own tool scope.
+    # No persona row: core composes the manager's persona in code on
     # create and on every resume (src/manager/persona.js).
     - id: preset-fishball
       name: '@deepseek-ai/dsh-agent-preset'
@@ -147,8 +150,8 @@
     # The Fishball page's manager-session route (src/session/route.js).
     - { id: fishball-core-session, name: fishball-core/session-route }
     # Fishball UI component (sub-package under ./ui/): Fishball page, Recommended tab (standalone
-    # only), the instance-run child's Plugins page changes, sidebar targets, ask cards, brand row and
-    # model dialog. Toggleable independently as a component row.
+    # only), the instance-run child's Plugins page changes, sidebar targets, ask cards and brand
+    # row. Toggleable independently as a component row.
     - { id: fishball-ui, name: ./ui/index.js }
     - { id: fishball-page, name: ./ui/fishball-page/index.js }
     # Instance-run or standalone (DESIGN §28): the child is instance-run exactly while the instance's

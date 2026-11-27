@@ -7,7 +7,7 @@
  * - Decision table UIFF-ASK-DT-01: card variant (permission, ask) × language × theme → the reason
  *   textarea shows the language's placeholder, painted at least WCAG.text against its own fill;
  * - Decision table RESHOOT-ASKBADGE-DT-01: card variant × language × theme, state open → the badge
- *   reads the open words in a `warning` DSH Tag, text at least WCAG.text against its own fill; dark:
+ *   shows the request count in a `warning` DSH Tag, text at least WCAG.text against its own fill; dark:
  *   text and fill equal DSH's own warning Tag drawn outside the card, and the text equals the token;
  * - EP UIFF-TOKENS-EP-01: every declaration of Fishball's own sheets that applies to a measured
  *   element (ask card, sidebar target list, open ask badge) is token-only;
@@ -80,9 +80,9 @@ export function registerContrastCases() {
   // ====================================== RESHOOT-ASKBADGE-DT-01: the open ask card's warning badge
   for (const variant of VARIANTS) for (const lang of LANGS) for (const theme of THEME.all()) {
     const dark = theme === THEME.dark
-    browserRow('RESHOOT-ASKBADGE-DT-01', `open ${variant} ${lang} ${theme.id}`, `(${lang}, ${theme.id}) an open ${variant} card's badge reads ${json(ASK_BADGE.open[lang])} in a ${ASK_BADGE.openTone} DSH Tag; its text has at least ${WCAG.text}:1 against the badge's own fill${dark ? `; dark: DSH's own ${ASK_BADGE.openTone} Tag look (${DSH_TOKEN.warn}), unchanged` : ''}`, async (t) => {
+    browserRow('RESHOOT-ASKBADGE-DT-01', `open ${variant} ${lang} ${theme.id}`, `(${lang}, ${theme.id}) an open ${variant} card's count badge reads ${json(ASK_BADGE.singleRequestCount)} in a ${ASK_BADGE.openTone} DSH Tag; its text has at least ${WCAG.text}:1 against the badge's own fill${dark ? `; dark: DSH's own ${ASK_BADGE.openTone} Tag look (${DSH_TOKEN.warn}), unchanged` : ''}`, async (t) => {
       const { drawn, badge } = await badgeDocument(t, variant, lang, OPEN)
-      assert.equal(textOf(badge).trim(), ASK_BADGE.open[lang], 'badge words')
+      assert.equal(textOf(badge).trim(), ASK_BADGE.singleRequestCount, 'single-request badge count')
       assert.equal(badge.props['data-tone'], ASK_BADGE.openTone, 'badge tone')
       const { badge: result, reference } = await badgeAndReference(drawn, theme, ASK_BADGE.openTone)
       const paint = badgePaint(result)

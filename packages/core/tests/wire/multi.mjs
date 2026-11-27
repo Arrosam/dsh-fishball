@@ -42,6 +42,11 @@ const connectFakes = []
 after(async () => { for (const f of connectFakes.splice(0)) await f.stop().catch(() => {}) })
 async function connectFake() { const f = await startFakeConnector(); connectFakes.push(f); return f }
 
+async function setMetadataUrl(w) {
+  const saved = await w.h.call('mutate', { ns: C.core, ops: [{ op: 'set', path: CONNECT.setting.split(MULTI.pathDot), value: MULTI.metadataUrl }] })
+  assert.equal(saved.ok, true, JSON.stringify(saved))
+}
+
 export function registerMultiCases() {
   const standalone = multiWorld()
   const hostedWith = (targetUrl) => multiWorld({ child: { targetUrl } })
@@ -209,7 +214,7 @@ export function registerMultiCases() {
     const a = await w.act('add', MULTI.url.remote)
     const b = await w.act('add', new URL(MULTI.url.otherPath, MULTI.url.remote).href)
     for (const t of [a, b]) assert.equal((await w.view(t.targetId)).connect?.code, CONNECT.configuration.metadataUrlMissing)
-    await w.h.call('mutate', { ns: C.core, ops: [{ op: 'set', path: CONNECT.setting.split(MULTI.pathDot), value: MULTI.metadataUrl }] })
+    await setMetadataUrl(w)
     for (const t of [a, b]) await w.until(t.targetId, (v) => v.connect?.code !== CONNECT.configuration.metadataUrlMissing, 'the global CIMD URL in force')
   })
 
@@ -338,7 +343,7 @@ export function registerMultiCases() {
     for (const raw of K1.TOOLS.map((t) => t.name)) assert.equal(names.includes(raw), false, 'bare remote/withheld name ' + raw)
     // CONN-TOOLS: the removed names are never offered in any form.
     for (const removed of K1.TOOLS.map((t) => t.name).filter((n) => !Object.values(MCP.tools).includes(n))) assert.equal(names.some((n) => n.includes(removed)), false, 'removed tool offered: ' + removed)
-    assert.equal(names.includes(MULTI.ask), false, 'bare ask_user')
+    assert.equal(names.filter((name) => name === MULTI.ask).length, 1, 'bare manager ask_user')
     for (const r of MULTI.reminderTools) assert.equal(names.filter((n) => n === r).length, 1, r)
     // Framing (contracts README security amendment): toolSource(JSON.stringify(name)) inside a random-marker block before the trusted text.
     for (const v of [a.view, b.view]) {
@@ -427,7 +432,7 @@ export function registerMultiCases() {
   /** Two Connect-capable targets (the link-save fake: approval page, code + PKCE), the CIMD URL set; both begun. */
   async function twoAttempts(w) {
     const fa = await connectFake(w); const fb = await connectFake(w)
-    await w.h.call('mutate', { ns: C.core, ops: [{ op: 'set', path: CONNECT.setting.split(MULTI.pathDot), value: MULTI.metadataUrl }] })
+    await setMetadataUrl(w)
     const ta = await w.act('add', fa.url()); const tb = await w.act('add', fb.url())
     for (const t of [ta, tb]) await w.until(t.targetId, (v) => v.connect?.state === CONNECT.state.needsAuthorization, 'needs authorization')
     const ra = await w.act('begin', ta.targetId); const rb = await w.act('begin', tb.targetId)
@@ -471,7 +476,7 @@ export function registerMultiCases() {
   row('MULTI-CONN-DT-01', 'url edit to another origin of the same listener', 'A\'s attempt pending on http://127.0.0.1:P; setUrl to http://localhost:P (another origin, so another endpoint) → a new epoch; the late completion of the old attempt saves no grant and does not authorize A', async () => {
     const w = await standalone()
     const fa = await connectFake()
-    await w.h.call('mutate', { ns: C.core, ops: [{ op: 'set', path: CONNECT.setting.split(MULTI.pathDot), value: MULTI.metadataUrl }] })
+    await setMetadataUrl(w)
     const { targetId } = await w.act('add', fa.url(FAKE_HOST.first))
     await w.until(targetId, (v) => v.connect?.state === CONNECT.state.needsAuthorization, 'needs authorization')
     const begun = await w.act('begin', targetId)

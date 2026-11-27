@@ -7,12 +7,10 @@ window.__ModuleLoader__.load({
     } = require('@deepseek-ai/dsh-client-ui-primitives')
     const h = React.createElement
     /**
-     * The umbrella's identity and its members' settings pages (fishball-board, fishball-heartbeat and fishball-taskboard, each its own package). DSH's Plugins page
+     * The umbrella's identity and its members' settings pages (each its own package). DSH's Plugins page
      * gives a component row a Configure control only when a client registers `plugins.row.config`
-     * keyed `<bundle package>#<row id>` (dsh-client-ui-plugin-manager rowConfigKey); the members
-     * have no browser code, so this umbrella registers one page per configurable member row, each
-     * only while DSH serves that row's settings namespace (the row id). Installed alone, without this
-     * umbrella, a member has no page (a known limit, README).
+     * keyed `<bundle package>#<row id>`. This umbrella registers heartbeat's page while its namespace
+     * is served. Consultant registers its own page under either installation origin.
      */
     const UMBRELLA = Object.freeze({
       id: 'fishball-amenities',
@@ -63,7 +61,7 @@ window.__ModuleLoader__.load({
     const RULE_WORD = Object.freeze({ unique: 'invalid.unique', url: 'invalid.url' })
 
     const en = {
-      hint: 'This installs the Fishball amenities, fishball-board, fishball-heartbeat and fishball-taskboard (each also installable on its own). Open a component below to configure it.',
+      hint: 'This installs the Fishball amenities, fishball-board, fishball-heartbeat, fishball-taskboard and fishball-consultant (each also installable on its own). Open a component below to configure it.',
       'summary.fishball-heartbeat': 'Keeps Fishball\'s prompt cache warm while it is idle.',
       'field.intervalSeconds': 'Heartbeat interval (seconds)',
       'field.maxConsecutive': 'Heartbeats in a row',
@@ -84,7 +82,7 @@ window.__ModuleLoader__.load({
       discard: 'Discard',
     }
     const zh = {
-      hint: '此插件一并安装 Fishball 的附加组件 fishball-board、fishball-heartbeat 与 fishball-taskboard（三者也可单独安装）。点开下方的组件即可配置它。',
+      hint: '此插件一并安装 Fishball 的附加组件 fishball-board、fishball-heartbeat、fishball-taskboard 与 fishball-consultant（也可分别单独安装）。点开下方的组件即可配置它。',
       'summary.fishball-heartbeat': '在 Fishball 空闲时保持其提示缓存温热。',
       'field.intervalSeconds': '心跳间隔（秒）',
       'field.maxConsecutive': '连续心跳次数',

@@ -39,6 +39,7 @@ Package folders and their test folders:
 | fishball-board | `packages/fishball-board` | `packages/fishball-board/tests` |
 | fishball-heartbeat | `packages/fishball-heartbeat` | `packages/fishball-heartbeat/tests` |
 | fishball-taskboard | `packages/fishball-taskboard` | `packages/fishball-taskboard/tests` |
+| fishball-consultant | `packages/fishball-consultant` | `packages/fishball-consultant/tests` |
 | fishball-amenities | `packages/fishball-amenities` | `packages/fishball-amenities/tests` |
 | fishball-shared | `packages/shared` | `packages/shared/tests` |
 | fishball-test-helpers | `packages/test-helpers` | `packages/test-helpers/tests` |

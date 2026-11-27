@@ -54,7 +54,7 @@ export const BADGE_TARGET = `${HOOK.askCard} [${ASK_BADGE.marker}]`
 export const referenceTarget = (tone) => `[${ASK_BADGE.reference}="${tone}"]`
 
 /**
- * One card of `variant` in `state`, drawn in `lang`, its state badge marked (the first DSH Tag inside
+ * One card of `variant` in `state`, drawn in `lang`, its count badge marked (the first DSH Tag inside
  * the card root: DSH's Tag forwards no hook of its own), with reference warning and neutral Tags
  * beside the card. Returns the drawn document and the badge's rendered node.
  */
@@ -63,7 +63,7 @@ export async function badgeDocument(t, variant, lang, state) {
   const card = findAll(tree, (n) => n.props?.[ASK_BADGE.cardAttr] !== undefined)[0]
   assert.ok(card, 'precondition: the dock draws an ask card')
   const badge = findAll([card], isTag)[0]
-  assert.ok(badge, 'precondition: the ask card draws a DSH Tag (its state badge)')
+  assert.ok(badge, 'precondition: the ask card draws a DSH Tag (its count badge)')
   const tags = referenceTags([ASK_BADGE.openTone, ASK_BADGE.settledTone])
   return { drawn: { tree: [...marked(tree, (n) => n === badge, ASK_BADGE.marker), ...tags], sheets }, badge }
 }

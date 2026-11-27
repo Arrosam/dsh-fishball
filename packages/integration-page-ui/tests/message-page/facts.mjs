@@ -3,7 +3,7 @@
  * Fishball page: shared by the page rows and the paging / stream rows.
  */
 import { openDsh } from '../support/page.mjs'
-import { MODEL, PAGE, SESSION_ROUTE } from './constants.mjs'
+import { PAGE, SESSION_ROUTE } from './constants.mjs'
 
 export const show = (v) => JSON.stringify(v)
 /** The data-chat-turn of the row whose text holds `marker`. */
@@ -13,15 +13,10 @@ export const replies = (snap, turn) => rowsOf(snap, turn, PAGE.kinds.reply).filt
 export const messages = (snap, turn) => rowsOf(snap, turn, PAGE.kinds.message)
 export const controlOf = (snap, turn) => snap?.controls.find((c) => c.turn === turn) ?? null
 
-/**
- * The manager session (core's session route, as fishball-page asks for it), with Fishball's model set
- * to a routable one: unset, fishball-ui's model dialog would cover the chat and DSH's control.
- */
+/** The manager session through the same core route fishball-page reads. */
 export async function managerSession(h) {
   const id = (await h.request(SESSION_ROUTE, { method: 'POST', body: {} })).json?.sessionId
   if (typeof id !== 'string') throw new Error('no manager session')
-  const set = await h.call('mutate', { ns: MODEL.namespace, ops: [{ op: 'set', path: [...MODEL.path], value: MODEL.routable }] })
-  if (!set.ok) throw new Error('Fishball model not set: ' + show(set))
   return id
 }
 

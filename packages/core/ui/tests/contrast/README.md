@@ -6,9 +6,9 @@ Authority: the user's UI-FIX-F requirements and screenshot audit (2026-11-18) an
 
 1. The ask / permission card's reason textarea (`client.asks.js`, DSH's `conversation.input.dock`): its
    placeholder ("Reason" / "理由") has at least 4.5:1 against the textarea's own fill, light and dark (was 1.26:1).
-2. An open ask card's state badge (DSH Tag, tone `warning`, "Fishball is waiting for your answer" /
-   "Fishball 正在等你回答") has text at least 4.5:1 against its own fill in light (was ≈1.8:1); in dark DSH's
-   warning Tag look is unchanged (text `--dsw-alias-state-warn-primary`).
+2. An open ask card's count badge (DSH Tag, tone `warning`) has text at least 4.5:1 against its own fill in
+   light (was ≈1.8:1); in dark DSH's warning Tag look is unchanged (text `--dsw-alias-state-warn-primary`).
+   Since the question-card accordion (`bdcccc66`), the badge shows a count instead of the waiting words.
 3. DSH design tokens only (`--dsw-*`), no hard-coded colours.
 
 ## How (live browser)
@@ -26,7 +26,7 @@ translucent layer composited over what is behind it. Rows skip where no Chromium
 | Id | Technique | Expected outcome |
 | --- | --- | --- |
 | UIFF-ASK-DT-01 `<permission\|ask> <en\|zh> <light\|dark>` (8) | DT | The textarea's placeholder is "Reason" / "理由", painted at least 4.5:1 against its fill |
-| RESHOOT-ASKBADGE-DT-01 `open <variant> <lang> <theme>` (8) | DT; BVA at 4.5:1 | The badge reads the open words, tone warning, text at least 4.5:1 against its fill; dark: equal to DSH's own warning Tag and to the token |
+| RESHOOT-ASKBADGE-DT-01 `open <variant> <lang> <theme>` (8) | DT; BVA at 4.5:1 | The badge shows `1` for the single-request fixture, tone warning, text at least 4.5:1 against its fill; dark: equal to DSH's own warning Tag and to the token |
 | UIFF-TOKENS-EP-01 `<ask card\|target list\|open ask badge> <theme>` (6) | EP | Every colour declaration of Fishball's sheets on the measured elements uses DSH tokens only |
 | UIFF-ORACLE-CTRL-01 placeholder × theme, warning Tag light (3) | Control | DSH's default placeholder token (1.26:1) and DSH's warning Tag on the page (1.96:1) measure below 4.5:1, so a pass is not an artefact |
 
@@ -43,7 +43,7 @@ same measurement with `client.asks.js` swapped for its copy at a base commit
 | --- | --- | --- |
 | 9f5a4228 (before UI-FIX-F) | 1.26 / 1.26 (fail) | 1.83 / 5.75 |
 | 881b14b2 (before RESHOOT fix 1) | 5.80 / 8.03 | **1.83** (fail) / 5.75 |
-| HEAD | 5.80 / 8.03 | 6.36 / 5.75 |
+| Rewrite baseline (`4f0d5fcc`, before the accordion) | 5.80 / 8.03 | 6.36 / 5.75 |
 
 ## Not here
 

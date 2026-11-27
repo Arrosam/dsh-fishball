@@ -17,10 +17,13 @@ export const TOOL = Object.freeze({ name: 'message_user', parameter: 'message', 
 export const SESSION_ROUTE = '/api/fishball/session'
 
 /**
- * Fishball's model, set before the page opens: with it unset fishball-ui's model dialog is a modal over
- * the chat and DSH's control cannot be clicked. The scripted model serves this routable selection.
+ * Configure the scripted model and executor at boot: ptc is not a volatile setting, and these
+ * transcripts script native tool calls, not run_code. The page cases never edit this core config.
  */
-export const MODEL = Object.freeze({ namespace: FISHBALL_MODEL.settingsNamespace, path: FISHBALL_MODEL.path, routable: Object.freeze({ provider: FAKE.provider, model: FAKE_MODELS.b }) })
+export const PAGE_CORE_PATCH = Object.freeze({ id: FISHBALL_MODEL.settingsNamespace, config: Object.freeze({
+  model: Object.freeze({ provider: FAKE.provider, model: FAKE_MODELS.b }),
+  ptc: false,
+}) })
 
 /**
  * Spec item 2's argument partitions, one call per turn before the page rows (MSG-PAGE-DT-01 reads that

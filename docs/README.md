@@ -11,6 +11,7 @@ Each package's README says what it does, how it is built and how to test it.
 | fishball-board | `packages/fishball-board` | [README](<../packages/fishball-board/README.md>) | [tests](<../packages/fishball-board/tests/README.md>) |
 | fishball-heartbeat | `packages/fishball-heartbeat` | [README](<../packages/fishball-heartbeat/README.md>) | [tests](<../packages/fishball-heartbeat/tests/README.md>) |
 | fishball-taskboard | `packages/fishball-taskboard` | [README](<../packages/fishball-taskboard/README.md>) | [tests](<../packages/fishball-taskboard/tests/README.md>) |
+| fishball-consultant | `packages/fishball-consultant` | [README](<../packages/fishball-consultant/README.md>) | [tests](<../packages/fishball-consultant/tests/README.md>) |
 | fishball-amenities | `packages/fishball-amenities` | [README](<../packages/fishball-amenities/README.md>) | [tests](<../packages/fishball-amenities/tests/README.md>) |
 | fishball-shared | `packages/shared` | [README](<../packages/shared/README.md>) | [tests](<../packages/shared/tests/README.md>) |
 | fishball-test-helpers | `packages/test-helpers` | [README](<../packages/test-helpers/README.md>) | its own `tests/` |
@@ -22,7 +23,7 @@ Each package's README says what it does, how it is built and how to test it.
 
 ## Design and requirements
 
-- [DESIGN.md](<../DESIGN.md>): the decisions in force (V3 §17–§35 and the rules kept from V2).
+- [DESIGN.md](<../DESIGN.md>): the decisions in force (V3 §17–§35, later amendments, and the rules kept from V2).
 - [planning/v3-design.md](<planning/v3-design.md>) (§1.0 first) and [planning/v3-requirements.md](<planning/v3-requirements.md>): the V3 design and requirements.
 - [planning/v3-multi-dsh.md](<planning/v3-multi-dsh.md>): PLAN-MULTI, several DSH targets.
 - [planning/v3-tasks.md](<planning/v3-tasks.md>): the V3 task table.

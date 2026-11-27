@@ -116,11 +116,11 @@ Source: [PLAN-MULTI](<../../../docs/planning/v3-multi-dsh.md>) §3–§7 (D01–
 | Per-target strip | `TargetView.line {kind, code}` = core's `stripLine(...).line` for that target (amendment from MULTI-3), with `control` and `contributedTools` |
 | Public state | `connected`, `connecting`, `failed`, `not-set` (rule in `SEAM_TARGETS`' comment); `name: null` shows the placeholder, never a URL (Q01) |
 | Routes | `SEAM_TARGETS.route`: GET `/api/fishball/targets` → 200 `TargetsSnapshot` (= `ui.targets.list()`; amendment from MULTI-1, so core's settings page needs no fishball-ui); POST `/api/fishball/targets/{connect,cancel,retry,pairing,add,remove,url}` with `{targetId, …}`; unknown id → 404 `unknown-target`; refusals `target-duplicate` (Q04), `target-reserved`, `confirmation-required` (Q07) |
-| Provenance | `TargetSource {targetId, endpointEpoch, serverName, name}` on every `InterceptedEvent` (`source`) and `AskCard` (`source`); only id/epoch are trusted |
+| Provenance | `TargetSource {targetId, endpointEpoch, serverName, name}` on every `InterceptedEvent` (`source`) and target-bound permission `AskCard` (`source`); only id/epoch are trusted. Fishball’s own question cards have no target. |
 | Local keys | `JSON.stringify([kind, targetId, endpointEpoch, remoteId])`, kinds `event` / `approval` / `session`; plain-token form base64url of that JSON; manager message id `fbe_` + handle (two targets' `event-1` never dedupe) |
 | Ask handle | `AskCard.handle` (kind `approval`); `ui.asks.answer(handle, …)` and the answer route body `{handle, choice, text?}`; state `voided` for a removed/retired target |
 | Duplicate names | ` (n)`, n from 2, lowest free complete name (literal collisions count), persisted, never renumbers (D07, Q03) |
-| Tool names | `mcp__<readable≤16>__<facade>_<digest12>`, ≤ 64, `[A-Za-z0-9_-]`; digest SHA-256 of `JSON.stringify([1, targetId, endpointEpoch, name, origin, rawName])`; every exposed remote tool and the local `ask_user`; withheld, reminder and skill tools unprefixed; a name bound (or retired) for another tuple fails closed. Supersedes V3 §6.3's ban on model-facing `mcp__…` names. Examples below |
+| Tool names | `mcp__<readable≤16>__<facade>_<digest12>`, ≤ 64, `[A-Za-z0-9_-]`; digest SHA-256 of `JSON.stringify([1, targetId, endpointEpoch, name, origin, rawName])`; every exposed remote tool and each target’s permission `ask_user`; Fishball’s own question `ask_user`, reminder and skill tools unprefixed; withheld tools not exposed; a name bound (or retired) for another tuple fails closed. Supersedes V3 §6.3's ban on model-facing `mcp__…` names. Examples below |
 | Target-bound seams | `fishballInstance.bridge(pluginId, ops, TargetSelector)`, `attention.signal(pluginId, input, TargetSelector)`; `{targetId, endpointEpoch?}`, source-derived callers MUST pass the source epoch (security amendment below); `apiVersion` 2 |
 | Hosted reservation | hosted child: first target `parent`/`parent`, URL = `dsh-instance-child.targetUrl`, read-only, not removable; it alone owns `DSH_AGENT_TOKEN`, `fishball-core/hosted-agent` and core's internal pending-origin record `fishball-core/pending-token-origin` (`src/link/constants.js` `LINK_SAVE.pendingOrigin`; core-only, so not a contract value) |
 | Added credentials | reference `FISHBALL_TARGET_TOKEN_<id>__<epoch>` (`-` → `_`); records `fishball-core/token-<id>-<epoch>`, `fishball-core/connect-<id>-<epoch>` |
@@ -238,8 +238,10 @@ same in standalone and hosted mode, and no plugin injects a section into it.
 - **Offered preset:** `fishball`, the default and the only one.
 - **Policy:** sandbox `read-only`; `ctx.approval.config.policy` = `ask`, read directly; permission
   presets `[read-only]`, default `read-only`.
-- **Manager tools:** exactly `read`, `read_image` and `working_directory`, plus `ask_user_question`
-  (the user, 2026-11-18: DSH's own ask tool), checked on resume instead of the preset name (R-FB-13).
+- **Manager tools:** expected host tools `read`, `read_image` and `working_directory`, checked on
+  resume instead of the preset name (R-FB-13). The Fishball singleton installs a `tools.restrict`
+  deny for inherited `ask_user_question`, excluding it from both native tools and the PTC SDK.
+  Other sessions retain it, including those on the same preset.
 - **Report (spelling PROPOSED):** `ok`, or `guards-overridden` with `row:<id>`, `policy:<key>`, `agent-presets`,
   `bundle-order` or `manager-tools`, with `extraManagerTools` (the manager's tool names beyond the
   defaults, which core's status announces once per new name, gently; the user, 2026-11-21) and
@@ -250,3 +252,15 @@ same in standalone and hosted mode, and no plugin injects a section into it.
   back.
 - **Leftover sessions** are archived (`workspaceController.archiveSession`). That is X-MIG's
   behaviour (PLAT-UC-05, R-MIG-01), with no type here.
+
+## Fishball’s own question cards
+
+The manager-only `ask_user({questions: [{id, question, header?, options?: [{label, description?}], multi_select?}]})`
+returns `{cardId}` after local persistence, not after an answer. Owner-only cards use the existing
+ask-card layer and `asks` page-stream topic. Question cards share the permission-card accordion,
+show the batch count and summary, and display each question in its own fieldset when expanded. The
+owner’s answer is an ordinary queued user-role follow-up containing `cardId` and `answers`
+(`{id, selected, custom?}` in question order). It wakes an idle manager or waits for its current
+turn to finish. There is no connector RPC, remote offer, or target epoch for this flow. Target-bound
+permission cards and forwarded managed-session questions and plan reviews keep their existing paths.
+See [DESIGN](<../../../DESIGN.md#fishball-question-cards>).

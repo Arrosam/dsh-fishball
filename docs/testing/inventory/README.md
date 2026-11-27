@@ -31,6 +31,9 @@ was retired, or the integration package that covers it.
 | [retired-subjects.md](<retired-subjects.md>) | 5 | 16 | 20 |
 | **all** | | **1105** | **3995** |
 
+These totals describe the original baseline only. See [staging additions](<staging-f8bcb158.md>)
+for the tests that landed on staging after that snapshot.
+
 ## Baseline results
 
 Of the 3995 behaviours, the baseline showed 3247 passing on both SDKs. The rest were:

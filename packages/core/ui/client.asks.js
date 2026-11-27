@@ -11,15 +11,11 @@
  * the session whose id the card stream names as the manager's. Every other session draws nothing.
  *
  * The state is the server half's (src/asks/): the stream route sends `{managerSessionId, cards}`
- * and the answer route commits once. A card shows the DSH it came from (MULTI-3: the target's
- * resolved name, plain text), the asking session, its question, the call's
- * arguments and the session's reason when the request carries them (the user, 2026-11-17), and the
- * card's choices (Allow / Reject, or Reject alone for incomplete arguments) with an optional reason; an answered, closed or voided
- * (its target removed, Q07) card shows its state, with no control, and the server refuses a late
- * answer anyway. A card is keyed and answered by its opaque `handle` (MULTI-0), never its raw id.
+ * and the answer route commits once. The same dock and accordion hold target permission cards and
+ * the local manager's question batches. Permissions keep their opaque handle and choices; local
+ * questions answer by cardId and carry one answer per question. Settled cards leave the dock.
  *
- * The words are the approval wording of the earlier Fishball page (en and zh), kept as they were;
- * the zh review is deferred by the user, so they are not reworded here.
+ * Permission actions keep the approval wording of the earlier Fishball page (en and zh).
  */
 window.__ModuleLoader__.load({
   id: 'fishball-ui',
@@ -37,22 +33,31 @@ window.__ModuleLoader__.load({
       // Before DSH's own docks in this slot (todo 0, goal 10, queue 20, both SDKs), so an open card
       // is the first thing above the composer.
       order: -10,
+      // Match the native question panel’s viewport cap so cards leave the composer usable.
+      maxHeight: 'min(60vh, 520px)',
       // Core's published answer route and card states, restated because fishball-ui imports nothing
       // of core (Q-G2): core's src/asks/constants.js ASK_ROUTE path without its leading `/`
       // (page-relative), and CARD_STATE. The cards arrive on the page stream's `asks` topic.
       answer: 'api/fishball/asks/answer',
-      state: Object.freeze({ open: 'open', answered: 'answered', closed: 'closed', voided: 'voided' }),
+      openState: 'open',
       /**
        * MULTI-0 (`SEAM_TARGETS.ask`, restated): the answer body names the card's opaque
        * target-qualified `handle`, never its raw `approvalId`, so two DSHs' equal ids are two cards
        * answered each through its own target (PLAN-MULTI §5).
        */
       handleField: 'handle',
-      css: Object.freeze({ id: 'fishball-asks-style', root: 'fb-asks', card: 'fb-ask-card', meta: 'fb-ask-meta', source: 'fb-ask-source', hidden: 'fb-ask-visually-hidden', from: 'fb-ask-from', time: 'fb-ask-time', body: 'fb-ask-body', badge: 'fb-ask-badge', question: 'fb-ask-question', detail: 'fb-ask-detail', label: 'fb-ask-label', args: 'fb-ask-args', row: 'fb-ask-row', reason: 'fb-ask-reason', error: 'fb-ask-error' }),
+      kind: Object.freeze({ permission: 'permission', question: 'question' }),
+      permissionCount: 1,
+      css: Object.freeze({
+        id: 'fishball-asks-style', root: 'fb-asks', card: 'fb-ask-card', meta: 'fb-ask-meta', preview: 'fb-ask-preview', chevron: 'fb-ask-chevron',
+        source: 'fb-ask-source', hidden: 'fb-ask-visually-hidden', from: 'fb-ask-from', time: 'fb-ask-time', body: 'fb-ask-body', badge: 'fb-ask-badge',
+        question: 'fb-ask-question', detail: 'fb-ask-detail', label: 'fb-ask-label', args: 'fb-ask-args', row: 'fb-ask-row', reason: 'fb-ask-reason', error: 'fb-ask-error',
+        fields: 'fb-ask-fields', option: 'fb-ask-option',
+      }),
       // K1's ARGUMENTS_STATUS word for whole arguments (core's AskCard.argumentsStatus, ask-card.d.ts).
       argumentsComplete: 'complete',
-      // DSH's Tag tones: an open card sits in the approval card's warn band; a finished one is quiet.
-      tone: Object.freeze({ open: 'warning', done: 'neutral' }),
+      // DSH's warning Tag inside the approval card's warn band.
+      badgeTone: 'warning',
       reasonRows: 2,
       /**
        * UI-FIX-F: the reason box's placeholder ink. DSH's own input placeholder token
@@ -64,7 +69,7 @@ window.__ModuleLoader__.load({
        */
       placeholderInk: '--dsw-alias-label-secondary',
       /**
-       * RESHOOT: the open card's "waiting" badge ink in the light theme only. DSH's warning Tag draws
+       * RESHOOT: the count badge ink in the light theme only. DSH's warning Tag draws
        * `--dsw-alias-state-warn-primary` (#f59e0b) on its #fdeacc tint there: 1.8:1. DSH's own warn
        * text token (`--dsw-alias-state-warn-label`, #dd8629) half mixed with the primary label is
        * #764c1f, 6.3:1 on the badge (WCAG AA 4.5:1), and stays in the warn hue. The dark theme
@@ -72,7 +77,7 @@ window.__ModuleLoader__.load({
        * scoped to the light theme by the body attribute DSH sets for dark (dsh-client-ui-layout's
        * ThemePresenter; dsh-client-ui-theme's token sheets key on the same attribute).
        */
-      waitingInk: Object.freeze({
+      badgeInk: Object.freeze({
         lightScope: 'body:not([data-ds-dark-theme])',
         ink: 'color-mix(in srgb,var(--dsw-alias-state-warn-label) 50%,var(--dsw-alias-label-primary))',
       }),
@@ -94,9 +99,11 @@ window.__ModuleLoader__.load({
       'detail.arguments': 'Arguments',
       'detail.reason': 'The session\'s reason',
       'detail.incomplete': 'The arguments are incomplete, so this request can only be rejected.',
-      'state.answered': 'answered',
-      'state.closed': 'closed',
-      'state.voided': 'voided',
+      'header.permission': 'Permission',
+      'header.question': 'Question',
+      'question.custom': 'Type your answer',
+      'question.skip': 'Skip',
+      'question.submit': 'Submit',
     }
     const zh = {
       waiting: 'Fishball 正在等你回答',
@@ -109,33 +116,38 @@ window.__ModuleLoader__.load({
       'detail.arguments': '参数',
       'detail.reason': '会话给出的理由',
       'detail.incomplete': '参数不完整，因此只能拒绝此请求。',
-      'state.answered': '已回答',
-      'state.closed': '已关闭',
-      'state.voided': '已作废',
+      'header.permission': '权限',
+      'header.question': '问题',
+      'question.custom': '输入你的答案',
+      'question.skip': '跳过',
+      'question.submit': '提交',
     }
 
-    // UI-POLISH-F: the layout of DSH's own approval card (dsh-client-ui-approval, both SDKs): a warn
-    // band naming who asks, the question as the headline, the details, and the choices at the end.
-    // An answered or closed card keeps only the band and the question, muted.
-    const openCard = `[data-fishball-ask-state="${ASKS_UI.state.open}"]`
+    // Keep the approval card's warning band and surface for both kinds of open card.
+    const focusRing = 'outline:var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));outline-offset:-2px'
     const css = [
       // The warn stroke is an overlay above the children, so the opaque band cannot paint over it.
+      `.${ASKS_UI.css.root}{max-height:${ASKS_UI.maxHeight};overflow:auto;overscroll-behavior:contain}`,
       `.${ASKS_UI.css.card}{position:relative}`,
-      `.${ASKS_UI.css.card}${openCard}::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 1px var(--dsw-alias-state-warn-secondary);pointer-events:none}`,
-      `.${ASKS_UI.css.card}:not(${openCard}){color:var(--dsw-alias-label-secondary)}`,
-      `.${ASKS_UI.css.meta}{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:8px 16px;font:var(--dsw-font-xxs-12);color:var(--dsw-alias-label-tertiary)}`,
-      // Only the Tag carries the warn colour: warn text on the warn band is too faint to read.
-      `.${ASKS_UI.css.card}${openCard} .${ASKS_UI.css.meta}{background:var(--dsw-alias-state-warn-tertiary);color:var(--dsw-alias-label-secondary)}`,
-      `${ASKS_UI.waitingInk.lightScope} .${ASKS_UI.css.card}${openCard} .${ASKS_UI.css.badge}{color:${ASKS_UI.waitingInk.ink}}`,
-      `.${ASKS_UI.css.from}{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}`,
+      `.${ASKS_UI.css.card}::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 1px var(--dsw-alias-state-warn-secondary);pointer-events:none}`,
+      `.${ASKS_UI.css.meta}{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:8px;width:100%;border:0;padding:8px 16px;background:var(--dsw-alias-state-warn-tertiary);color:var(--dsw-alias-label-primary);font:var(--dsw-font-xxs-12);text-align:start;cursor:pointer}`,
+      `.${ASKS_UI.css.meta}:focus-visible{${focusRing}}`,
+      `.${ASKS_UI.css.preview}{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-secondary)}`,
+      `.${ASKS_UI.css.chevron}{width:6px;height:6px;border:solid currentColor;border-width:0 1px 1px 0;transform:translateY(-2px) rotate(45deg)}`,
+      `.${ASKS_UI.css.meta}[aria-expanded="true"] .${ASKS_UI.css.chevron}{transform:translateY(2px) rotate(225deg)}`,
+      `${ASKS_UI.badgeInk.lightScope} .${ASKS_UI.css.card} .${ASKS_UI.css.badge}{color:${ASKS_UI.badgeInk.ink}}`,
+      `.${ASKS_UI.css.from}{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font:var(--dsw-font-xxs-12);color:var(--dsw-alias-label-secondary)}`,
       // A label read by assistive technology only ("DSH:" before the source name).
       `.${ASKS_UI.css.hidden}{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}`,
       // Which DSH asks (MULTI-3): its name as text, cut visually with the full name as the title.
       `.${ASKS_UI.css.source}{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;unicode-bidi:plaintext;font:var(--dsw-font-xxs-strong-12);color:var(--dsw-alias-label-primary)}`,
       `.${ASKS_UI.css.time}{margin-left:auto;white-space:nowrap}`,
       `.${ASKS_UI.css.body}{display:grid;gap:8px;padding:12px 16px 14px}`,
-      `.${ASKS_UI.css.question}{margin:0;white-space:pre-wrap;font:var(--dsw-font-s-strong-14);color:var(--dsw-alias-label-primary)}`,
-      `.${ASKS_UI.css.card}:not(${openCard}) .${ASKS_UI.css.question}{font:var(--dsw-font-xs-13);color:var(--dsw-alias-label-secondary)}`,
+      `.${ASKS_UI.css.body}[hidden]{display:none}`,
+      `.${ASKS_UI.css.question}{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font:var(--dsw-font-s-strong-14);color:var(--dsw-alias-label-primary)}`,
+      `.${ASKS_UI.css.fields}{display:grid;gap:8px;min-width:0;margin:0;padding:0;border:0}`,
+      `.${ASKS_UI.css.fields} legend{margin-bottom:8px;padding:0}`,
+      `.${ASKS_UI.css.option}{display:flex;align-items:baseline;gap:8px;overflow-wrap:anywhere}`,
       `.${ASKS_UI.css.detail}{margin:0;color:var(--dsw-alias-label-secondary);white-space:pre-wrap}`,
       `.${ASKS_UI.css.label}{margin:0 0 4px;font:var(--dsw-font-xxs-strong-12);color:var(--dsw-alias-label-tertiary)}`,
       // The arguments wrap at spaces first and split a token only when it is longer than the line
@@ -145,7 +157,7 @@ window.__ModuleLoader__.load({
       // The input look of DSH's settings fields (SettingsValueField, both SDKs).
       `.${ASKS_UI.css.reason}{width:100%;box-sizing:border-box;resize:vertical;padding:6px 10px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-md);background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary);font:var(--dsw-font-xs-13)}`,
       `.${ASKS_UI.css.reason}::placeholder{color:var(${ASKS_UI.placeholderInk});opacity:1}`,
-      `.${ASKS_UI.css.reason}:focus-visible{outline:var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));outline-offset:-1px}`,
+      `.${ASKS_UI.css.reason}:focus-visible{${focusRing}}`,
       `.${ASKS_UI.css.error}{margin:0;color:var(--dsw-alias-state-error-primary)}`,
     ].join('')
 
@@ -160,63 +172,163 @@ window.__ModuleLoader__.load({
       initial: Object.freeze({ managerSessionId: null, cards: Object.freeze([]) }),
     })
 
+    function AnswerText({ label, value, locked, onChange }) {
+      return h('textarea', {
+        className: ASKS_UI.css.reason, rows: ASKS_UI.reasonRows, value, placeholder: label, 'aria-label': label,
+        disabled: locked, onChange: (event) => onChange(event.target.value),
+      })
+    }
+
+    function AskAction({ children, ...props }) {
+      return h(Button, { type: 'button', size: 'sm', variant: 'outline', ...props }, children)
+    }
+
+    function PermissionBody({ card, expanded, locked, send, t }) {
+      const [reason, setReason] = React.useState('')
+      if (!expanded) return null
+      return h(React.Fragment, null,
+        h('p', { className: ASKS_UI.css.question }, card.question),
+        // Plain text children: React escapes the target's question, arguments and reason.
+        card.arguments == null ? null : h('div', { 'data-fishball-ask-arguments': true },
+          h('p', { className: ASKS_UI.css.label }, t('detail.arguments')),
+          h('pre', { className: ASKS_UI.css.args }, card.arguments)),
+        card.reason == null ? null : h('p', { className: ASKS_UI.css.detail, 'data-fishball-ask-reason': true }, t('detail.reason') + ': ' + card.reason),
+        card.argumentsStatus != null && card.argumentsStatus !== ASKS_UI.argumentsComplete
+          ? h('p', { className: ASKS_UI.css.detail, 'data-fishball-ask-incomplete': true }, t('detail.incomplete')) : null,
+        h(AnswerText, { label: t('reason'), value: reason, locked, onChange: setReason }),
+        h('div', { className: ASKS_UI.css.row }, card.choices.map((choice, index) => h(AskAction, {
+          key: choice, variant: index === 0 ? 'primary' : 'outline', disabled: locked,
+          'data-fishball-ask-choice': choice, onClick: () => send({ [ASKS_UI.handleField]: card.handle, choice, text: reason }),
+        }, t('choice.' + choice)))))
+    }
+
+    const emptyDraft = Object.freeze({ selected: Object.freeze([]), custom: '', skipped: false })
+
+    function QuestionFields({ question, draft, locked, update, t }) {
+      const group = React.useId()
+      const multi = question.multi_select === true
+      return h('fieldset', { className: ASKS_UI.css.fields, disabled: locked },
+        h('legend', { className: ASKS_UI.css.question }, question.question),
+        question.options?.map(({ label, description }, index) => {
+          const descriptionId = description ? group + '-description-' + index : undefined
+          const choose = (event) => {
+            const selected = !multi ? [label] : event.target.checked
+              ? [...draft.selected, label] : draft.selected.filter((item) => item !== label)
+            update({ selected, custom: multi ? draft.custom : '', skipped: false })
+          }
+          return h('label', { key: label, className: ASKS_UI.css.option },
+            h('input', {
+              type: multi ? 'checkbox' : 'radio', name: group, value: label, checked: draft.selected.includes(label),
+              'aria-label': label, 'aria-describedby': descriptionId, onChange: choose,
+            }),
+            h('span', null, label, descriptionId && h('span', { id: descriptionId, className: ASKS_UI.css.detail }, h('br'), description)))
+        }),
+        // Like DSH's question tool, typing replaces a radio answer but can accompany checked options.
+        h(AnswerText, {
+          label: t('question.custom'), value: draft.custom, locked,
+          onChange: (custom) => update({ selected: multi ? draft.selected : emptyDraft.selected, custom, skipped: false }),
+        }),
+        h('div', null, h(AskAction, {
+          'aria-pressed': draft.skipped, variant: draft.skipped ? 'primary' : 'outline',
+          onClick: () => update({ ...emptyDraft, skipped: !draft.skipped }),
+        }, t('question.skip'))))
+    }
+
+    function QuestionBody({ card, expanded, locked, send, t }) {
+      const [drafts, setDrafts] = React.useState(() => new Map())
+      if (!expanded) return null
+      const canSubmit = card.questions.every(({ id }) => {
+        const draft = drafts.get(id)
+        return draft && (draft.skipped || draft.selected.length > 0 || draft.custom.trim() !== '')
+      })
+      const submit = () => {
+        const answers = card.questions.map(({ id }) => {
+          const { selected, custom } = drafts.get(id)
+          // An explicitly skipped question has neither a choice nor custom text on the wire.
+          const text = custom.trim()
+          return { id, selected, ...(text === '' ? {} : { custom: text }) }
+        })
+        send({ cardId: card.cardId, answers })
+      }
+      return h(React.Fragment, null,
+        card.questions.map((question) => h(QuestionFields, {
+          key: question.id, question, draft: drafts.get(question.id) ?? emptyDraft, locked, t,
+          update: (draft) => setDrafts((current) => new Map(current).set(question.id, draft)),
+        })),
+        h('div', { className: ASKS_UI.css.row },
+          h(AskAction, { variant: 'primary', disabled: locked || !canSubmit, onClick: submit }, t('question.submit'))))
+    }
+
+    const isQuestion = (card) => card.kind === ASKS_UI.kind.question
+
     function makeDock(ctx, stream, kit, presses) {
-      /** One card: the asking session, the question, and Allow / Reject with an optional reason. */
-      function AskCard({ card, t, stale, lang }) {
-        const [reason, setReason] = React.useState('')
-        // The press state is the part's, keyed by the card's handle (kit `pressStore`), so a remount
-        // of the dock keeps an in-flight answer locked.
+      function AskCard({ card, expanded, toggle, t, stale, lang }) {
+        const panelId = React.useId()
+        // Press state outlives the dock: remounts cannot unlock an in-flight answer. A stale frame
+        // may still show a settled card, so none of its controls can post until the stream is live.
         const { sending, refused } = kit.usePress(presses, card.handle)
-        const open = card.state === ASKS_UI.state.open
-        // A card from a stream that is not live may be answered or closed already: no control acts
-        // on it until a fresh frame (R-FIX-FUI). Core still refuses a late answer anyway.
         const locked = sending || stale
-        // A refusal that closed the card arrives on the stream too; the sentence says why now
-        // (MULTI-0 `SEAM_TARGETS.http`: a voided or closed card answers `expired`).
-        const send = (choice) => presses.run(card.handle, () => kit.press(ASKS_UI.answer, { [ASKS_UI.handleField]: card.handle, choice, text: reason }),
-          (answer) => ({ refused: kit.refusalText(answer, lang) }))
-        // The DSH the card came from (MULTI-3; PLAN-MULTI §5): its name as plain text, untrusted data.
+        const send = (body) => {
+          if (stale || presses.get(card.handle).sending) return
+          return presses.run(card.handle, () => kit.press(ASKS_UI.answer, body),
+            (answer) => ({ refused: kit.refusalText(answer, lang) }))
+        }
+        const question = isQuestion(card)
+        const kind = question ? ASKS_UI.kind.question : ASKS_UI.kind.permission
+        const first = question ? card.questions[0] : card
+        const preview = first?.question
+        const header = (question && first?.header?.trim()) || t('header.' + kind)
+        const count = question ? card.questions.length : ASKS_UI.permissionCount
         const source = card.source?.name ?? t('dsh.unnamed')
-        return h('div', { className: [kit.css.card, ASKS_UI.css.card].join(' '), 'data-fishball-ask': card.handle, 'data-fishball-ask-state': card.state },
-          h('div', { className: ASKS_UI.css.meta },
-            h(Tag, { tone: open ? ASKS_UI.tone.open : ASKS_UI.tone.done, className: ASKS_UI.css.badge }, open ? t('waiting') : t('state.' + card.state)),
-            h('span', { className: ASKS_UI.css.source, title: source, 'data-fishball-ask-source': card.source?.targetId }, h('span', { className: ASKS_UI.css.hidden }, t('dsh')), source),
-            h('span', { className: ASKS_UI.css.from }, t('from') + ': ' + (card.sessionTitle ?? card.sessionId)),
+        return h('div', {
+          className: [kit.css.card, ASKS_UI.css.card].join(' '), 'data-fishball-ask': card.handle,
+          'data-fishball-ask-state': card.state, 'data-fishball-ask-kind': kind,
+        },
+        h('button', {
+          className: ASKS_UI.css.meta, type: 'button', 'aria-expanded': expanded, 'aria-controls': panelId,
+          onClick: toggle,
+        },
+        h('strong', null, header),
+        h('span', { className: ASKS_UI.css.preview, title: preview }, preview),
+        h(Tag, { tone: ASKS_UI.badgeTone, className: ASKS_UI.css.badge }, count),
+        h('span', { className: ASKS_UI.css.chevron, 'aria-hidden': true })),
+        h('div', { className: ASKS_UI.css.body, id: panelId, hidden: !expanded },
+          expanded && h('div', { className: ASKS_UI.css.from },
+            h('span', { className: ASKS_UI.css.hidden }, t('waiting')),
+            !question && h('span', { className: ASKS_UI.css.source, title: source, 'data-fishball-ask-source': card.source?.targetId },
+              h('span', { className: ASKS_UI.css.hidden }, t('dsh')), source),
+            h('span', null, t('from') + ': ' + (card.sessionTitle ?? card.sessionId)),
             h('span', { className: ASKS_UI.css.time }, new Date(card.askedAt).toLocaleString(ASKS_UI.timeLocale[lang]))),
-          h('div', { className: ASKS_UI.css.body },
-            h('p', { className: ASKS_UI.css.question }, card.question),
-            // The user, 2026-11-17: "Show arguments and reason". Plain text children: React escapes them.
-            card.arguments == null ? null : h('div', { 'data-fishball-ask-arguments': true },
-              h('p', { className: ASKS_UI.css.label }, t('detail.arguments')),
-              h('pre', { className: ASKS_UI.css.args }, card.arguments)),
-            card.reason == null ? null : h('p', { className: ASKS_UI.css.detail, 'data-fishball-ask-reason': true }, t('detail.reason') + ': ' + card.reason),
-            open && card.argumentsStatus != null && card.argumentsStatus !== ASKS_UI.argumentsComplete
-              ? h('p', { className: ASKS_UI.css.detail, 'data-fishball-ask-incomplete': true }, t('detail.incomplete')) : null,
-            open ? h('textarea', {
-              className: ASKS_UI.css.reason, rows: ASKS_UI.reasonRows, value: reason, placeholder: t('reason'), 'aria-label': t('reason'),
-              disabled: locked, onChange: (event) => setReason(event.target.value),
-            }) : null,
-            open ? h('div', { className: ASKS_UI.css.row },
-              card.choices.map((choice) => h(Button, {
-                key: choice, type: 'button', size: 'sm', variant: choice === card.choices[0] ? 'primary' : 'outline',
-                disabled: locked, 'data-fishball-ask-choice': choice, onClick: () => send(choice),
-              }, t('choice.' + choice)))) : null,
-            refused !== null && open ? h('p', { className: ASKS_UI.css.error, role: 'alert' }, refused) : null))
+          // Keep the draft owner mounted while removing collapsed controls from the tab order.
+          h(question ? QuestionBody : PermissionBody, { card, expanded, locked, send, t }),
+          expanded && refused !== null ? h('p', { className: ASKS_UI.css.error, role: 'alert' }, refused) : null))
       }
 
-      // `t` is the slot's own locale prop (registered with `locale`), so a language switch re-renders
-      // the dock, as DSH's goal and queue docks are drawn.
-      return function FishballAsks({ sessionId, t }) {
-        const lang = kit.useLang(ctx)
-        const { frame: { managerSessionId, cards }, health } = React.useSyncExternalStore(stream.subscribe, stream.get)
-        // Finished cards (`answered`, `closed`, `voided`) stay in core's history but dismiss from the composer dock.
-        const visible = cards.filter((card) => card.state === ASKS_UI.state.open)
-        // Only Fishball's own conversation shows its cards (Q-U2: never another session's view).
-        if (sessionId === undefined || sessionId !== managerSessionId || visible.length === 0) return null
+      function OpenAsks({ cards, t, lang, health }) {
+        const multiple = cards.length > 1
+        const [accordion, setAccordion] = React.useState(() => ({ multiple, expanded: multiple ? null : cards[0].handle }))
+        const enteringMulti = multiple && !accordion.multiple
+        const stillOpen = cards.some((card) => card.handle === accordion.expanded)
+        // Collapse on entry into multi-card mode, but keep the user's choice on subsequent arrivals.
+        const expanded = !enteringMulti && stillOpen ? accordion.expanded : null
+        if (multiple !== accordion.multiple || expanded !== accordion.expanded) setAccordion({ multiple, expanded })
         const stale = health !== kit.HEALTH.live
         return h('div', { className: [kit.css.dock, ASKS_UI.css.root].join(' '), 'data-fishball-asks': true, 'data-fishball-asks-stale': stale ? health : undefined },
           stale ? h('div', { className: kit.css.card }, h(kit.StreamNotice, { health, lang })) : null,
-          visible.map((card) => h(AskCard, { key: card.handle, card, t, stale, lang })))
+          cards.map((card) => h(AskCard, {
+            key: card.handle, card, t, stale, lang, expanded: expanded === card.handle,
+            toggle: () => setAccordion({ multiple, expanded: expanded === card.handle ? null : card.handle }),
+          })))
+      }
+
+      // The slot's t prop re-renders the dock when the locale changes.
+      return function FishballAsks({ sessionId, t }) {
+        const lang = kit.useLang(ctx)
+        const { frame: { managerSessionId, cards }, health } = React.useSyncExternalStore(stream.subscribe, stream.get)
+        // Only Fishball's own conversation shows cards. Settled cards stay in history, not the dock.
+        if (!sessionId || sessionId !== managerSessionId) return null
+        const open = cards.filter((card) => card.state === ASKS_UI.openState && (!isQuestion(card) || card.sessionId === sessionId))
+        return open.length ? h(OpenAsks, { key: sessionId, cards: open, t, lang, health }) : null
       }
     }
 

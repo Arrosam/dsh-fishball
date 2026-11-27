@@ -30,7 +30,7 @@ Supported: DeepSeek Harness (DSH) ${SDKS.join(' and ')}.
 
 ## Standalone Fishball DSH
 
-Install \`fishball-ui\` and \`fishball-core\` (core last):
+Install \`fishball-core\` last; it includes \`fishball-ui\`:
 
 ${installBlocks('standalone', name)}
 
@@ -53,6 +53,13 @@ ${installBlocks('heartbeat', name)}
 ${name('taskboard')}:
 
 ${installBlocks('taskboard', name)}
+
+${name('consultant')}:
+
+${installBlocks('consultant', name)}
+
+When provided by the umbrella, Consultant can be disabled as a row, not removed separately.
+Do not use an ordinary worker to bypass Consultant's protected connector requirement.
 
 For the DSH-side connector plugins, see the \`dsh-connector\` repository. For running Fishball as a hosted child inside your main DSH, see the \`dsh-fishball-instance\` repository.
 `

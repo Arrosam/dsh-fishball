@@ -21,10 +21,11 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { caseName, caseTest } from 'fishball-test-helpers/cases'
 import { DSH_VERSION } from 'fishball-test-helpers/dsh'
 import { packageByName } from 'fishball-test-helpers/packages'
-import { BUDGET, CASE, CORE_CLOSURE, DSH, FIELDS, INSTALL_DOC, ISOLATION, JUNK, LIBRARIES, MANIFEST, PACK, PACK_SCRIPT, RELEASE, RELEASED, SETS, STAGED, TESTS_RULE, VERSION, tarballName } from '../constants.mjs'
+import { BUDGET, CASE, CONSULTANT_RELEASE, CORE_CLOSURE, DSH, FIELDS, FISHBALL, INSTALL_DOC, ISOLATION, JUNK, LIBRARIES, MANIFEST, PACK, PACK_SCRIPT, RELEASE, RELEASED, SETS, STAGED, TESTS_RULE, VERSION, tarballName } from '../constants.mjs'
 import { packedFiles } from '../support/scan.mjs'
 import {
   assertFromOwnBundle, copyRelease, describeEntry, docLines, docProfile, dshAdd, dshModule, fencedBlocks, flipByte, installAndCheck, installProblems,
@@ -120,6 +121,16 @@ const onCopy = (fn) => withScratch(async (scratch) => {
 })
 
 export function registerReleaseCases() {
+  caseTest(CASE.consultant, 'catalog', 'release stages the standalone consultant before the collection that bundles it', async () => {
+    const { PACKAGES, INSTALL_SETS } = await import(pathToFileURL(PACK_SCRIPT.catalog).href)
+    const { member, collection } = CONSULTANT_RELEASE
+    const atMember = PACKAGES.findIndex((pkg) => pkg.key === member)
+    const atCollection = PACKAGES.findIndex((pkg) => pkg.key === collection)
+    assert.ok(atMember !== -1 && atMember < atCollection, 'consultant must precede amenities in publish order')
+    assert.equal(PACKAGES[atMember].folder, packageByName(FISHBALL.consultant).dir)
+    assert.deepEqual(INSTALL_SETS[member], [member])
+    assert.deepEqual(INSTALL_SETS[collection], [collection])
+  })
   registerOracle()
   registerLayout()
   registerManifests()

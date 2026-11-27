@@ -24,7 +24,7 @@ import { chromeBinary, stopBrowser } from 'fishball-test-helpers/browser'
 import { caseTest } from 'fishball-test-helpers/cases'
 import { scenario } from 'fishball-test-helpers/dsh-world'
 import { sleep } from 'fishball-test-helpers/wait'
-import { EXTENSION, corePackages } from '../support/world.mjs'
+import { pageWorld } from '../support/world.mjs'
 import { BUDGET, HOME, PAGE, PAGING, SKIP_NO_CHROME, STREAM, TOOL } from './constants.mjs'
 import { managerSession, openFishballPage, show } from './facts.mjs'
 
@@ -137,7 +137,7 @@ export function registerPagingCases() {
       f.exceptions = tab.exceptions()
       await tab.close()
     },
-  ], { packages: corePackages(), extension: EXTENSION })
+  ], pageWorld())
   const read = async (...keys) => {
     const f = await facts()
     for (const key of keys) if (f[key] === undefined) throw f.error ?? new Error('fact ' + key + ' was not collected')

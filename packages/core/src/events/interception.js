@@ -22,7 +22,7 @@
  */
 import { randomUUID } from 'node:crypto'
 // `LINK.disconnected` is core's own copy of the connector's word (K3a), not read from the link itself.
-import { INTERCEPT, LINK, REASON, STATE } from '../../contracts/constants.js'
+import { INTERCEPT, LINK, MCP, REASON, STATE } from '../../contracts/constants.js'
 import { ACKABLE, DISPATCH, HOST, INTERCEPTOR_HELD, LOG, MISUSE, UNDECIDED } from './constants.js'
 import { codeOf } from './diagnostics.js'
 import { receiptOf, recordKeyOf } from './ledger.js'
@@ -45,6 +45,8 @@ const snapshotOf = (event) => frozen(structuredClone(event))
  * @param options.logger - `{info, warn}`: the background log (R-INT-09); never given a payload.
  */
 export function createInterception({ ledger, registry, delivery, link, logger }) {
+  const turnObservers = new Set()
+  const trustedTurns = new WeakSet()
   let recovering = Promise.resolve()
   let pruning = false
   // Once close() has run, the ledger's owner may close its storage domain, and a ledger read or
@@ -240,6 +242,14 @@ export function createInterception({ ledger, registry, delivery, link, logger })
       ? { state: STATE.fishball, reason: REASON.noMatch, attempt, eventId: event.eventId, event }
       : { state: STATE.offered, plugin: chosen.pluginId, attempt, eventId: event.eventId, event }
     if (!(await ledger.create(key, fields))) return replay(key)
+    if (event.type === MCP.eventTypes.turnFinished && turnObservers.size > 0 && link.live(source)) {
+      trustedTurns.add(event)
+      for (const observer of turnObservers) setImmediate(() => {
+        // Macrotask: this runs outside the acceptance/delivery chain, even for synchronous listeners.
+        if (closed || !turnObservers.has(observer) || !link.live(source)) return
+        void Promise.resolve().then(() => observer(event)).catch(() => {})
+      })
+    }
     if (chosen === undefined) {
       logger?.info(LOG.toFishball, event.eventId, event.type, REASON.noMatch)
       delivery.add(ledger.get(key))
@@ -326,6 +336,22 @@ export function createInterception({ ledger, registry, delivery, link, logger })
    */
   const service = Object.freeze({
     [HOST.tracker]: HOST.trackerOptions,
+    observeTurnFinished(handler) {
+      if (typeof handler !== 'function') throw new TypeError(MISUSE.handler)
+      const observer = (event) => handler(event)
+      if (!closed) turnObservers.add(observer)
+      return () => { turnObservers.delete(observer) }
+    },
+    async isCurrentWorkTurn(event, { signal } = {}) {
+      if (closed || !trustedTurns.has(event) || !link.live(event.source)) return false
+      const { sessionId, assignment, turnFinal } = event.payload ?? {}
+      if (!sessionId || sessionId !== event.sourceSessionId || assignment?.purpose !== MCP.workTurn.purpose ||
+          typeof assignment.id !== 'string' || turnFinal?.version !== MCP.workTurn.version || !Number.isSafeInteger(turnFinal.sequence)) return false
+      try {
+        return await link.isCurrentWorkTurn?.(event.source, sessionId, assignment.id, turnFinal.sequence, signal) === true &&
+          !closed && link.live(event.source)
+      } catch { return false }
+    },
     intercept(registration, onEvent) {
       const caller = this?.[HOST.trackerOptions.property]
       const entry = registry.add(registration, onEvent, caller?.fiber)
@@ -346,6 +372,6 @@ export function createInterception({ ledger, registry, delivery, link, logger })
      * history (state `fishball`, never delivered, never acked). Sends nothing.
      */
     retire: (retired) => delivery.retire(retired),
-    close() { closed = true; delivery.close() },
+    close() { closed = true; turnObservers.clear(); delivery.close() },
   })
 }

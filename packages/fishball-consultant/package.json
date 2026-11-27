@@ -1,0 +1,63 @@
+{
+  "name": "fishball-consultant",
+  "version": "1.0.0-alpha.1",
+  "description": "Advisory-only second opinions for Fishball. Fails closed without a protected connector capability.",
+  "icon": "./assets/fishball-consultant-icon.svg",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Arrosam/dsh-fishball.git",
+    "directory": "packages/fishball-consultant"
+  },
+  "publishConfig": {
+    "tag": "alpha"
+  },
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json",
+    "./client": "./client.js"
+  },
+  "files": [
+    "assets/fishball-consultant-icon.svg",
+    "index.js",
+    "client.js",
+    "src/",
+    "cordis.patch.yml",
+    "README.md",
+    "CONTRACT.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22.14",
+    "dsh": ">=0.2.1-rc.5"
+  },
+  "dependencies": {
+    "fishball-shared": "1.0.0-alpha.1"
+  },
+  "bundleDependencies": [
+    "fishball-shared"
+  ],
+  "peerDependencies": {
+    "@deepseek-ai/dsh-tools": "*",
+    "@deepseek-ai/schemastery": "*",
+    "@deepseek-ai/dsh-storage-domain": "*"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-ui-plugin-manager"
+      ]
+    }
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs"
+  }
+}

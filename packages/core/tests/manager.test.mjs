@@ -4,4 +4,7 @@
 // (watchdog-persona.mjs). See manager/README.md.
 import { registerManagerCases } from './manager/cases.mjs'
 
+import './manager/ptc.mjs'
+import './manager/question-cards.mjs'
+
 registerManagerCases()

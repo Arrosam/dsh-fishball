@@ -722,6 +722,8 @@ export function registerTargetsCases() {
     const b = card({ approvalId: FIXTURE.approvalId, handle: FIXTURE.handles[1], source: { ...card().source, targetId: FIXTURE.ids[1], name: FIXTURE.names.suffixed } })
     const p = await askPage(c, [a, b])
     assert.deepEqual(p.cardsDrawn().map((n) => n.props[ASK_CARD.card]).sort(), [...FIXTURE.handles].sort())
+    // With two pending cards, disclose the chosen card before using its actions.
+    await p.press(p.within(FIXTURE.handles[1]).find((n) => String(n.props[ASK_CARD.expanded]) === 'false'))
     const reject = p.within(FIXTURE.handles[1]).find((n) => n.tag === 'button' && String(n.props[ASK_CARD.choice]) === ASK_CARD.choices.reject)
     await p.press(reject)
     assert.deepEqual(p.posts.filter((x) => x.path === ASK_SOURCE.answerPath).map((x) => x.json.handle), [FIXTURE.handles[1]])

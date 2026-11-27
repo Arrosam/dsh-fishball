@@ -2,8 +2,8 @@
 
 This is the approved plan and decision record of this repository (AGENTS.md: change it when a spike
 or the user changes the design). It holds only what is in force for the packages here: fishball-core,
-fishball-ui, fishball-board, fishball-heartbeat, fishball-taskboard, fishball-amenities and
-fishball-shared, plus the test and release tooling. The full V3 design is
+fishball-ui, fishball-board, fishball-heartbeat, fishball-taskboard, fishball-consultant,
+fishball-amenities and fishball-shared, plus the test and release tooling. The full V3 design is
 [v3-design.md](<docs/planning/v3-design.md>) (§1.0 first) with
 [v3-requirements.md](<docs/planning/v3-requirements.md>); the package READMEs say what each package does
 today ([index](<docs/README.md>)).
@@ -21,7 +21,7 @@ left this repository on 2026-11-20 (6b7c53bf: the dsh-connector and dsh-fishball
 but those repositories own them now: change them there.
 
 **Current release.** 1.0.0-alpha.1. The board ships again inside the fishball-amenities umbrella with
-fishball-heartbeat and fishball-taskboard (§33); fishball-core and fishball-ui name none of them, and the
+fishball-heartbeat, fishball-taskboard (§33) and fishball-consultant; fishball-core and fishball-ui name none of them, and the
 hosted child places only fishball-core.
 
 
@@ -205,7 +205,7 @@ Decided with the user while F-WIRE ran (answers to the five product questions an
 | Core's rows | One main row `fishball-core` (`fishball-core/main`, src/main/) composes the link, Connect, the interception service, the ask cards, status, the bridge façade and the one manager session; it provides `fishballInstance` (apiVersion 1) and `fishballStatus`. The V2 child rows (`fishball-native-session-tools`, `-approvals`, `-app`, `-inbox`) and `src/slim/**` are deleted, with core's `dsh-connector` peer | V2 was never deployed (the user's rule): no V2 path is kept; R-ARCH-10 |
 | Reminders | `schedule_create/list/update/delete` kept, unchanged, registered in the manager's scope only; their V2 page API is gone | the user's answer 1 |
 | Window style | No frame-only rule: the page in dsh-connector-ui's window is exactly the standalone page | the user's answer 2 |
-| Fishball's model | Core's own setting `model` ({provider, model, reasoningEffort?}); unset, unroutable or unreadable means this DSH's default model; nothing blocks. Only core's settings page and fishball-ui's model dialog write it; the composer's model picker (`ui-model-selection`) is a fishball-ui guard row | the user: "所有版本：先用DSH的默认模型"; answers 3 and 4 |
+| Fishball's model | Core's own setting `model` ({provider, model, reasoningEffort?}); unset, unroutable or unreadable means this DSH's default model; nothing blocks. Core's settings page uses separate native model and effort selects; on model change it keeps a supported effort, otherwise uses the catalog default or first supported effort; the effort select is hidden when none are supported. Core's settings page and the hosted instance's first-run onboarding can write it; the legacy in-page model dialog was removed in 1a67b63d; the composer's model picker (`ui-model-selection`) is a fishball-ui guard row | the user: "所有版本：先用DSH的默认模型"; answers 3 and 4 |
 | Model dialog | fishball-ui's `client.model.js`: on opening the Fishball page with `model` unset, a dialog lists DSH's model catalog and writes the choice; dismissed, it returns at the next page open; with no model it says so and opens DSH Settings | the user, 2026-11-16 ("fishball打开的时候…弹出要求选择模型的页面") |
 | Persona | V2 wording kept; tools renamed to their V3 names; sentences on features V3 lacks removed | the user's answer 5 |
 | Cross-machine Connect | A press from a page whose `Origin` is https and whose authority is the request's `Host` uses core's web callback `<origin>/api/fishball/connect/callback` (a raw web route, since the cross-site redirect carries no `SameSite=Strict` cookie; it serves only the one pending attempt, whose `state`, `iss` and PKCE are checked); a loopback origin uses the loopback callback; anything else is `web-callback-insecure` | Q-A3 = B; R-OA-14 and the user's rule that only loopback may use http |
@@ -241,7 +241,7 @@ The user (verbatim): "侧边栏的按钮被收到了这里，这是可以的，�
 | Material | DSH's own primitives (`Button`, `Tooltip`, `Tag`, `StateDot`, `Modal`, the settings fields), its icons and its `--dsw-*` tokens only; no new dependency or hard-coded colour | Light and dark themes come from DSH; the brief |
 | Page navigation | A floating bar in DSH's menu material with three icon buttons (DSH's Settings gear, DSH's fish mark for Fishball, DSH's Plugins pinwheel); the name is the aria-label and DSH's Tooltip; Retry is the refresh icon beside the status | "我更乐意看到是按钮的图标" |
 | Status card | The strip is a card above the composer: a heading ("Target DSH") with the state's dot and badge, the contributed-tools chip and the one control; the other lines below. `stripView` adds `card` {state, title, badge, toolsHint, openApproval}; `card.state` is one of `CARD` (connected, unset, disconnected, connecting, attention, failed, off), from the link line's kind; an unknown kind is `failed` | "target的UI设计太丑了" |
-| Other parts | Ask cards take DSH's approval-card layout; the model dialog groups models under their provider; the header entries are icons; core's settings page puts the model and Connect in DSH settings cards. fishball-board is shelved from this release (the user), so it gets nothing | "所有这个插件的UI都需要设计的美观" |
+| Other parts | Ask cards take DSH's approval-card layout; the legacy in-page model dialog grouped models under their provider (removed in 1a67b63d); the header entries are icons; core's settings page puts the model and Connect in DSH settings cards. fishball-board is shelved from this release (the user), so it gets nothing | "所有这个插件的UI都需要设计的美观" |
 | Wording changed | strip `tools` (now a chip: "N contributed tools" / "N 个贡献工具"); new `card` words; the approval link reads "Open the approval page" / "打开授权页面" instead of the raw URL (still its `title`) | Needed by the design; listed for the user's zh review |
 | Package icons (ICON-SET) | fishball-core and fishball-ui get the shared fish base with their own badge, from ICON-SET's spec (copied, not imported): core a link (DSH's link glyph: the link to the target), fishball-ui a speech bubble with three dots (Fishball's conversation). Both are clearly apart from the DSH side's wrench, window, server and plug at 30 px. Nothing on the Fishball side draws the connector's wrench. fishball-board is shelved and gets none (superseded by §33: every amenity package has its own icon) | The user: "只有connector插件的设置页的图标带有这个小扳手，然后每个插件的右下角都要有个各自的图标" |
 | Narrow window | Below 480 px (DSH's own chat breakpoint) the conversation is lifted by the page bar's height, so the bar never covers DSH's composer stats | Found in the 390 px screenshots |
@@ -294,6 +294,7 @@ The fixes for the fishball-ui review (`.runtime/reports/review-x-fishball-ui.md`
 | Point | Decision | Reason |
 |---|---|---|
 | Rows that change DSH's UI | fishball-ui's patch only inserts its own rows. The UI guard rows (`ui-*`, `entry-customization`) and the hosted child's Preview Notice acknowledgement are in **core's** patch, each conditional on `fishball-ui` being in the profile (live while HMR runs, else `startedBundles`). Core's check reports them only while fishball-ui's `fishballUiGuards` presence service is there. Accepted limit: with core but without fishball-ui these rows read DSH's stock values, so an earlier bundle's setting of one of them is not kept | the user, 2026-11-18 (option 1). The host's patch merge writes every override whatever its `!!js` value, so a row in fishball-ui's patch changed earlier composition without core (Q-G2 = A) |
+| Workspace files | Disable DSH’s `ui-sidebar-files` row in the Fishball profile. This removes its Start card, the file browser tab (including the navigator in document previews), and its keyboard/palette command. Task board and individual document previews stay. | The plugin owns all the file-browser routes; ordinary DSH profiles do not apply core’s patch. |
 | Pairing warning | Each target's pairing warning is drawn in that target's sidebar details (MULTI-3; the R-FIX-FUI dock card and its `/api/fishball/pairing` routes are removed with core's scalar `ui.pairing`). Its choices post `SEAM_TARGETS.route.pairing` `{targetId, choice, confirmed}`; Continue is enabled only with its box ticked, and core still refuses it unconfirmed. Last-seen times are in the page's language and the browser's time zone. The pairing words (`SEAM_PAIRING`) are fishball-shared's | R-ID-07 (import/pasted-token path), R-NAME-03 |
 | A lost stream | The sidebar's DSH targets and the ask cards share one browser stream lifecycle (client.js kit): an `error` marks the cached view stale; CLOSED offers Reconnect, which reopens every stream of the row. Until a fresh valid frame: each target drops its cached state, lines and controls, its pairing warning staying readable; the ask cards keep their cached text readable under the notice; every control is disabled | a cached frame must not look authoritative or be acted on; what was asked stays readable, and core refuses a late answer anyway |
 | Pairing confirmation | The box resets with each new warning (`pairingView` `key`: state, bound pair, name refusal), also between two warnings of the same state | a tick confirms one pairing only (R-ID-07) |
@@ -305,9 +306,11 @@ The fixes for the fishball-ui review (`.runtime/reports/review-x-fishball-ui.md`
 
 ## 26. V3 CONN-TOOLS and ASK-NATIVE (2026-11-18)
 
-The user removes `question_ask` and `question_answer_own`, including their exclusive own-card schemas and behaviour. The historical dotted `question.ask` / `question.answerOwn` architecture is superseded, not a compatibility requirement; the historical documents remain unchanged.
+The user removes `question_ask` and `question_answer_own`, including their exclusive own-card schemas and behaviour. The historical dotted `question.ask` / `question.answerOwn` architecture is superseded, not a compatibility requirement; the historical documents are retained for reference.
 
-`question_answer` still answers forwarded managed-session DSH questions and plan reviews. Shared question/answer validators, generic settlement `answers`, and `QUESTION_ANSWER` / `CARD_CLOSED` semantics for forwarded questions remain. Fishball's local `ask_user` files existing permission/legacy-ask offers only. For its own clarifications, Fishball's manager uses the native DSH `ask_user_question` tool from its guarded preset; this does not add a connector MCP tool or change where managed-session questions are answered.
+`question_answer` still answers forwarded managed-session DSH questions and plan reviews. Shared question/answer validators, generic settlement `answers`, and `QUESTION_ANSWER` / `CARD_CLOSED` semantics for forwarded questions remain. Fishball automatically files permission cards on opted-in connectors’ handoff notices. On manager turn end, core escalates the remaining opted-in permission offers admitted to that turn; the connector validates the offer and remains the authority on its outcome. Each target’s namespaced `ask_user` remains a permission fallback for older and opted-out targets.
+
+**Historical ASK-NATIVE decision:** Fishball briefly used the native DSH `ask_user_question` tool for its own clarifications. That approach is superseded by [Fishball’s own question cards](#fishball-question-cards).
 
 ## 27. Hosted Frame Readiness v1
 
@@ -418,9 +421,10 @@ The user's request: Fishball gets tools to create tasks, break goals into subtas
 |---|---|
 | Tool | Core's `message_user` (`src/manager/message-tools.js` `MESSAGE_TOOL`, `message-user.js`), in the manager's scope only, through X2 (setup `fishball-core-message-user`), and listed in `GUARDS.coreTools`. One required `message` (Markdown). Returns `{shown: true}`, or `{shown: false, code: 'message-empty'}` when blank after trimming. Nothing is stored: the recorded call is the message. |
 | Notify | The persona names embed-UI's `notify` (dsh-connector `UI_TOOL.notify`, model base name `embed-ui__notify`) as offered only when the target DSH runs embed-UI (Q-N3). Core adds no notify tool of its own. |
-| Drawing | fishball-page registers a Conversation Definition on `tool/call` for `message_user`, and a `conversation.chat.node` renderer for its kind `fishball-message`, at group-tree position `turn`, so DSH's turn fold never hides it. The call's own tool row stays in the fold. Fishball's bubble, name and avatar (§22, and the avatar theme) move from assistant replies to this row. |
-| Refused calls | The row is drawn from the dispatched call (`tool/call`), not from its result, so a `message_user` call whose turn is stopped before the tool answers, or that the runtime refuses after dispatch, is still drawn. A blank message is never drawn. |
-| Folding | On the Fishball page, assistant reply rows are hidden unless their Turn's own DSH control (`button[data-turn-process]`) is open or disabled. Expanding that control shows the folded process and the replies, in DSH's plain look. No new disclosure. A folded seat gets DSH's own `hidden` attribute, which DSH's flow gaps, paging and scroll anchoring skip. |
+| Drawing | fishball-page registers a Conversation Definition on `tool/call` and `tool/ptc-dispatch-start` for `message_user`, and a `conversation.chat.node` renderer for its kind `fishball-message`, at group-tree position `turn`, so DSH's turn fold never hides it. The call's own tool row stays in the fold. Fishball's bubble, name and avatar (§22, and the avatar theme) move from assistant replies to this row. |
+| Quoting | The `message_user` bubble opts into DSH's native text interactions on hosts that ship the Quote text action (verified in the Web bundle from 0.2.2-rc.1). DSH inserts a quote in the manager's composer and sends it as a Markdown blockquote. Native user and settled assistant rows keep DSH's existing behavior; raw tool rows remain ineligible even when expanded. |
+| Refused calls | The row is drawn from the start of the dispatched call, not from its result, so a `message_user` call whose turn is stopped before the tool answers, or that the runtime refuses after dispatch, is still drawn. A blank message is never drawn. |
+| Folding | On the Fishball page, assistant reply rows are hidden unless their Turn's own DSH control (`button[data-turn-process]`) is open or disabled. A disabled control without `aria-expanded` has no whole-Turn disclosure (e.g. after steering); it does not reveal replies if the Turn has a `message_user` bubble. Without a bubble the existing fallback still applies. Expanding an operable control shows the folded process and the replies, in DSH's plain look. No new disclosure. A folded seat gets DSH's own `hidden` attribute, which DSH's flow gaps, paging and scroll anchoring skip. |
 
 ## 33. Every amenity is its own package; `fishball-amenities` is an umbrella (2026-11-21)
 
@@ -429,7 +433,7 @@ The user's request: Fishball gets tools to create tasks, break goals into subtas
 | Point | Decision |
 |---|---|
 | Packages | `packages/fishball-board`, `packages/fishball-heartbeat`, `packages/fishball-taskboard` (were `board/`, `heartbeat/`, `taskboard/` inside `fishball-amenities`), each a DSH bundle with its own `cordis.patch.yml` inserting its own row by package name. Row ids, tools, settings namespaces, storage and routes are unchanged. |
-| Umbrella | `fishball-amenities` depends on and bundles the three members (and `fishball-shared`), and its own patch inserts their rows by package name, because DSH makes only a profile's direct dependencies bundles (as DSH's `dsh-cua-bundle` carries its members' rows). Installing the umbrella and a member as direct dependencies together would insert the same rows twice. |
+| Umbrella | `fishball-amenities` depends on and bundles the members (the three above plus [Fishball Consultant](#fishball-consultant), and `fishball-shared`), and its own patch inserts their rows by package name, because DSH makes only a profile's direct dependencies bundles (as DSH's `dsh-cua-bundle` carries its members' rows). Installing the umbrella and a member as direct dependencies together would insert the same rows twice. |
 | Browser code | `dsh.client` only on `fishball-taskboard` (its Task board tab) and the umbrella (its settings-page hint). Board and heartbeat have none. |
 | Shared helper | `followInstance` / `reportCoreMissing` (was the board's `src/instance.js`, imported by the other two by relative path) moved unchanged to `fishball-shared/instance-follower`, which now has three users; each member lists `fishball-shared` in `dependencies` and `bundleDependencies`. |
 | Release | Decided by the user (2026-11-21): all three amenities ship in the release, together with Fishball, through the umbrella; each is also released on its own, before the umbrella. Every component is separate code: no component imports another component or any core module; their one shared module is the generic `fishball-shared/instance-follower`. The shelving rule that core and fishball-ui name the board nowhere (SHELVE-BOARD) still holds. Known limit: fishball-board binds `fishballInstance` apiVersion 1 (its frozen contract) while core is at 2 (MULTI-0), so beside today's core it loads, logs `fishball-core-missing` once and stays idle. |
@@ -442,7 +446,7 @@ The user's request: Fishball gets tools to create tasks, break goals into subtas
 | Point | Decision |
 |---|---|
 | Carrier | One owner-only SSE route of core's main row, `/api/fishball/page/events?lang=&tz=` (`fishball-shared` `SEAM_PAGE_STREAM`, core `src/page/stream.js`). Each message is `{topic, frame}`. Every topic's frame is sent at open, then one per change, never an unchanged one twice. The URL names no topics: the stream always carries every registered topic, so mounting a panel never reopens it. Only the page's language (the strip is drawn in it) or Reconnect replaces it. |
-| Topics | `fishballInstance.page.register(topic, {frame(url), onChange})`, additive in apiVersion 2. Core registers `asks`, the fishball-ui row registers `strip`, and fishball-taskboard registers `fishball-taskboard` while it is bound to the instance (`followInstance`). A new amenity adds a topic, never a connection. |
+| Topics | `fishballInstance.page.register(topic, {frame(url), onChange})`, additive in apiVersion 2. Core registers `asks`, the fishball-ui row registers `strip`, and fishball-taskboard registers `fishball-taskboard` while it is bound to the instance (`followInstance`). Taskboard auto-update adds its audit topic on the same carrier. A new amenity adds a topic, never a connection. |
 | Browser | fishball-ui's client opens the one EventSource while any reader is mounted and demultiplexes by topic. A late reader gets the last frame. Health (live/stale/closed) and Reconnect are the carrier's. The kit's `topicStream` replaces `liveStream`/`langStream`, and the client service `fishballPageStream` (`subscribe(topic, {frame, health})`) is the amenities' way in. fishball-taskboard falls back to its own `/api/fishball-taskboard/events` only where that service is absent (standalone, no fishball-ui). |
 | Count | On the Fishball page: one Fishball connection, plus DSH's own `/plugins/events`. That is 2 of the 6, whatever the page draws. The older per-view routes (`/api/fishball/strip`, `/api/fishball/asks/events`) stay for other readers; the page no longer opens them. |
 | Rejected | A DSH stream Remote on DSH's own WebSocket, which would not count against the limit at all: `ctx.remote.$mount` accepts only contributions with the strict descriptors `dsh-typert-generator` writes at build time, and the Fishball packages are plain JS with no build step. HTTP/2 over TLS on loopback: it needs a certificate the browser trusts and DSH's webserver in https mode, which changes the user's DSH setup. Spreading streams over a second host name (127.0.0.1 and localhost): DSH's admission and session cookies are per host, and it only doubles the ceiling. Opening streams lazily or rationing them: the count would still grow with every amenity. |
@@ -455,3 +459,37 @@ The user's request: Fishball gets tools to create tasks, break goals into subtas
 |---|---|
 | Poll | Every `TARGET_SESSIONS.watchIntervalMs` (15 s, the implementer's choice: the user asked for a modest interval and gave no number), one `sessions_list` per connected target, only while a Fishball page holds core's page stream (§34). Core's `page.watching()` / `onWatch` says so. When the first page starts watching, one refresh runs at once. With no page open there is no timer and no call. |
 | Kept | The existing refreshes (connect, `refreshOn` events, the `called` hook) stay. No new connection and no new event type. |
+
+## Fishball-only programmatic tool calling
+
+Fishball uses DSH 0.2.2's built-in PTC executor by default, not the shipped coding preset. Core
+mounts the executor on the Agent identified by its manager record, keeping the preset, permissions,
+and other sessions unchanged. The child profile's `fishball-core.config.ptc` can select native
+execution at the next process start; placement does not own that setting. On the Fishball page,
+`message_user` keeps its visible message bubble for both native calls and nested PTC dispatches.
+On resume DSH restores the same journal and compaction surface, and assembles the current executor’s
+tool list for new work. Fishball does not rewrite tool-call history, force compaction, or fork the
+session as part of this change.
+
+## Fishball question cards
+
+| Point | Decision |
+|---|---|
+| Scope | Only the recorded Fishball singleton installs a `tools.restrict` deny for inherited `ask_user_question`. The tool is absent from both its native tool list and its PTC SDK. Other sessions, including ones using the `fishball` preset, keep the native tool; the preset is not the gate. |
+| File a question | Fishball calls unprefixed `ask_user({questions: [{id, question, header?, options?: [{label, description?}], multi_select?}]})`. Core persists one local card for the batch and returns `{cardId}` immediately. Neither native nor programmatic calls wait for a reply. This is separate from each target’s namespaced `ask_user({offer_id})` permission fallback. |
+| Show the card | Only the Fishball owner can see and answer the card. It uses the existing ask-card layer and `asks` topic on the Fishball page stream (§34), in the same accordion as permission cards. The card shows the batch count and summary; expanding it reveals a separate fieldset for each question. |
+| Deliver the answer | Submission queues an ordinary user-role follow-up to the singleton containing `cardId` and an `answers` list (`{id, selected, custom?}`) in the original question order. An idle Fishball wakes; a busy Fishball finishes its current turn before handling the answer. The original tool result remains `{cardId}`. Core keeps a stable reply identity until DSH records the user message, and recovers replies that were queued but not admitted before restart. DSH does not distinguish teardown from removing an item from its native queue; removing a queued card reply does not revoke the stored card answer. |
+| Boundary | The cards and answers are local to Fishball; there is no new connector tool or protocol change. Forwarded managed-session questions and plan reviews still use their own session cards and the existing first-answer-wins broker (§21). |
+
+## Task board auto-update Task board auto-update (2026-11-27)
+
+The user approved opt-in automation of evidenced, nonterminal task fields. A connector-native work
+assignment and a proven root-turn boundary are prerequisites. Core exposes an independent read-only
+observer and a generation-fenced freshness probe; neither owns an ack or disables ordinary delivery.
+Taskboard automation owns the model selection and the same atomic envelope as the manual board.
+Completion is a manager review, not an automatic board mutation; notification ownership is claimed
+after any actual change is durable. See [Task board auto-update](docs/plugins/fishball-taskboard.md#8-auto-update).
+
+## Fishball Consultant
+
+The Consultant is an independently installable amenity. It owns its configuration, owner-only disclosure cards, topic ledger and advisory results. One approval covers only the exact question, evidence, replay history and destination. The current staging host has no protected connector port: only catalog reads are allowed and there is no worker fallback. Physical removal of a member supplied by the collection requires instance packaging changes; this build supports disabling its row. See the [amenity guide](packages/fishball-consultant/README.md) and [private port contract](packages/fishball-consultant/CONTRACT.md).

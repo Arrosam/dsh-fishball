@@ -53,8 +53,6 @@ const { loadLayeredEnv } = await importRuntime('dsh-app-boot')
 const { createUserMessage } = await importRuntime('dsh-llm')
 
 const extension = process.env[WORLD.env.extension] ? await import(pathToFileURL(process.env[WORLD.env.extension]).href) : null
-// Before DSH boots, so DSH's model catalogue already reads what the extension changes on the scripted model.
-extension?.prepare?.({ model })
 
 // ---- the profile -------------------------------------------------------------------------------
 const profileDir = path.join(home, CHILD.profilesDir, WORLD.profile)
@@ -85,6 +83,7 @@ const firstStart = !fs.existsSync(profileDir)
 // Only the first boot of a home initializes the profile: re-initializing would discard saved settings.
 if (firstStart) initializeProfileFromDefault(WORLD.profile, CHILD.template, home)
 for (const p of JSON.parse(process.env[WORLD.env.packages] ?? '[]')) install(p)
+await extension?.prepare?.({ model, profileDir, firstStart })
 
 /** The files a settings save could write, read before DSH starts. */
 const patchFiles = [path.join(profileDir, CHILD.patchFile), path.join(home, CHILD.patchFile)]

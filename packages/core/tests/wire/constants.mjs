@@ -18,16 +18,11 @@ export const C = Object.freeze({
   main: 'fishball-core/main', forbiddenDependency: /^(?:dsh-agent-connector|dsh-connector)(?:$|[-/])/,
   // The scan reads core's own folder only (../support/core-static.mjs): fishball-shared's no-connector
   // rule is fishball-shared's own test; fishball-ui under ui/ is its own package.
-  // MULTI-0: ask_user is per target (mcp__<readable>__ask_user_<digest>), so with no target the
-  // manager's own core tools are the reminder tools; the bare `ask_user` is never offered.
-  // MSG-USER (2026-11-21): core's manager-only message_user is one of core's own tools too.
-  coreTools: ['schedule_create', 'schedule_list', 'schedule_update', 'schedule_delete', 'message_user'],
-  bareAsk: 'ask_user',
+  // The bare ask_user belongs to the manager; target asks still have target-qualified names.
+  coreTools: ['schedule_create', 'schedule_list', 'schedule_update', 'schedule_delete', 'message_user', 'ask_user'],
   privateSkill: /^private_skill_/,
   coreToolTables: [{ module: '../manager/reminders.js', table: 'TOOL' }, { module: '../manager/skills.js', table: 'PRIVATE_SKILL_TOOL' }, { module: '../asks/constants.js', table: 'ASK_TOOL' }, { module: '../manager/message-tools.js', table: 'MESSAGE_TOOL' }],
-  // `ask_user_question` is DSH's own ask tool in core's preset (the user, 2026-11-18:
-  // "用DSH自带的提问工具").
-  baseTools: ['read', 'read_image', 'working_directory', 'ask_user_question'], boardToolPrefix: 'board_', guardsOk: 'ok',
+  baseTools: ['read', 'read_image', 'working_directory'], boardToolPrefix: 'board_', guardsOk: 'ok',
   /**
    * SHELVE-BOARD: fishball-board is shelved, not in 1.0.0-alpha.1. The user, 2026-11-18:
    * "fishball-board先从这次release中移除，我要改的地方太多了。先封存，留到下一批再说。所以不要预留在子实例的Fishball内。"

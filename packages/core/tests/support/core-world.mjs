@@ -8,8 +8,8 @@
  * - `corePackages(more)`: the packages list (core's own folder via import.meta.dirname; fishball-shared
  *   by NAME, resolved from core's own dependency, never by its folder).
  * - `bootCore(home, options)`: one boot; `options` as dsh-world's, plus `homePatch` (a patch list
- *   written to the home's cordis.patch.yml before DSH starts) and `handoff` (a token value the hosted
- *   stand-in row writes to DSH_AGENT_TOKEN at its start).
+ *   written to the home's cordis.patch.yml before DSH starts), `profileConfig` (initial main-row
+ *   settings in the writable profile patch), and `handoff` (the hosted stand-in's DSH_AGENT_TOKEN).
  * - `requestAs(h, route, {authority, origin, body})`: an owner POST over the listener's socket with an
  *   explicit Host (fetch() cannot set Host), signed in on that authority first.
  *
@@ -32,18 +32,24 @@ export const CORE_EXTENSION = path.join(import.meta.dirname, 'core-world-ext.mjs
 /** The packages of a core world: the library, then core (selected), then `more` (a test's own fixtures). */
 export const corePackages = (more = []) => [{ dir: SHARED_DIR, name: CORE_WORLD.shared, selected: false }, { dir: CORE_DIR, name: CORE_WORLD.core }, ...more]
 
+/** A home-level config row for cases that exercise home patch reconciliation. */
+export const corePatch = (config) => [{ id: CORE_WORLD.core, name: CORE_WORLD.main, config }]
+/** The direct native tool fixture, instead of a model script that calls run_code. */
+export const NATIVE_MANAGER = Object.freeze({ ptc: false })
+
 const HTTP = Object.freeze({ get: 'GET', post: 'POST', json: 'application/json', cookieEnd: ';', cookieSeparator: '; ', tokenParam: 'token', encoding: 'utf8' })
 
 /** Environment for one boot (the home patch and the handoff, when given). */
-export const coreEnv = ({ homePatch, handoff, env = {} } = {}) => ({
+export const coreEnv = ({ homePatch, profileConfig, handoff, env = {} } = {}) => ({
   ...env,
   ...(homePatch === undefined ? {} : { [CORE_WORLD.env.homePatch]: JSON.stringify(homePatch) }),
+  ...(profileConfig === undefined ? {} : { [CORE_WORLD.env.profileConfig]: JSON.stringify(profileConfig) }),
   ...(handoff === undefined ? {} : { [CORE_WORLD.env.handoff]: handoff }),
 })
 
 /** One DSH process with core on `home` (a newHome when omitted). */
-export function bootCore(home, { packages = [], overlay = [], homePatch, handoff, env } = {}) {
-  return bootWorld(home ?? newHome(CORE_WORLD.core), { packages: corePackages(packages), overlay, extension: CORE_EXTENSION, env: coreEnv({ homePatch, handoff, env }) })
+export function bootCore(home, { packages = [], overlay = [], homePatch, profileConfig, handoff, env } = {}) {
+  return bootWorld(home ?? newHome(CORE_WORLD.core), { packages: corePackages(packages), overlay, extension: CORE_EXTENSION, env: coreEnv({ homePatch, profileConfig, handoff, env }) })
 }
 
 /** One request over the listener's socket with an explicit Host. */

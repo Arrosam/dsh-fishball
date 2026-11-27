@@ -49,6 +49,7 @@ export function registerViewCases() {
   registerEmptyAndMemoRows()
   registerNarrowRows()
   registerEditRows()
+  registerAutoRows()
 }
 
 // ============================================================================ B1: the bar's fill
@@ -696,5 +697,60 @@ function registerEditRows() {
     await tab.press(tab.button(COPY.reload))
     assert.ok(shownValues(tab).includes('fbtest-edit by Fishball'), 'the new board is not shown after Reload')
     assert.ok(!shownValues(tab).includes(EDITED), 'the draft survived Reload')
+  })
+}
+
+const AUTO = Object.freeze({
+  audit: '/api/fishball-taskboard/auto', undo: '/api/fishball-taskboard/auto/undo',
+  settingsButton: 'Auto-update settings', historyButton: 'Update history', undoButton: 'Undo this batch', undoConfirm: 'Confirm batch undo',
+  model: Object.freeze({ provider: 'fixture-provider', model: 'fixture-model' }),
+  batchId: 'fixture-batch', batchVersion: 3, oldProgress: 30, newProgress: 70, retentionDays: 30,
+})
+
+function auditSnapshot(revision, extra) {
+  return { ok: true, revision, model: null, available: true, reason: 'off', batches: [], reviews: [], diagnostics: {}, retentionDays: AUTO.retentionDays, ...extra }
+}
+
+function registerAutoRows() {
+  const revision = 2
+  const taskRow = task(1, { status: STATUS.inProgress, progress: AUTO.newProgress })
+  const initialBoard = board([taskRow], [], revision)
+  t('TBV-AUTO-01', 'off; before enabling', 'settings discloses the full task projection and excluded data, and viewing it cannot save a setting', async (c) => {
+    const tab = await boardTab(c, { answer: () => ({ status: 200, json: auditSnapshot(revision) }) })
+    await tab.deliver(initialBoard)
+    await press(tab, tab.button(AUTO.settingsButton), AUTO.settingsButton)
+    assert.match(tab.text(), /no calls, automatic writes, or notifications/i)
+    assert.match(tab.text(), /entire task tree, including unrelated and closed tasks/i)
+    assert.match(tab.text(), /Memos, conversation history, tool results, attachments, permissions, and credentials are not included/i)
+    assert.ok(tab.requests().some(({ method, url }) => method === 'GET' && new URL(url).pathname === AUTO.audit))
+    assert.ok(tab.requests().every(({ method }) => method !== 'POST'))
+  })
+  t('TBV-AUTO-02', 'history; confirm; stale', 'undo requires explicit confirmation, sends only the batch version and board revision, and a 409 tells the owner to edit manually', async (c) => {
+    const batch = {
+      batchId: AUTO.batchId, batchVersion: AUTO.batchVersion, baseRevision: revision - 1, revision, createdAt: Date.UTC(2026, 0, 1),
+      model: AUTO.model, source: { sessionId: 'fixture-worker', targetId: 'fixture-target', turnId: 'fixture-turn' },
+      changes: [{ taskId: taskRow.id, title: taskRow.title, progress: AUTO.newProgress, parent: null,
+        fields: { progress: { before: AUTO.oldProgress, after: AUTO.newProgress } }, evidence: taskRow.title + ' is at ' + AUTO.newProgress + '% progress.' }],
+      reviewIds: [], notification: 'accepted', undoable: true,
+    }
+    const answer = ({ method }) => method === 'POST'
+      ? { status: 409, json: { ok: false, code: 'stale', revision: revision + 1 } }
+      : { status: 200, json: auditSnapshot(revision, { batches: [batch] }) }
+    const tab = await boardTab(c, { answer })
+    const posts = () => tab.requests().filter(({ method }) => method === 'POST')
+    await tab.deliver(initialBoard)
+    await press(tab, tab.button(AUTO.historyButton), AUTO.historyButton)
+    assert.ok(tab.text().includes(AUTO.batchId))
+    await press(tab, tab.button('Batch details'), 'the retained batch details')
+    assert.match(tab.text(), /no parent/i)
+    assert.match(tab.text(), /Fishball queue \(not read\)/i)
+    await press(tab, tab.button(AUTO.undoButton), AUTO.undoButton)
+    assert.deepEqual(posts(), [])
+    await press(tab, tab.button(AUTO.undoConfirm), AUTO.undoConfirm)
+    const [post] = posts()
+    assert.equal(posts().length, 1)
+    assert.equal(new URL(post.url).pathname, AUTO.undo)
+    assert.deepEqual(JSON.parse(post.body), { batchId: AUTO.batchId, expectedBatchVersion: AUTO.batchVersion, baseRevision: revision })
+    assert.match(tab.text(), /board or batch has changed.*edit manually/i)
   })
 }

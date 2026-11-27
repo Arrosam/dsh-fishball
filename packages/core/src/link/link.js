@@ -277,6 +277,20 @@ export class McpLink {
     }
   }
 
+  /** Optional read-only probe: capability and result belong to the same live connection.
+   * A probe refusal must not classify or disconnect the ordinary delivery link. */
+  async probeTool(name, args, { signal, capability } = {}) {
+    const client = this.#connected
+    const generation = this.#generation
+    const refused = { ok: false, code: LINK.disconnected }
+    if (client === undefined || signal?.aborted || !this.#tools.some((tool) => tool.name === name &&
+        Object.hasOwn(tool.inputSchema?.properties ?? {}, capability))) return refused
+    try {
+      const result = await callStructured(client, name, args, signal)
+      return !signal?.aborted && this.#current(generation) && this.#connected === client ? result : refused
+    } catch { return refused }
+  }
+
   #setStatus(next) {
     // A classified status ends the attempt (connected, held, refused or failed alike).
     this.#setDetail({ connecting: false })

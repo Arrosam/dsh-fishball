@@ -3,5 +3,7 @@
 // entry and form, the target cards and their Connect, the model select, the logo theme, the wake
 // settings. See settings/README.md.
 import { registerSettingsCases } from './settings/cases.mjs'
+import { registerModelPickerCases } from './settings/model-picker.mjs'
 
 registerSettingsCases()
+registerModelPickerCases()

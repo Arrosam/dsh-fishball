@@ -4,4 +4,6 @@
 // the brand config (brand-config.mjs) and the wake batch (batch.mjs). See wire/README.md.
 import { registerWireCases } from './wire/cases.mjs'
 
+import './wire/permission-handoff.mjs'
+
 registerWireCases()

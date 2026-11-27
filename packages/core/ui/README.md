@@ -1,7 +1,7 @@
 # fishball-ui
 
 Every change Fishball makes to DSH's own UI inside a Fishball DSH: the Fishball page, the sidebar's DSH
-targets with their pairing and running sessions, the ask cards, the sidebar brand row, the model dialog,
+targets with their pairing and running sessions, the permission and question cards, the sidebar brand row,
 the two settings entries, the Fishball Recommended tab (standalone) and the instance-run child's
 Plugins page notice. Version `1.0.0-alpha.1`, private.
 
@@ -28,8 +28,6 @@ an import, and depends on no DSH-side package.
     pairing choices and its running managed sessions;
   - `client.brand.js`: Fishball's logo, wordmark and state in DSH's sidebar brand row; the wide brand
     button opens the one manager session (LOGO-BUTTON);
-  - `client.model.js`: while core's `model` is unset, the dialog that lists DSH's model catalog and
-    writes the choice to core's settings.
   - One EventSource for the page (core's `/api/fishball/page/events`), demultiplexed by topic; other
     browser code (fishball-taskboard's tab) subscribes through the client service `fishballPageStream`.
 - **`fishball-page/`**: the Fishball page itself (the manager's conversation): the shortcut and launcher
@@ -79,7 +77,8 @@ and counts):
 | `brand.test.mjs` | the sidebar brand row, its states, the manager-session button, the reply avatar |
 | `connections.test.mjs` | the page's one live connection, whatever readers are mounted |
 | `contrast.test.mjs` | WCAG contrast of the ask card's reason box and open badge; DSH tokens only |
-| `model-dialog.test.mjs` | the model dialog, the sidebar DSH targets, ask-card sources, running sessions |
+| `model-dialog.test.mjs` | absence of the retired model dialog, the sidebar DSH targets, ask-card sources, running sessions |
+| `question-cards.test.mjs` | collapsed cards and free-text, single-choice and multi-choice answers |
 | `package.test.mjs` | the manifests and shipped files, the part loader, fishball-page's navigation and narrow bar |
 | `page.test.mjs` | fishball-page's LITE guards in a real browser |
 | `pairing.test.mjs` | the pairing view model |

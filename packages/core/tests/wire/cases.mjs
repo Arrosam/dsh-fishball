@@ -10,7 +10,7 @@ import { after } from 'node:test'
 import { caseTest } from 'fishball-test-helpers/cases'
 import { until } from 'fishball-test-helpers/wait'
 import { coreImports, coreManifest as manifest, corePatchRows as patches } from '../support/core-static.mjs'
-import { requestAs } from '../support/core-world.mjs'
+import { NATIVE_MANAGER, requestAs } from '../support/core-world.mjs'
 import { SEAM_TARGETS } from '../support/targets-oracle.mjs'
 import { registerBrandConfigCases } from './brand-config.mjs'
 import { registerWakeSystemCases } from './batch.mjs'
@@ -64,7 +64,7 @@ export function registerWireCases() {
   // WIRE-SYS on core alone (fishball-ui and the board stand-in beside core are integration rows).
   let live
   let first
-  const get = () => (first ??= bootWire().then((h) => { live = h; return h }))
+  const get = () => (first ??= bootWire({ profileConfig: NATIVE_MANAGER }).then((h) => { live = h; return h }))
   after(async () => live?.stop())
   const sys = (title, fn) => caseTest('WIRE-SYS', C.core, title, SYS, fn)
   sys('apiVersion and complete public service shape', async () => {
@@ -100,7 +100,6 @@ export function registerWireCases() {
   sys('manager tool scope and guards hold', async () => {
     const h = await get(); await h.call('ensure'); const f = await h.call('tools')
     for (const name of C.coreTools) { assert.ok(f.local.includes(name), name); assert.equal(f.global.includes(name), false, name) }
-    assert.equal(f.local.includes(C.bareAsk), false, 'the bare ask_user is offered (MULTI-0: per target only)')
     assert.ok(f.local.some((n) => C.privateSkill.test(n)))
     assert.equal(f.global.some((n) => C.privateSkill.test(n)), false)
     assert.deepEqual(f.local.filter((n) => !C.coreTools.includes(n) && !C.privateSkill.test(n)).sort(), [...C.baseTools].sort())

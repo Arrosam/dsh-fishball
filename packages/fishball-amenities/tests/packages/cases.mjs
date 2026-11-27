@@ -18,7 +18,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { after } from 'node:test'
 import { caseTest } from 'fishball-test-helpers/cases'
-import { LIBRARY, MEMBERS, PACKAGES, UMBRELLA, VERSION, dirOf, fileOf, manifestOf } from '../support/packages.mjs'
+import { CONSULTANT, LIBRARY, MEMBERS, PACKAGES, UMBRELLA, VERSION, dirOf, fileOf, manifestOf } from '../support/packages.mjs'
 import { packedFiles } from '../support/pack.mjs'
 import { removeTemps } from '../support/temp.mjs'
 import { LIBRARY_EXPORTS, MANIFEST, OLD_FOLDER, PATH_ROW, SOURCE } from './constants.mjs'
@@ -26,6 +26,7 @@ import { bareName, bundledOf, dependencyOf, describeRef, dshInspect, inside, jso
 
 const ID = Object.freeze({
   ep01: 'AM-EP-01', ep02: 'AM-EP-02', ep03: 'AM-EP-03', ep04: 'AM-EP-04', ep05: 'AM-EP-05', ep06: 'AM-EP-06', ep08: 'AM-EP-08',
+  collection: 'AM-COLLECTION',
   dt01: 'AM-DT-01', dt02: 'AM-DT-02', bva01: 'AM-BVA-01', sc01: 'AM-SC-01', sc02: 'AM-SC-02', sc03: 'AM-SC-03',
 })
 const idName = (row) => ({ id: row?.id, name: row?.name })
@@ -84,9 +85,10 @@ export function registerAmenityPackageCases() {
   }
 
   // ---- AM-EP-03: the umbrella's patch inserts its own row and every member's row, by package name ----
-  caseTest(ID.ep03, 'rows', `the umbrella's patch inserts exactly the rows ${PACKAGES.map((p) => p.name).join(', ')}, each id equal to its package name`, async () => {
+  const collectionRows = [UMBRELLA, ...MEMBERS, CONSULTANT].map(({ name }) => ({ id: name, name }))
+  caseTest(ID.ep03, 'rows', `the umbrella's patch inserts exactly the rows ${collectionRows.map((r) => r.name).join(', ')}, each id equal to its package name`, async () => {
     const rows = (await patchRows(UMBRELLA)).map(idName)
-    assert.deepEqual(byId(rows), byId(PACKAGES.map((p) => ({ id: p.name, name: p.name }))))
+    assert.deepEqual(byId(rows), byId(collectionRows))
   })
   caseTest(ID.ep03, 'no path row', "the umbrella's patch names no row by a ./, ../, / or file: path", async () => {
     const rows = await patchRows(UMBRELLA)
@@ -123,6 +125,25 @@ export function registerAmenityPackageCases() {
       assert.ok(bundledOf(manifest).includes(LIBRARY.name), MANIFEST.bundled.join('/') + ': ' + json(bundledOf(manifest)))
     })
   }
+
+  caseTest(ID.collection, 'version', 'collection pins and bundles the consultant at the batch version', () => {
+    const collection = manifestOf(UMBRELLA)
+    assert.equal(collection.dependencies?.[CONSULTANT.name], VERSION)
+    assert.equal(collection.bundleDependencies?.filter((name) => name === CONSULTANT.name).length, 1)
+    assert.equal(collection.version, VERSION)
+    const own = manifestOf(CONSULTANT)
+    assert.equal(own.name, CONSULTANT.name)
+    assert.equal(own.version, VERSION)
+    assert.equal(own.dependencies?.[LIBRARY.name], VERSION)
+    assert.ok(own.bundleDependencies?.includes(LIBRARY.name))
+  })
+  caseTest(ID.collection, 'row', 'the standalone and collection patches insert the same single consultant row', async () => {
+    const expected = { id: CONSULTANT.name, name: CONSULTANT.name, config: {} }
+    const carried = (await patchRows(UMBRELLA))
+      .filter((row) => row.id === CONSULTANT.name || row.name === CONSULTANT.name)
+    assert.deepEqual(carried, [expected])
+    assert.deepEqual(await patchRows(CONSULTANT), carried)
+  })
 
   // ---- AM-EP-06: the umbrella ships no member folder of its own ----
   caseTest(ID.ep06, 'files', `the umbrella's files list no member folder (${MEMBER_FOLDERS.join(', ')})`, () => {

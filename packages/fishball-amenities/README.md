@@ -11,9 +11,10 @@ Version `1.0.0-alpha.1`, DSH `>=0.2.1-rc.5`.
 | [`fishball-board`](<../fishball-board/README.md>) | Fishball's session-linked work board (binds `fishballInstance` apiVersion 1, so beside today's core it stays idle). |
 | [`fishball-heartbeat`](<../fishball-heartbeat/README.md>) | Keeps Fishball's prompt cache warm while it is idle with useful heartbeat turns; off until both of its timer settings are set; when it stops, it compacts a long context once. |
 | [`fishball-taskboard`](<../fishball-taskboard/README.md>) | Fishball's own task board and memo pad, which the user views and edits in the right sidebar's **Task board** tab. |
+| [`fishball-consultant`](<../fishball-consultant/README.md>) | Advisory-only second opinions. Configuration and threads are available; no consultation is sent without a proven protected connector capability. |
 
-All three ship in this release through this umbrella (DESIGN §33). Installing `fishball-amenities`
-installs all three and loads them: its dependencies bring the packages (bundled in its tarball with
+All four ship in this release through this umbrella (DESIGN §33). Installing `fishball-amenities`
+installs all four and loads them: its dependencies bring the packages (bundled in its tarball with
 `fishball-shared`), and its own patch inserts their rows (DSH makes only a profile's direct dependencies
 bundles, so an umbrella carries its members' rows, as DSH's own `dsh-cua-bundle` does). Install an amenity
 on its own instead and its own patch is used. Do not install the umbrella together with an amenity as a
@@ -24,24 +25,29 @@ that names them. Open `fishball-heartbeat` there (the arrow beside its name) to 
 (`intervalSeconds`, `maxConsecutive`, `compactThresholdTokens`). A saved change applies at once: the
 heartbeat re-applies itself with the new values, without a DSH restart, and the values are kept in the
 profile's `cordis.patch.yml`. `fishball-board` and `fishball-taskboard` have no settings page: the
-taskboard has no settings, and the board's settings (`inject`, `contextCards`, `doneWindowHours`) are
+taskboard settings are in its sidebar, and the board's settings (`inject`, `contextCards`, `doneWindowHours`) are
 read by nothing yet, so they are not offered.
 
 Known limit: the pages are this umbrella's (`client.js`); the heartbeat has no browser code. Installed
 alone, without the umbrella, `fishball-heartbeat` has no settings page: edit its row's `config` in the
 profile's `cordis.patch.yml` instead.
 
-Only this umbrella (`client.js`: the settings-page hint and the heartbeat's settings page) and
-`fishball-taskboard` (its Task board tab) have browser code, so only they declare `dsh.client`.
+The umbrella, Taskboard, and Consultant declare `dsh.client`. Consultant supplies its own settings
+page whether installed alone or through the umbrella.
+
+To remove Consultant while keeping the collection, **disable its row**. Its bundled code is still
+installed. This Fishball build does not support physically removing a bundled member. A standalone
+Consultant package can be uninstalled through DSH; this does not erase history, installation source
+or caches. Archive live consultations first and verify the target's receipt before removal.
 
 ## Structure
 
 | path | what |
 |---|---|
-| `package.json` | manifest: depends on and bundles the three amenities and `fishball-shared`; `dsh.client` web |
-| `cordis.patch.yml` | inserts `fishball-amenities`, `fishball-board`, `fishball-heartbeat` and `fishball-taskboard` by package name |
+| `package.json` | manifest: depends on and bundles the four amenities and `fishball-shared`; `dsh.client` web |
+| `cordis.patch.yml` | inserts `fishball-amenities`, `fishball-board`, `fishball-heartbeat`, `fishball-taskboard` and `fishball-consultant` by package name |
 | `index.js` | the umbrella's own empty row |
-| `client.js` | the plugin-page hint and one settings page per configurable member row, built from the schema DSH serves |
+| `client.js` | the plugin-page hint and Heartbeat's settings page, built from the schema DSH serves |
 | `assets/` | the plugin icon |
 | `tests/` | its own tests (not shipped) |
 
@@ -55,7 +61,7 @@ node scripts/test.mjs fishball-amenities --against=<git-ref>
 
 | entry | what it covers |
 |---|---|
-| `packages.test.mjs` | the split from the umbrella's side: manifests, patches, DSH's bundle inspection, pack listing, members' imports (48 cases) |
+| `packages.test.mjs` | the split from the umbrella's side: manifests, patches, DSH's bundle inspection, pack listing, members' imports (50 cases) |
 | `icons.test.mjs` | each shipped package's plugin icon: DSH's reader, SVG, self-containment, light/dark render, the ICON-SET base (64 cases) |
 | `settings-page.test.mjs` | the umbrella's client: the bundle hint and each configurable member row's page over DSH's real settings service and form (40 cases) |
 

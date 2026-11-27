@@ -22,6 +22,7 @@ export const VERSION = '1.0.0-alpha.1'
  */
 const pkg = (name, browser, own = false) => Object.freeze({ name, browser, own })
 export const UMBRELLA = pkg('fishball-amenities', true, true)
+export const CONSULTANT = pkg('fishball-consultant', true)
 export const MEMBERS = Object.freeze([pkg('fishball-board', false), pkg('fishball-heartbeat', false), pkg('fishball-taskboard', true)])
 export const PACKAGES = Object.freeze([...MEMBERS, UMBRELLA])
 /** The Fishball side's library the members bundle (no dsh field: not a plugin). */

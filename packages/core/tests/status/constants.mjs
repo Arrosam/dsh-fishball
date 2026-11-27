@@ -100,7 +100,7 @@ export const GUARD = Object.freeze({
 export const TOOLS = Object.freeze({
   names: Object.freeze({ a: 'fbtest_tool_alpha', b: 'fbtest_tool_beta', c: 'fbtest_tool_gamma' }),
   code: GUARDS.code.managerTools,
-  /** K3 `ManagerTool`, the defaults `missingManagerTools` names (GUARDS.managerTools: read, read_image, working_directory, ask_user_question). */
+  /** K3 `ManagerTool`, the defaults `missingManagerTools` names. */
   defaults: GUARDS.managerTools,
   /** A guard code beside manager-tools in a refresh that keeps the same extras (K3 `bundle-order`). */
   other: GUARDS.code.bundleOrder,

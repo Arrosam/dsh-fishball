@@ -17,7 +17,7 @@ import * as K1 from 'fishball-test-helpers/connector-contract/mcp-schema'
 import { newHome, removeHome } from 'fishball-test-helpers/dsh-world'
 import { startFakeDsh } from 'fishball-test-helpers/fake-connector'
 import { until } from 'fishball-test-helpers/wait'
-import { bootCore } from '../support/core-world.mjs'
+import { bootCore, NATIVE_MANAGER } from '../support/core-world.mjs'
 import { SEAM_TARGETS, connectorTools, credentialNamesOf } from '../support/targets-oracle.mjs'
 import { C, MULTI } from './constants.mjs'
 
@@ -41,17 +41,17 @@ export async function fakeTarget(options = {}) {
 }
 
 /** One booted core DSH (stopped after the file). `homePatch` and `handoff` as ../support/core-world.mjs. */
-export async function bootWire({ home = wireHome(), child, liveChild = false, packages, homePatch, handoff } = {}) {
+export async function bootWire({ home = wireHome(), child, liveChild = false, packages, homePatch, profileConfig, handoff } = {}) {
   const hosted = child === undefined ? {} : liveChild ? { homePatch: [childRow(child)] } : { overlay: [childRow(child)] }
-  const h = await bootCore(home, { packages, handoff, ...hosted, ...(homePatch === undefined ? {} : { homePatch }) })
+  const h = await bootCore(home, { packages, profileConfig, handoff, ...hosted, ...(homePatch === undefined ? {} : { homePatch }) })
   live.push(() => h.stop())
   return h
 }
 
 /** A multi-target world factory (the old multiWorld): `open({home, expect, child, handoff})`. */
-export function multiWorld({ child, liveChild = false } = {}) {
+export function multiWorld({ child, liveChild = false, coreConfig = NATIVE_MANAGER } = {}) {
   return async function open({ home, expect, child: childNow = child, handoff } = {}) {
-    const h = await bootWire({ home, child: childNow, liveChild, handoff })
+    const h = await bootWire({ home, child: childNow, liveChild, handoff, profileConfig: coreConfig })
     // A restart: the stored records are read after boot; wait (harness only) until `expect` targets are listed.
     if (expect !== undefined) await until(async () => ((await h.call('targets'))?.targets.length ?? 0) >= expect, MULTI.budget.connectMs, MULTI.budget.pollMs)
     const w = {

@@ -127,9 +127,10 @@ export async function openPage(h, route = PAGE.root) {
       return true
     },
     async openTaskBoard() {
-      if (!(await page.click(null, UI.openRight))) return 'no ' + UI.openRight + ' control'
-      if (!(await page.click(null, UI.taskBoard))) return 'no ' + UI.taskBoard + ' guide entry'
-      return true
+      // The sidebar can reopen on an existing tab instead of showing its guide. Use the header action.
+      if (!(await page.click(null, UI.openTaskBoard))) return 'no ' + UI.openTaskBoard + ' header action'
+      const visible = await until(() => evaluate(AIM, UI.taskBoard), BUDGET.uiMs, BUDGET.pollMs)
+      return visible ? true : 'Task board did not become visible'
     },
     collapseRight: () => page.click(null, UI.collapseRight),
     async settled(test, budgetMs = BUDGET.uiMs) {

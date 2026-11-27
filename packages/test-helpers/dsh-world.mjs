@@ -19,7 +19,8 @@
  * as if added while DSH was down, and the owner's own later bundle edits are kept.
  *
  * Extension: an absolute module path whose optional exports are
- * `prepare({model})` (before DSH boots: change the scripted model, e.g. its input modalities),
+ * `prepare({model, profileDir, firstStart})` (after profile initialization, before DSH boots: seed
+ * the test profile or change the scripted model, e.g. its input modalities),
  * `ready({ctx})` (truthy once the extension's services are up; waitReady waits for it too) and
  * `ops({ctx, model, world})` (more ops; `world` holds the base helpers, see the child).
  */

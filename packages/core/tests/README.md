@@ -7,7 +7,7 @@ area, each registering its cases once on the current DSH. They reach only core's
 several areas are in [support/](<support/README.md>).
 
 ```bash
-node scripts/test.mjs fishball-core                 # all 16 entry files
+node scripts/test.mjs fishball-core                 # all 17 entry files
 node scripts/test.mjs fishball-core --list          # the entry files, nothing run
 node scripts/test.mjs fishball-core --file=events   # one entry file
 node scripts/test.mjs fishball-core --against=<ref> -- --test-name-pattern=<ID>
@@ -15,8 +15,8 @@ node scripts/test.mjs fishball-core --against=<ref> -- --test-name-pattern=<ID>
 
 ## Areas
 
-Counts are the cases each entry registers on DSH 0.2.2-rc.3 (`node scripts/test.mjs fishball-core
---file=<area>`, 2026-11-27): 1701 in all.
+Counts are the pre-merge baseline for entries present before the staging port. See the
+[staging supplement](<../../../docs/testing/inventory/staging-f8bcb158.md>) for added cases.
 
 | entry | area README | what it covers | case-id prefixes | cases |
 |---|---|---|---|---|
@@ -34,6 +34,7 @@ Counts are the cases each entry registers on DSH 0.2.2-rc.3 (`node scripts/test.
 | `persona.test.mjs` | [persona/](<persona/README.md>) | the bold-punctuation rule against DSH's own chat markdown parser | PBR-01…06 | 30 |
 | `settings.test.mjs` | [settings/](<settings/README.md>) | core's settings page in a scripted DSH page: form, per-target cards, Connect races, model select, logo, wake settings | SET3-*, MULTI-SET-*, CONNECT-*, EFIX3-SET-*, BRAND-SET/STATUS-*, WAKE-SET-* | 134 |
 | `skills.test.mjs` | [skills/](<skills/README.md>) | private Skills tools, provider and confined store | SK-UC/EP/BVA/DT/ST-* | 178 |
+| `start-panels.test.mjs` | — | Fishball Start entries and workspace-files guards against real DSH | START-PANELS-DT-01 | 3 scenarios |
 | `status.test.mjs` | [status/](<status/README.md>) | the status snapshot, strip line, set check, guards notice, gentle tools notice | UC-STATUS-*, F-STATUS-*, MULTI-STATUS-*, TOOLS-*, PLAT-*, HOST-DT, REM-DT | 138 |
 | `wire.test.mjs` | [wire/](<wire/README.md>) | the main row in a booted standalone DSH, multiple targets, hosted lifecycle, retirement, running sessions, brand config, wake from the manager | WIRE-*, MULTI-TGT/HOST/CRED/NAME/TOOL/CONN/SVC/EVT-SYS/ASK-SYS-*, MULTI-LIFE-*, MULTI-1-FIX, SESSIONS(-WATCH), BRAND-CONFIG-*, WAKE-SYS-* | 137 |
 

@@ -17,7 +17,8 @@
  */
 import fs from 'node:fs'
 import path from 'node:path'
-import { importRuntime } from 'fishball-test-helpers/runtime'
+import { pathToFileURL } from 'node:url'
+import { importRuntime, RUNTIME } from 'fishball-test-helpers/runtime'
 import { until } from 'fishball-test-helpers/wait'
 import { CORE_WORLD } from './core-world-names.mjs'
 
@@ -26,6 +27,22 @@ const N = CORE_WORLD
 // Before DSH starts: the home patch the parent asked for (see the module comment).
 const homePatchFile = path.join(fs.realpathSync(process.env.DSH_HOME), N.patchFile)
 if (process.env[N.env.homePatch]) fs.writeFileSync(homePatchFile, process.env[N.env.homePatch])
+
+/** Seed the same writable profile document DSH settings will mutate; keep its edits on restart. */
+export async function prepare({ profileDir, firstStart }) {
+  const initial = process.env[N.env.profileConfig]
+  if (!firstStart || initial === undefined) return
+  const file = path.join(profileDir, N.patchFile)
+  const { parseDocument, isMap, isSeq } = await import(pathToFileURL(path.join(RUNTIME, N.yaml)).href)
+  const doc = parseDocument(fs.existsSync(file) ? fs.readFileSync(file, N.encoding) : '[]')
+  if (doc.errors.length) throw doc.errors[0]
+  if (!isSeq(doc.contents)) throw new Error('Expected a profile patch sequence')
+  const row = doc.contents.items.findLastIndex((item) => isMap(item) && item.get('id') === N.core && !item.has('insert'))
+  const config = JSON.parse(initial)
+  if (row < 0) doc.add({ id: N.core, config })
+  else for (const [key, value] of Object.entries(config)) doc.setIn([row, 'config', key], value)
+  fs.writeFileSync(file, String(doc))
+}
 
 const shape = (value, depth = 0) => value == null ? null : typeof value === 'function' ? N.functionWord : typeof value !== 'object' || depth > N.shapeDepth ? typeof value : Object.fromEntries(Object.keys(value).map((k) => [k, shape(value[k], depth + 1)]))
 const thrown = (e) => ({ thrown: String(e?.message ?? e) })

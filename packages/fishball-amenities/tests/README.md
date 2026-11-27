@@ -7,7 +7,7 @@ node scripts/test.mjs fishball-amenities
 ```
 
 fishball-amenities is the umbrella: it depends on and bundles fishball-board, fishball-heartbeat,
-fishball-taskboard and fishball-shared, so its tests reach those by name (their published exports and manifests)
+fishball-taskboard, fishball-consultant and fishball-shared, so its tests reach those by name (their published exports and manifests)
 — never another package. Shared reading of them is [support/](<support/>): `packages.mjs` (each package's folder
 as Node resolves it from here), `pack.mjs` (`npm pack --dry-run`), `temp.mjs` (throwaway folders).
 
@@ -23,5 +23,5 @@ lived under `test/v3/fishball-amenities/` are fishball-heartbeat's own tests now
 
 ### Case-id index
 
-AM-EP-01…06, AM-EP-08, AM-DT-01, AM-DT-02, AM-BVA-01, AM-SC-01…03 · PI-EP-01…06, PI-DT-01…03, PI-BVA-01,
+AM-EP-01…06, AM-EP-08, AM-DT-01, AM-DT-02, AM-BVA-01, AM-SC-01…03, AM-COLLECTION · PI-EP-01…06, PI-DT-01…03, PI-BVA-01,
 PI-RENDER-01, PI-CONSIST · PG-EP-01…06, PG-DT-01, PG-ST-01…03, PG-UC-01…03, PG-BVA-01, PG-MF-01, PG-MF-02.

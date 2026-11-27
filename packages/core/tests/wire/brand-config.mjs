@@ -3,6 +3,7 @@
  * A fake brand getter skips the very validation that can prevent cold startup. */
 import assert from 'node:assert/strict'
 import { caseTest } from 'fishball-test-helpers/cases'
+import { corePatch } from '../support/core-world.mjs'
 import { C } from './constants.mjs'
 import { bootWire } from './world.mjs'
 
@@ -15,7 +16,6 @@ const INVALID = [
 const configured = (brandStyle) => ({ brandStyle })
 const current = async (host) => (await host.call('snapshot'))?.brand?.style
 
-const corePatch = (config) => [{ id: C.core, name: C.main, config }]
 const T = Object.freeze({ timeout: C.budget.boot + C.budget.call })
 
 export function registerBrandConfigCases() {

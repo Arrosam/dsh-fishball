@@ -21,10 +21,11 @@ export const FISHBALL = Object.freeze({
   board: 'fishball-board',
   heartbeat: 'fishball-heartbeat',
   taskboard: 'fishball-taskboard',
+  consultant: 'fishball-consultant',
   helpers: 'fishball-test-helpers',
 })
 /** Every package under test (fishball-test-helpers is a test tool, not one of them). */
-export const NAMES = Object.freeze([FISHBALL.library, FISHBALL.core, FISHBALL.ui, FISHBALL.board, FISHBALL.heartbeat, FISHBALL.taskboard, FISHBALL.amenities])
+export const NAMES = Object.freeze([FISHBALL.library, FISHBALL.core, FISHBALL.ui, FISHBALL.board, FISHBALL.heartbeat, FISHBALL.taskboard, FISHBALL.consultant, FISHBALL.amenities])
 /** The amenities: each finds core only through the optional `fishballInstance` service (design §9.1), never by import. */
 export const FEATURES = Object.freeze([FISHBALL.board, FISHBALL.heartbeat, FISHBALL.taskboard])
 
@@ -33,7 +34,7 @@ export const FEATURES = Object.freeze([FISHBALL.board, FISHBALL.heartbeat, FISHB
  * own list; fishball-ui ships inside fishball-core's tarball, its manifest is private). `folder` is the
  * repository.directory every manifest names; it is read from the catalogue by name, never written here.
  */
-export const RELEASED = Object.freeze([FISHBALL.library, FISHBALL.core, FISHBALL.board, FISHBALL.heartbeat, FISHBALL.taskboard, FISHBALL.amenities])
+export const RELEASED = Object.freeze([FISHBALL.library, FISHBALL.core, FISHBALL.board, FISHBALL.heartbeat, FISHBALL.taskboard, FISHBALL.consultant, FISHBALL.amenities])
 export const LIBRARIES = Object.freeze([FISHBALL.library])
 /**
  * A package shipped inside another's tarball (fishball-core's manifest `files` lists `ui/`; fishball-ui is
@@ -184,6 +185,7 @@ export const STAGED = Object.freeze([/^node_modules\//])
 
 /** The pack script's checker (`--check`, `--out <dir>`; exit 0 = intact). */
 export const PACK_SCRIPT = Object.freeze({
+  catalog: path.join(REPO, 'scripts', 'release', 'constants.mjs'),
   file: path.join(REPO, 'scripts', 'pack-v3.mjs'), check: '--check', out: '--out', okExit: 0,
   absentDir: 'no-such-release', flipMask: 0xff,
   offsets: Object.freeze({ first: () => 0, middle: (size) => Math.floor(size / 2), last: (size) => size - 1 }),
@@ -213,6 +215,7 @@ export const SETS = Object.freeze([
   Object.freeze({ key: 'board', pkgs: Object.freeze([FISHBALL.board]), other: FISHBALL.heartbeat }),
   Object.freeze({ key: 'heartbeat', pkgs: Object.freeze([FISHBALL.heartbeat]), other: FISHBALL.board }),
   Object.freeze({ key: 'taskboard', pkgs: Object.freeze([FISHBALL.taskboard]), other: FISHBALL.heartbeat }),
+  Object.freeze({ key: 'consultant', pkgs: Object.freeze([FISHBALL.consultant]), other: FISHBALL.heartbeat }),
 ])
 export const INSTALL_DOC = Object.freeze({
   fence: /^\s*```/,
@@ -238,7 +241,10 @@ export const ISOLATION = Object.freeze({
 export const BUDGET = Object.freeze({ toolMs: 300000, checkCaseMs: 1800000, installCaseMs: 600000, docCaseMs: 1200000, maxOutputBytes: 64 * 1024 * 1024, tailChars: 4000 })
 
 /** Case ids: the old suites' families. */
+export const CONSULTANT_RELEASE = Object.freeze({ member: 'consultant', collection: 'amenities' })
+
 export const CASE = Object.freeze({
+  consultant: 'REL-CONSULTANT',
   plat: 'PLAT-EP-07', host: 'HOST-EP-03', shelve: 'SHELVE-EP-01', tests: 'REL-TESTS', helpers: 'REL-HELPERS',
   oracle: 'REL-ORACLE', layout: 'REL-EP-01', sums: 'REL-EP-02', extras: 'REL-EP-03', manifest: 'REL-EP-04', engines: 'REL-DT-01', peers: 'REL-DT-02',
   links: 'REL-EP-05', bundling: 'REL-DT-03', closure: 'REL-EP-06', junk: 'REL-EP-08', dryRun: 'REL-EP-09', check: 'REL-ST-01',

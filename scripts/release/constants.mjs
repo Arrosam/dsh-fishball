@@ -25,7 +25,7 @@ export const RELEASE_DIR = path.join(REPO, '.runtime', 'release', VERSION)
  * registry install of any of them never names an unpublished version. A library is a bundled
  * dependency, but publishing it first also keeps it installable on its own. `library` marks the two
  * libraries, which are not DSH plugins (R-ARCH-08: no `dsh` field) and carry no engines.dsh.
- * The three amenities ship in the release with Fishball, inside the fishball-amenities umbrella, and
+ * The amenities ship in the release with Fishball, inside the fishball-amenities umbrella, and
  * each is also its own published package (the user, 2026-11-21). fishball-core and fishball-ui still
  * name fishball-board nowhere (SHELVE-BOARD).
  */
@@ -36,6 +36,7 @@ export const PACKAGES = Object.freeze([
   Object.freeze({ key: 'board', folder: 'packages/fishball-board' }),
   Object.freeze({ key: 'heartbeat', folder: 'packages/fishball-heartbeat' }),
   Object.freeze({ key: 'taskboard', folder: 'packages/fishball-taskboard' }),
+  Object.freeze({ key: 'consultant', folder: 'packages/fishball-consultant' }),
   Object.freeze({ key: 'amenities', folder: 'packages/fishball-amenities' }),
 ])
 
@@ -51,6 +52,7 @@ export const INSTALL_SETS = Object.freeze({
   board: Object.freeze(['board']),
   heartbeat: Object.freeze(['heartbeat']),
   taskboard: Object.freeze(['taskboard']),
+  consultant: Object.freeze(['consultant']),
 })
 
 /** The profile the documents and checks use, DSH's own Web template (dsh-app-boot PROFILE_TEMPLATES.web). */

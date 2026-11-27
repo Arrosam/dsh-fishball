@@ -28,7 +28,7 @@ function expanded(entries) {
 }
 
 export function registerWorkspaceCases() {
-  for (const pkg of SUBJECTS) {
+  for (const pkg of [...SUBJECTS, PKG.consultant]) {
     caseTest('AM-EP-07', pkg.name, `the root workspaces list ${pkg.name}'s folder (${workspaceOf(pkg)})`, () => {
       assert.ok(rootWorkspaces().includes(workspaceOf(pkg)), 'root workspaces: ' + JSON.stringify(rootWorkspaces()))
     })

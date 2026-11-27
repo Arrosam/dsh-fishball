@@ -64,7 +64,7 @@ function whenTrulyIdle(agent, job, retry) {
  *   optional `agent/pre-step` waterfall listener (the event delivery adds its batch to a step that
  *   carries the user's message; WAKE rule 5). Not called once the owner stopped.
  */
-export function createHandover({ isMine, admitted, dropped, redeliver, idle, closed, flush, preStep }) {
+export function createHandover({ isMine, admitted, dropped, redeliver, idle, closed, flush, preStep, turnEnded }) {
   const watched = new WeakSet()
   // messageId → the agent whose turn claimed it and has not admitted it yet.
   const claimed = new Map()
@@ -75,7 +75,7 @@ export function createHandover({ isMine, admitted, dropped, redeliver, idle, clo
     const messageId = event.data?.id
     if (event.type === HOST.userMessage && isMine(messageId)) {
       claimed.delete(messageId)
-      return admitted(messageId)
+      return admitted(messageId, agent)
     }
     if (event.type !== HOST.turnEnd) return undefined
     const verdict = claimVerdict(event.data?.reason)
@@ -85,6 +85,7 @@ export function createHandover({ isMine, admitted, dropped, redeliver, idle, clo
       if (verdict === REDELIVER) redeliver(claimedId)
       else dropped(claimedId, verdict)
     }
+    turnEnded?.(agent, verdict === REDELIVER)
     return undefined
   }
 
