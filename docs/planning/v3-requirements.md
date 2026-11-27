@@ -6,10 +6,10 @@ The design that answers these requirements is [v3-design.md](<v3-design.md>). Se
 every question and its answer. **All are decided**; the last, Q30, was answered with the
 user's own design of one typed event stream and an interception registry (1.11).
 
-Inputs: [V2 final scope](<v2-final-scope.md>) (what V2 shipped and what it deferred to V3),
-[instance extension points](<../plugins/instance-extension-points.md>) (U1–U22, X1–X19),
-[connector MCP option](<../plugins/connector-mcp-option.md>) (decisions 1a/1b/1c), the
-[connector contract 1.2](<../connector-contract.md>), and these documents on other branches:
+Inputs: [V2 final scope](<../history/planning/v2-final-scope.md>) (what V2 shipped and what it deferred to V3),
+[instance extension points](<../history/plugins/instance-extension-points.md>) (U1–U22, X1–X19),
+[connector MCP option](<../history/plugins/connector-mcp-option.md>) (decisions 1a/1b/1c), the
+[connector contract 1.2](<../history/connector-contract.md>), and these documents on other branches:
 - the bundled-placement note (`docs/v2-bundled-placement` @ `f71717e`, `docs/plugins/bundled-placement.md`);
 - the Watchdog plan (`docs/v2-watchdog-plan` @ `8c883be`);
 - the Watchdog T0 reconciliation (`test/v2-wd-t0-reconcile` @ `bdeb28a`);

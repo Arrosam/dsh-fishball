@@ -283,7 +283,7 @@ Each tool wraps today's connector domain function (`packages/connector/src/*`) a
 Content).** Every tool returns `structuredContent` `{ok: true, …}` or `{ok: false, code, message}`
 **and** the same JSON serialised in a text content block. A refusal is a tool execution error:
 `isError: true`. Stock DSH throws on `isError: true` before keeping `structuredContent`
-(`dsh-mcp-client` conversion, [option §6](<../plugins/connector-mcp-option.md#6-security-discovery-and-limits>)),
+(`dsh-mcp-client` conversion, [option §6](<../history/plugins/connector-mcp-option.md#6-security-discovery-and-limits>)),
 so the code is also carried in the text block, which DSH-hosted agents still see. `fishball-core`'s
 own link reads `structuredContent` directly. Every output schema admits the refusal envelope (K1).
 JSON-RPC errors are kept for protocol faults only.
@@ -473,7 +473,7 @@ fishballChild = {
     existing `managed()`. No new service member, no connector read API;
   - the frame: `src` comes from `admit`; when `lang` changes it asks for a new admission. On initial
     navigation and parent-initiated replacements the iframe stays hidden and inaccessible until the
-    current admitted frame signals [Hosted Frame Readiness v1](<../connector-contract.md#15-hosted-frame-readiness-v1-v3-only>).
+    current admitted frame signals [Hosted Frame Readiness v1](<../history/connector-contract.md#15-hosted-frame-readiness-v1-v3-only>).
     “Open Fishball again” gets a fresh admission; it does not retry the instance lifecycle;
   - ~~status and Retry, outside the frame; the Plugins card with the model-sync trigger~~ — moved
     to the instance's own settings page (requirements 1.33 Q-D1, Q-D2); embed-UI's connector card

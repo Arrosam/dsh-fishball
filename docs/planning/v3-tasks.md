@@ -2,7 +2,7 @@
 
 Status: **draft, 2026-11-11; synced 2026-11-13 (D-SYNC) with v3-remaining-plan.md's added tasks and the S7c decisions.** Built on [v3-requirements.md](<v3-requirements.md>) and
 [v3-design.md](<v3-design.md>) at `e1e5577`, and on the requirements-only cases in
-[docs/test-design/v3](<../test-design/v3/README.md>). No implementation code was read for this
+[docs/test-design/v3](<../history/test-design/v3/README.md>). No implementation code was read for this
 plan.
 
 ## How to use this table

@@ -2,7 +2,7 @@
 
 - **Date:** 2026-11-12
 - **Branch:** `spike/v3-s7b`, from `b7c396c` (`test/v3-cases`)
-- **Inputs:** [v3-tasks.md](../planning/v3-tasks.md) S7b row; [v3-requirements.md](../planning/v3-requirements.md) R-OA-01…20, R-REM-03/05, R-ID-02/13, R-NAME-01…08, R-TOK-00/06/08; [v3-design.md](../planning/v3-design.md) §5.5, §5.5a, §11 (V3-S7b gate); spike reports `docs/spikes/v3-s1.md` (`9499ec6`) and `docs/spikes/v3-s7.md` (`8e92b84`); cases [01-auth-pairing.md](../test-design/v3/01-auth-pairing.md) and [09-standalone-remote.md](../test-design/v3/09-standalone-remote.md).
+- **Inputs:** [v3-tasks.md](../planning/v3-tasks.md) S7b row; [v3-requirements.md](../planning/v3-requirements.md) R-OA-01…20, R-REM-03/05, R-ID-02/13, R-NAME-01…08, R-TOK-00/06/08; [v3-design.md](../planning/v3-design.md) §5.5, §5.5a, §11 (V3-S7b gate); spike reports `docs/spikes/v3-s1.md` (`9499ec6`) and `docs/spikes/v3-s7.md` (`8e92b84`); cases [01-auth-pairing.md](../history/test-design/v3/01-auth-pairing.md) and [09-standalone-remote.md](../history/test-design/v3/09-standalone-remote.md).
 - **Specification read (2026-11-12):** MCP 2026-07-28 [Authorization](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization.md), [Client Registration](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization/client-registration.md), [Security Considerations](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization/security-considerations.md); [draft-ietf-oauth-client-id-metadata-document-00](https://www.ietf.org/archive/id/draft-ietf-oauth-client-id-metadata-document-00.txt).
 - **Prototype:** [spikes/v3-s7b/](../../spikes/v3-s7b/README.md) (throwaway). Evidence: `spikes/v3-s7b/evidence-{ts,tunnel,clash}-<version>.json`.
 

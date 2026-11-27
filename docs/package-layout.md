@@ -1,75 +1,57 @@
-# Package layout (V3)
+# Package layout
 
-This repository holds the Fishball side's packages (core, the three amenities and their umbrella, and fishball-shared); the two sides that never import each other (requirements
-R-ARCH-10; design §1.0). The root `package.json` is private and not a plugin; it only lists the
-workspaces. Install, uninstall and the supported DSH versions are in the [README](<../README.md>).
+This repository holds the Fishball side's packages. The DSH side (dsh-connector, dsh-connector-ui,
+dsh-connector-adapter, dsh-connector-shared, dsh-instance) left it on 2026-11-20 (6b7c53bf) for the
+dsh-connector and dsh-fishball-instance repositories; the two sides never import each other (R-ARCH-10,
+design §1.0). The root `package.json` is private and not a plugin; it lists the workspaces and the
+day-to-day test command. Install, uninstall and the supported DSH versions are in the
+[README](<../README.md>).
 
 ## Tree
 
 ```
-package.json                    root, private, workspaces only
+package.json                    root, private: workspaces, scripts
 packages/
-  dsh-connector/                DSH side, plugin: the MCP endpoint and OAuth server (backend)
-    index.js                    the row; cordis.patch.yml inserts it
-    client.js                   its own settings page (tokens, designated agent, approval port, limits)
-    src/                        mcp/ (http, oauth, oauth-web, tools), tokens/, pairs/, mailbox/,
-                                routing/, handover/, hosted/, revocation/, contrib/, ui/, settings/
-    mcp-schema/  tools/         ./mcp-schema and ./tools: the frozen K1/K2 data-and-types modules
-    host-services/              K3 type contracts of the host-only services (types only)
-    contract/                   the V2 ./contract export, removed by C-WIRE-2
-    locale/  assets/
-  dsh-connector-ui/             DSH side, plugin: the connector's frontend
-    index.js  src/host/         host half: service lookup, connector-missing / instance-missing,
-                                the notify and attention tools, its own Fetch routes
-    src/client/                 client.js with client.shell.js, client.marks.js, client.attention.js
-  dsh-instance/                 DSH side, plugin: the hosted child
-    host.js                     the row
-    client.js client.status.js client.models.js   its own settings page
-    native-child.js child-row.js                  the child's lifecycle row and child-side row
-    uninstall.js                the cleanup command
-    src/native-runtime/         launch, lifecycle, placement, overlay, wire
-    src/host/                   hosted token, locator, routes, model sync, first-install sync
-    src/child/                  the child halves of model sync
-    bundled/                    release output only (the placed Fishball plugins); never committed
-  dsh-connector-adapter/        DSH side, plugin: OAuth for a stock dsh-mcp-client row
-  dsh-connector-shared/         DSH side, library (no `dsh` field): provider-sync, files, redact,
-                                request-host, oauth-client
-  core/                         Fishball side, plugin `fishball-core`: the backend
+  core/                         plugin fishball-core: the backend (manager session, link, Connect, events, asks, status, guards)
     client.js client.settings.js   its own settings page
-    contracts/                  K3/K3a types, and constants.js (runtime values, MCP and LINK)
-    src/                        main/, manager/, link/, events/, asks/, bridge/, guards/,
-                                identity/, session/, settings/, status/
-  fishball-ui/                  Fishball side, plugin: every UI change in a Fishball DSH
-    client.js client.{entries,asks,strip,model}.js
-    fishball-page/  fishball-recommend-plugins/  fishball-child-plugins/   their own small packages
-  fishball-board/               Fishball side, plugin `fishball-board`: the session-linked work board
-  fishball-heartbeat/           Fishball side, plugin `fishball-heartbeat`: cache-warming heartbeat turns
-  fishball-taskboard/           Fishball side, plugin `fishball-taskboard`: task board and memo pad (its own client.js)
-  fishball-amenities/           Fishball side, umbrella: depends on and bundles the three amenities and
-                                inserts their rows; its own client.js is its settings-page hint
-  shared/                       Fishball side, library `fishball-shared` (no `dsh` field): ui-seam,
-                                instance-follower
+    contracts/                  K3/K3a types and constants.js (runtime values, core's copy of the connector's MCP surface)
+    src/                        main/ manager/ link/ targets/ events/ asks/ bridge/ guards/ identity/ session/ settings/ status/ page/
+    ui/                         plugin fishball-ui, its own package shipped inside core's tarball: every UI change in a Fishball DSH
+      client.js client.{asks,brand,entries,model,strip}.js   flat browser chunks
+      fishball-page/ fishball-recommend-plugins/ fishball-child-plugins/   its sub-packages
+      tests/                    fishball-ui's tests (not shipped)
+    tests/                      fishball-core's tests (not shipped)
+  fishball-board/               plugin: the session-linked work board (shelved in core's view; ships in the umbrella)
+  fishball-heartbeat/           plugin: cache-warming heartbeat turns
+  fishball-taskboard/           plugin: task board and memo pad, with its own client.js (the Task board tab)
+  fishball-amenities/           umbrella: depends on and bundles the three amenities and inserts their rows
+  shared/                       library fishball-shared (no dsh field): ui-seam, instance-follower
+  test-helpers/                 private, never shipped: fishball-test-helpers, the shared test tools
+  integration-*/                private, never shipped: cross-package integration test packages
+scripts/
+  test.mjs                      one package's tests on the current DSH
+  test-release.mjs              every package and integration package in parallel over the DSH matrix
+  pack-v3.mjs release/          the release tarballs
 ```
+
+Every package except the two private test packages has a `tests/` folder of its own tests
+([testing](<testing/README.md>)); `tests/` is never in a package's `files` (fishball-core's `files`
+lists `ui/` and excludes `ui/tests/`), and the release stage drops any `tests` folder.
 
 ## Rules
 
-- **No cross-side import.** No DSH-side package imports, peers, vendors, bundles or generates code
-  from a Fishball-side package, and the reverse (R-ARCH-10). The only coupling is the connector's
-  public MCP surface. Core keeps its own copy of the constants it needs (`core/contracts/constants.js`
-  `MCP`, `LINK`), checked against the connector by contract tests.
-- **One library per side.** `dsh-connector-shared` and `fishball-shared` hold only modules that at
-  least two packages of their own side use (R-ARCH-08, strict reading since REMOVE-V2b). Each user
-  lists its library in `dependencies` and `bundleDependencies`, so its tarball carries it.
+- **No cross-side import.** No Fishball package imports, peers, vendors, bundles or generates code from
+  a DSH-side package, and the reverse. The only coupling is the connector's public MCP surface; core
+  keeps its own copy of the constants it needs (`core/contracts/constants.js` `MCP`, `LINK`), checked
+  by core's contract tests against the vendored contract in `fishball-test-helpers/connector-contract`.
+- **One library.** `fishball-shared` holds only modules at least two Fishball packages use (R-ARCH-08,
+  strict). Each user lists it in `dependencies` and `bundleDependencies`, so its tarball carries it.
 - **Chunks, not folders, for browser code.** DSH serves a package's `client.js` and only
   `client.<name>.js` files beside it, so browser parts are flat chunks.
-- **The instance carries the Fishball plugins as data.** In a packed `dsh-instance`, `bundled/`
-  holds `core` (the amenities are installed by the user, not placed), each exactly its package's `files` plus `package.json`
-  and its own bundled libraries. In a checkout, placement reads the sibling workspace folders. The
-  host DSH never resolves or loads them.
+- **Tests are per package.** A package's tests import only its own files, `fishball-test-helpers`, and
+  by name the packages it depends on; cross-package behaviour is tested in `packages/integration-*`.
 
 ## Packing
 
-The release step (task REL-PACK) builds every tarball: one shared version `1.0.0-alpha.1`,
-`engines.dsh` `>=0.2.1-rc.5`, the bundled libraries, and the instance's `bundled/`. Until it lands,
-`npm pack` in a package folder gives a tarball of that package alone, and a packed `dsh-instance`
-without `bundled/` cannot place the Fishball plugins (`PLACEMENT_SOURCE_UNAVAILABLE`).
+`node scripts/pack-v3.mjs` builds every tarball (one shared version `1.0.0-alpha.1`, `engines.dsh`
+`>=0.2.1-rc.5`, the bundled libraries) into `.runtime/release/<version>/`; `--check` re-verifies it.
