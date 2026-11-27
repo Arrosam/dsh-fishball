@@ -1,12 +1,10 @@
 /**
  * Placement of the Fishball set in a real hosted child (README "The child", "Placement"; the I-PLACE
  * rows PLAT-DT-01, PLAT-DT-04, HOST-ST-01 rows 1 and 3, HOST-UC-06 post, HOST-UC-08 main 1 and A3,
- * HOST-EP-03 rows 7 and SHELVE, LITE-UC-03 hosted; HOST-UC-01 E2).
+ * HOST-EP-03 row 7, LITE-UC-03 hosted; HOST-UC-01 E2).
  *
- * The placed set is fishball-core only since 8fdd0ef ("place unified fishball-core bundle";
- * fishball-ui is PLACEMENT.retiredBundle), so every rule the old suite walked with fishball-ui as
- * the one feature is walked with core, the set's only member. The README's "Placement" line still
- * names fishball-ui and is stale in that respect.
+ * Amenities and core are selected bundles, with core last so its guards can reach earlier rows.
+ * The amenities' packages are copied dependencies, not separately selected bundles.
  *
  * One hosted setup per SDK; the cases run in order and later ones restart the same home. Changes to
  * the child profile are made while the host (and so the child) is down, as an owner's switch would be.
@@ -25,15 +23,22 @@ import {
   CHILD, HTTP, INCOMPATIBLE, OVERLAY, SET, STATE, admitChild, blockedBy, disabledIds, graphIds, hostedWorld, incompatibleCoreRepo, insertedIds, perSdk, readJson, show,
 } from '../support/hosted-child.mjs'
 
-/** Every trace of the shelved board in a child profile (SHELVE-BOARD: not placed, installed, enabled or recorded, not even off). */
-function shelvedTraces(child) {
-  const traces = []
-  for (const dir of CHILD.copyDirs) if (fs.existsSync(child.copy(SET.shelved, dir))) traces.push(dir + '/' + SET.shelved)
-  if (Object.hasOwn(child.deps(), SET.shelved)) traces.push('dependency')
-  if (Object.values(child.deps()).some((spec) => String(spec).includes(SET.shelved))) traces.push('install spec')
-  if (child.bundles().includes(SET.shelved)) traces.push('bundle')
-  if ((child.record()?.[CHILD.record.key] ?? []).includes(SET.shelved)) traces.push('placement record')
-  return traces
+/** The packages supplied by amenities are file dependencies only; standalone UI is absent. */
+function assertAmenityPlacement(child) {
+  const bundles = child.bundles()
+  const record = child.record()[CHILD.record.key]
+  const deps = child.deps()
+  for (const name of SET.amenityPackages) {
+    for (const dir of CHILD.copyDirs) assert.equal(readJson(path.join(child.copy(name, dir), CHILD.manifest))?.name, name, name + ' is missing in ' + dir)
+    assert.equal(deps[name], 'file:./vendor/' + name, name + ' is not installed from the placed copy')
+  }
+  for (const name of [...SET.amenityPackages, SET.retired]) {
+    assert.equal(bundles.includes(name), false, name + ' is selected')
+    assert.equal(record.includes(name), false, name + ' is recorded as a placed bundle')
+  }
+  for (const dir of CHILD.copyDirs) assert.equal(fs.existsSync(child.copy(SET.retired, dir)), false, SET.retired + ' in ' + dir)
+  assert.equal(Object.hasOwn(deps, SET.retired), false, SET.retired + ' is a dependency')
+  assert.equal(Object.values(deps).some((spec) => String(spec).includes(SET.retired)), false, SET.retired + ' in a dependency spec')
 }
 
 /** The top-level entries a copy of a package must hold: its manifest and the first segment of each `files` entry ('!' entries exclude). */
@@ -50,8 +55,8 @@ eachSdk((sdk) => {
       return w.child
     }
     const on = (name) => w.child.bundles().includes(name)
-    /** Switch `name` on again (before core's place, core last) while the child is down. */
-    const switchOn = (child, name) => { if (!child.bundles().includes(name)) child.setBundles([...child.bundles().filter((b) => b !== SET.core), name, ...(name === SET.core ? [] : [SET.core])]) }
+    const switchCoreOff = (child) => child.setBundles(child.bundles().filter((b) => b !== SET.core))
+    const switchCoreOn = (child) => { if (!child.bundles().includes(SET.core)) child.setBundles([...child.bundles(), SET.core]) }
 
     // ============================================================== HOST-ST-01 rows 1-2, HOST-UC-08 main 1
     row('HOST-ST-01', 1, 'Stopped → host app ready → Starting, then (row 2) Running: ready with the origin set (Open Fishball admits to the child)', async () => {
@@ -61,14 +66,13 @@ eachSdk((sdk) => {
       assert.ok(child.cookie, 'the admission set no cookie')
       assert.notEqual(child.origin, w.host.origin, 'the admission URL is not the child\'s own origin')
     })
-    row('HOST-UC-08', 'main 1', "the child's profile holds the set member fishball-core, on, last (8fdd0ef: the set is core only)", async () => {
+    row('HOST-UC-08', 'main 1', "the child's profile enables amenities and core, in that order, after all other bundles", async () => {
       const child = await ready()
       const bundles = child.bundles()
-      for (const name of SET.placed) assert.ok(bundles.includes(name), name + ' is not on: ' + show(bundles))
-      assert.equal(bundles.at(-1), SET.core, 'core is not last: ' + show(bundles))
+      assert.deepEqual(bundles.slice(-SET.placed.length), [...SET.placed], show(bundles))
       assert.equal(bundles.includes(SET.retired), false, 'the retired fishball-ui is placed: ' + show(bundles))
     })
-    row('HOST-UC-08', 'main 1', "the child's plugin list (DSH's own profile reader) lists the set member as an installed bundle, enabled", async () => {
+    row('HOST-UC-08', 'main 1', "the child's plugin list (DSH's own profile reader) lists both set members as installed bundles, enabled", async () => {
       const child = await ready()
       const { readProfilePlugins } = await importSdk(sdk, '@deepseek-ai/dsh-app-boot')
       const { dependencies } = readProfilePlugins({ binName: 'dsh', profileDir: child.profile, installAnchor: path.join(runtimeOf(sdk), '@deepseek-ai', 'dsh', 'package.json') })
@@ -109,12 +113,12 @@ eachSdk((sdk) => {
       assert.equal(s?.state, STATE.ready, show(s))
     })
 
-    // ============================================================== HOST-EP-03 row 7, SHELVE
-    row('HOST-EP-03', 7, 'the child profile and the placement record hold the set member (core), and nothing else of Fishball as a bundle or record', async () => {
+    // ============================================================== HOST-EP-03 row 7
+    row('HOST-EP-03', 7, 'the child enables amenities then core and records both, with no other Fishball bundle or record entry', async () => {
       const child = await ready()
       const fishball = (list) => list.filter((n) => n.startsWith('fishball-'))
       assert.deepEqual(fishball(child.record()[CHILD.record.key]).sort(), [...SET.placed].sort())
-      assert.deepEqual(fishball(child.bundles()).sort(), [...SET.placed].sort())
+      assert.deepEqual(fishball(child.bundles()), [...SET.placed])
     })
     row('HOST-EP-03', 7, "core's own library fishball-shared sits beside core in the child, never as a profile bundle; the connector is not placed (I-READY)", async () => {
       const child = await ready()
@@ -140,8 +144,8 @@ eachSdk((sdk) => {
         for (const excluded of (manifest.files ?? []).filter((f) => f.startsWith('!'))) assert.equal(fs.existsSync(path.join(copy, excluded.slice(1))), false, dir + ': ' + excluded + ' was copied')
       }
     })
-    row('HOST-EP-03', 'SHELVE first', `after the first start: no ${SET.shelved} in vendor/ or node_modules/, the profile's dependencies or bundles, the placement record (not even disabled) or an install spec`, async () => {
-      assert.deepEqual(shelvedTraces(await ready()), [])
+    row('HOST-EP-03', 'amenities first', 'after first placement: amenity packages are file dependencies, never separate bundles, and standalone fishball-ui is absent', async () => {
+      assertAmenityPlacement(await ready())
     })
 
     // ============================================================== PLAT-DT-01 rule 9, PLAT-DT-04 rule 1, LITE-UC-03
@@ -186,13 +190,13 @@ eachSdk((sdk) => {
     // ============================================================== PLAT-DT-01 rules 2-5 (a walk over restarts), HOST-UC-01 E2
     for (const [rule, title, action, expectOn] of [
       [2, 'recorded, present, on → stays on', () => {}, true],
-      [3, 'recorded, present, off → stays off (a disable survives the restart)', (child) => child.setBundles(child.bundles().filter((b) => b !== SET.core)), false],
-      [4, 'recorded, deleted while off → placed again, off', (child) => { child.setBundles(child.bundles().filter((b) => b !== SET.core)); child.removePlaced(SET.core) }, false],
+      [3, 'recorded, present, off → stays off (a disable survives the restart)', switchCoreOff, false],
+      [4, 'recorded, deleted while off → placed again, off', (child) => child.removePlaced(SET.core), false],
       // "Deleted while on": the copies and the dependency are gone while the owner's switch (the bundle
       // list, which holds on/off; the record holds names only, README "Placement") still says on.
-      [5, 'recorded, deleted while on → placed again, on', (child) => { switchOn(child, SET.core); child.removePlaced(SET.core, { keepSelected: true }) }, true],
+      [5, 'recorded, deleted while on → placed again, on', (child) => { switchCoreOn(child); child.removePlaced(SET.core, { keepSelected: true }) }, true],
     ]) {
-      row('PLAT-DT-01', rule, title + ' (the member is core, 8fdd0ef)', async () => {
+      row('PLAT-DT-01', rule, title + ' (core)', async () => {
         await ready()
         const status = await w.restart(() => action(w.child))
         assert.equal(status?.state, STATE.ready, show(status))
@@ -200,7 +204,8 @@ eachSdk((sdk) => {
         for (const dir of CHILD.copyDirs) assert.ok(fs.existsSync(path.join(child.copy(SET.core, dir), CHILD.manifest)), SET.core + ' not in ' + dir + '/')
         assert.equal(on(SET.core), expectOn, `on/off after rule ${rule}: ${show(child.bundles())}`)
         assert.ok(child.record()[CHILD.record.key].includes(SET.core), 'still recorded')
-        if (expectOn) assert.equal(child.bundles().at(-1), SET.core, 'core last')
+        assert.ok(on(SET.amenities), 'changing core must leave amenities on')
+        if (expectOn) assert.deepEqual(child.bundles().slice(-SET.placed.length), SET.placed, 'amenities then core last')
       })
       if (rule === 3) {
         // R-FB-10 as amended by 1.39: the instance reports only generic child states; no fishball-off.
@@ -211,10 +216,10 @@ eachSdk((sdk) => {
         })
       }
     }
-    row('HOST-EP-03', 'SHELVE restart', `after a restart: no ${SET.shelved} in vendor/ or node_modules/, the profile's dependencies or bundles, the placement record (not even disabled) or an install spec`, async () => {
+    row('HOST-EP-03', 'amenities restart', 'after restart: amenity packages remain file dependencies, never separate bundles, and standalone fishball-ui is still absent', async () => {
       await ready()
       assert.equal((await w.restart())?.state, STATE.ready, 'the child did not start again')
-      assert.deepEqual(shelvedTraces(w.child), [])
+      assertAmenityPlacement(w.child)
     })
 
     // ============================================================== PLAT-DT-01 rules 6-7, HOST-ST-01 row 3 (an incompatible member)
@@ -223,30 +228,34 @@ eachSdk((sdk) => {
       const scratch = incompatibleCoreRepo(siblingRepo('fishball'))
       let status
       let bundlesThen
+      let engineThen
       try {
         status = await w.restart(() => prep(w.child), { env: { FISHBALL_REPO: scratch.repo } })
         bundlesThen = w.child.bundles()
+        engineThen = readJson(path.join(w.child.copy(SET.core, CHILD.nodeModules), CHILD.manifest))?.engines?.dsh
       } finally { scratch.remove() }
-      const back = await w.restart(() => switchOn(w.child, SET.core))
+      const back = await w.restart(() => switchCoreOn(w.child))
       assert.equal(back?.state, STATE.ready, 'the child did not start again from the real source: ' + show(back))
+      assert.equal(engineThen, INCOMPATIBLE.impossibleEngine, 'fixture core was not placed: ' + show(status))
+      assert.ok(bundlesThen.includes(SET.amenities), 'the incompatible-core boot switched amenities off: ' + show(bundlesThen))
       return { status, bundlesThen }
     }
     row('PLAT-DT-01', 7, 'core off and incompatible → the start is not blocked (only enabled bundles block)', async () => {
       await ready()
-      const { status, bundlesThen } = await startIncompatible((child) => child.setBundles(child.bundles().filter((b) => b !== SET.core)))
+      const { status, bundlesThen } = await startIncompatible(switchCoreOff)
       assert.equal(status?.state, STATE.ready, show(status))
       assert.equal(bundlesThen.includes(SET.core), false, 'core was switched on: ' + show(bundlesThen))
     })
     row('PLAT-DT-01', 6, 'core on and incompatible → the child start is blocked; the status names it (PROFILE_INCOMPATIBLE)', async () => {
       await ready()
-      const { status } = await startIncompatible((child) => switchOn(child, SET.core))
+      const { status } = await startIncompatible(switchCoreOn)
       assert.equal(status?.state, STATE.failed, show(status))
       assert.equal(status?.code, INCOMPATIBLE.code, show(status))
       assert.equal(blockedBy(status), SET.core, show(status))
     })
     row('HOST-ST-01', 3, 'Starting → an enabled incompatible member → Failed, PROFILE_INCOMPATIBLE naming it', async () => {
       await ready()
-      const { status } = await startIncompatible((child) => switchOn(child, SET.core))
+      const { status } = await startIncompatible(switchCoreOn)
       assert.deepEqual([status?.state, status?.code, blockedBy(status)], [STATE.failed, INCOMPATIBLE.code, SET.core], show(status))
     })
   })

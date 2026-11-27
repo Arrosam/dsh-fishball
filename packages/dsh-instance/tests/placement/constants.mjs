@@ -6,11 +6,11 @@
  *   or without a trailing '/') and everything under it, whatever the order, as npm pack reads it; a
  *   nonexistent exclusion is not refused; a name-prefix sibling is kept; a missing positive entry
  *   rejects PLACEMENT_SOURCE_UNAVAILABLE and a symlink in a shipped tree UNSAFE_PLACEMENT_SOURCE;
- * - placement (README "Placement", constants.js PLACEMENT as amended by 8fdd0ef): at every start
- *   the set (fishball-core alone since 8fdd0ef; fishball-ui retired, fishball-board shelved) is
- *   copied into <profile>/vendor/<name> and <profile>/node_modules/<name>, declared
- *   file:./vendor/<name>, appended to the bundles, core last; its own bundled library goes beside it,
- *   never as a bundle; the record fishball-placement.json keeps the owner's switches;
+ * - placement (README "Placement", constants.js PLACEMENT): at every start fishball-amenities
+ *   and fishball-core are copied into <profile>/vendor/<name> and <profile>/node_modules/<name>,
+ *   declared file:./vendor/<name>, and appended to the bundles in that order. Their bundled
+ *   dependencies go beside them, never as bundles; the record fishball-placement.json keeps the
+ *   owner's switches. The old standalone fishball-ui is no longer placed;
  * - the launch overlay (README "How it starts", R-HOST-04, design §6.2): HMR off, origin and port,
  *   the two instance rows, the isolation of instructions and skills; no guard row, no token.
  * Fixture paths are POSIX and converted to the platform separator by the cases.
@@ -111,22 +111,17 @@ export const REFUSALS = Object.freeze([
 
 // ------------------------------------------------------------------ the placed set (PLACE-*, PLAT-DT-01)
 
-/**
- * The set and its neighbours (8fdd0ef: "place unified fishball-core bundle"; PLACEMENT.retiredBundle;
- * SHELVE-BOARD, the user 2026-11-18: "不要预留在子实例的Fishball内").
- */
+/** The hosted set (README "Placement") and the retired standalone UI bundle. */
 export const SET = Object.freeze({
+  amenities: 'fishball-amenities',
   core: 'fishball-core',
-  /** core's own bundled library (its bundleDependencies, pinned at core's version): placed beside it, never a bundle. */
   library: 'fishball-shared',
-  /** No longer placed (8fdd0ef); a fake sibling folder of it must stay unplaced. */
   retired: 'fishball-ui',
-  /** Shelved, not in 1.0.0-alpha.1: never placed, installed, bundled, recorded or reserved. */
-  shelved: 'fishball-board',
   version: '1.0.0-alpha.1',
-  /** Every Fishball-side package name starts so. */
   prefix: 'fishball-',
 })
+export const BUNDLES = Object.freeze([SET.amenities, SET.core])
+export const AMENITY_PACKAGES = Object.freeze(['fishball-board', 'fishball-heartbeat', 'fishball-taskboard'])
 
 /** The fake dsh-fishball checkout FISHBALL_REPO points at: packages/<folder> per package. */
 export const FAKE_REPO = Object.freeze({
@@ -134,8 +129,7 @@ export const FAKE_REPO = Object.freeze({
   root: 'dsh-fishball',
   packages: 'packages',
   coreFolder: 'core',
-  /** Folders a real checkout also holds; nothing of them may be placed. */
-  others: Object.freeze([Object.freeze({ folder: 'fishball-ui', name: SET.retired }), Object.freeze({ folder: 'board', name: SET.shelved })]),
+  modules: 'node_modules',
   patch: 'cordis.patch.yml',
   /** core's own files list, as the real core writes it since e07228ff: "ui/" and "!ui/tests/". */
   coreFiles: Object.freeze(['cordis.patch.yml', 'src/', 'ui/', '!ui/tests/']),

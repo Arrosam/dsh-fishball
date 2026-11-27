@@ -11,7 +11,8 @@
  *   2026-11-20);
  * - POST reconnect → `{ok: true}` or `{ok: false, code}` (K3 `reconnect`);
  * - POST open `{lang}` → `{ok: true, url}`: one admission into the child's Fishball page (view
- *   `chat`) under the page's own loopback hostname (Q-G3; the user's answer Q7 = A: a new tab).
+ *   `chat`), on the configured main DSH HTTPS relay if enabled and matched, otherwise under the
+ *   page's own loopback hostname (Q-G3; the user's answer Q7 = A: a new tab).
  * The model-sync routes are provider-sync-routes.js beside this file (same paths as before).
  */
 import { requestHostname } from '../lib/request-host.js'
@@ -66,7 +67,7 @@ async function openBody(request) {
 
 /**
  * @param ctx - the host row's context (`connection`)
- * @param service - `{status(), notice(), busy(), retry(), restart(), reconnect(), open({hostname, lang})}`;
+ * @param service - `{status(), notice(), busy(), retry(), restart(), reconnect(), open({hostname, lang, request})}`;
  *   `busy()` tells whether a Fishball package operation runs; `restart()` resolves `{refused?: code}`.
  */
 export function registerInstanceRoutes(ctx, service) {
@@ -89,7 +90,7 @@ export function registerInstanceRoutes(ctx, service) {
       fetch: async (request) => {
         const lang = await openBody(request)
         if (lang === undefined) return json({ ok: false, code: REFUSAL.invalid }, R.badRequest)
-        try { return json(await service.open({ hostname: requestHostname(request), lang })) } catch { return json({ ok: false, code: REFUSAL.failed }) }
+        try { return json(await service.open({ hostname: requestHostname(request), lang, request })) } catch { return json({ ok: false, code: REFUSAL.failed }) }
       },
     },
   ], R.label)

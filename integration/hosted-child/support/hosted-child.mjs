@@ -69,17 +69,16 @@ export const CHILD = Object.freeze({
   savedRecord: 'fishball-core/hosted-agent',
 })
 
-/**
- * The placed set (README "Placement"; commit 8fdd0ef made it fishball-core only, with fishball-ui
- * retired as PLACEMENT.retiredBundle). fishball-shared is core's own bundled library, placed beside
- * it (constants.js PLACEMENT.bundledField). fishball-board is shelved: never placed.
- */
+/** The placed bundles and their file-only dependencies (README "Placement"). */
+const CORE_BUNDLE = 'fishball-core'
+const AMENITIES_BUNDLE = 'fishball-amenities'
 export const SET = Object.freeze({
-  core: 'fishball-core',
-  placed: Object.freeze(['fishball-core']),
+  core: CORE_BUNDLE,
+  amenities: AMENITIES_BUNDLE,
+  placed: Object.freeze([AMENITIES_BUNDLE, CORE_BUNDLE]),
+  amenityPackages: Object.freeze(['fishball-board', 'fishball-heartbeat', 'fishball-taskboard']),
   library: 'fishball-shared',
   retired: 'fishball-ui',
-  shelved: 'fishball-board',
   /** The child's base bundles (constants.js RUNTIME.profile.bundles). */
   base: Object.freeze(['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app']),
   instance: 'dsh-instance',
@@ -103,7 +102,7 @@ export const CODE = Object.freeze({ protected: 'protected', busy: 'busy', notRea
 export const APPLIED = Object.freeze({ nextStart: 'next-start', restarting: 'restarting' })
 export const HTTP = Object.freeze({ ok: 200, seeOther: 303, badRequest: 400, forbidden: 403 })
 /** The protected bundles the list route names (constants.js CHILD_OWN_BUNDLES, retired fishball-ui included). */
-export const PROTECTED = Object.freeze([...SET.base, SET.core, SET.retired, SET.instance])
+export const PROTECTED = Object.freeze([...SET.base, ...SET.placed, SET.retired, SET.instance])
 /** DSH's cancelInstall outcomes (dsh-plugin-manager CancelInstallOutcome, both SDKs). */
 export const CANCEL_OUTCOMES = Object.freeze(['cancelled', 'too-late', 'not-running'])
 
@@ -320,17 +319,22 @@ export async function connectorEntries(host) {
 }
 
 /**
- * A scratch copy of the sibling dsh-fishball checkout's fishball-core, made incompatible (an
- * engines.dsh range no SDK meets), for FISHBALL_REPO: placement reads FISHBALL_REPO first
- * (README "Placement": sources are the sibling workspace folders of a source checkout). Its
- * fishball-shared resolves to the sibling's own library through a link; the sibling is only read.
+ * A scratch checkout for FISHBALL_REPO with only core made incompatible (an engines.dsh range
+ * no SDK meets). Amenities and its workspace packages are linked as siblings, and fishball-shared
+ * is linked in node_modules. Placement reads those links without modifying the real checkout.
  * Answers `{repo, remove}`.
  */
 export function incompatibleCoreRepo(siblingFishball) {
   const base = fs.realpathSync(os.tmpdir())
   const repo = fs.mkdtempSync(path.join(base, 'dshi-test-incompatible-'))
-  const core = path.join(repo, 'packages', 'core')
-  fs.cpSync(path.join(siblingFishball, 'packages', 'core'), core, { recursive: true, filter: (src) => path.basename(src) !== 'node_modules' })
+  const packages = path.join(repo, 'packages')
+  const source = path.join(siblingFishball, 'packages')
+  const core = path.join(packages, 'core')
+  fs.cpSync(path.join(source, 'core'), core, { recursive: true, filter: (src) => path.basename(src) !== CHILD.nodeModules })
+  const amenities = readJson(path.join(source, SET.amenities, CHILD.manifest))
+  const bundledWorkspace = (amenities.bundleDependencies ?? []).filter((name) =>
+    name !== SET.library && amenities.dependencies?.[name] === amenities.version)
+  for (const name of [SET.amenities, ...bundledWorkspace]) fs.symlinkSync(path.join(source, name), path.join(packages, name), 'dir')
   const manifestFile = path.join(core, CHILD.manifest)
   const manifest = JSON.parse(fs.readFileSync(manifestFile, 'utf8'))
   manifest.engines = { ...manifest.engines, dsh: INCOMPATIBLE.impossibleEngine }

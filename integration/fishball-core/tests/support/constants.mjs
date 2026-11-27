@@ -2,8 +2,8 @@
  * Values the cases check. Guard vocabulary: core's frozen K3 contract (contracts/guards.d.ts of the
  * sibling checkout, read back as text by guards.mjs); launch overlay: the instance README ("How it
  * starts": HMR off, the two instance rows, the isolation; "No guard row and no token") and design
- * §6.2 (R-HOST-04); placement: README "Placement" (fishball-core placed, core last; fishball-board
- * never; fishball-ui retired, commit 8fdd0ef "place unified fishball-core bundle").
+ * §6.2 (R-HOST-04); placement: README "Placement" (amenities then core; fishball-ui retired
+ * as a standalone bundle, board supplied by amenities).
  */
 export const OVERLAY = Object.freeze({
   hmr: 'hmr',
@@ -32,8 +32,8 @@ export const CORE_ROWS = Object.freeze({
   uiPackageRows: Object.freeze(['fishball-page', 'fishball-recommend-plugins', 'fishball-child-plugins']),
 })
 
-/** The placed set (README "Placement"; 8fdd0ef). */
-export const SET = Object.freeze({ placed: Object.freeze(['fishball-core']), retired: 'fishball-ui', shelved: 'fishball-board' })
+/** The placed set (README "Placement"); board is a dependency of amenities, not a selected bundle. */
+export const SET = Object.freeze({ placed: Object.freeze(['fishball-amenities', 'fishball-core']), retired: 'fishball-ui', board: 'fishball-board' })
 
 /** SHIP-UC-01: npm pack's own file list of fishball-core (dry run, isolated), less what placement never ships. */
 export const PACK = Object.freeze({

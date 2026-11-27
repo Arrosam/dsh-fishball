@@ -27,6 +27,8 @@ export const RUNTIME = Object.freeze({
   socketPathBytes: 100,
   privateDirectoryMode: 0o700,
   privateFileMode: 0o600,
+  groupOtherMask: 0o077,
+  groupOtherWriteMask: 0o022,
   secretBytes: 32,
   marker: 'owner.json',
   // Uninstall renames the runtime root to `runtime.removing-<uuid>` beside it before deleting it
@@ -36,6 +38,10 @@ export const RUNTIME = Object.freeze({
   active: 'active.json',
   pid: 'pid.json',
   endpoint: 'endpoint.json',
+  // The main process that wrote a launch record (index.js launch). A record whose child never
+  // announced itself can only be retired once this process is provably gone, so an interrupted
+  // launch no longer blocks every later start (files.js removeInterruptedLaunch, 2026-11-23).
+  writerPid: 'writerPid',
   log: 'lifecycle.log',
   // The only shape a log line's `reason` may have: an error code identifier (files.js lifecycleLog).
   logReason: /^[A-Z][A-Z0-9_]{0,63}$/,
@@ -177,11 +183,12 @@ export const PLACEMENT = Object.freeze({
    * fishball-core last, so its guard patch reaches every row the others insert (R-FB-12).
    * `directory` names a set member's sibling workspace folder `../<directory>` in a checkout; a
    * packed instance ships it as `bundled/<tarball(name, version)>` instead (REL-PACK output, never
-   * committed; Q-22). The set is fishball-ui and core. fishball-board is shelved, not in 1.0.0-alpha.1
-   * (SHELVE-BOARD, the user, 2026-11-18: "不要预留在子实例的Fishball内"), so nothing places, installs or
-   * reserves it in the child; add it back here and in `install.order` for its release.
+   * committed; Q-22). The hosted set is `fishball-amenities` (umbrella bundling `fishball-board`,
+   * `fishball-heartbeat`, `fishball-taskboard`) and `fishball-core` (which includes `fishball-ui`),
+   * installed together on child setup (the user, 2026-11-23).
    */
   bundles: Object.freeze([
+    Object.freeze({ name: 'fishball-amenities', directory: 'fishball-amenities' }),
     Object.freeze({ name: 'fishball-core', directory: 'core' }),
   ]),
   /** The set's former UI bundle, still held by children an earlier instance set up (CHILD_OWN_BUNDLES). */
@@ -224,7 +231,7 @@ export const PLACEMENT = Object.freeze({
    * as any DSH plugin install does; the offline fallback needs none of them.
    */
   install: Object.freeze({
-    order: Object.freeze(['fishball-core']),
+    order: Object.freeze(['fishball-amenities', 'fishball-core']),
     operations: '@deepseek-ai/dsh-plugin-manager/operations',
     manager: '@deepseek-ai/dsh-plugin-manager',
     command: 'add',
@@ -330,7 +337,8 @@ const NO_SUCCESSOR = 'no-successor'
  * - `record`: the host's non-secret list of the hosted entry keys it created, newest last, with
  *   the instance's stable id and the old entry of an unfinished succession (host/hosted-record.js);
  * - `retire`: the reinstall succession's K3 answers and log lines (I-SUCCEED);
- * - `notice`: the instance's one notice, after Retry found the hosted entry deleted (R6 = B);
+ * - `notice`: the instance's status-page notices — `entryDeleted` after Retry found the hosted entry
+ *   deleted (R6 = B), and `recordUnreadable` when `hosted.json` could not be opened or created;
  * - `reconnect`: its refusals (K3 `ReconnectRefusalCode`).
  */
 export const HOSTED = Object.freeze({
@@ -347,7 +355,10 @@ export const HOSTED = Object.freeze({
   /** DSH's credential document lock wait (dsh-credentials-local DOCUMENT_LOCK_WAIT_MS, 0.2.1-rc.5 and 0.2.2-rc.1). */
   credentialLockWaitMs: 30000,
   record: Object.freeze({ file: 'hosted.json', format: 1 }),
-  notice: Object.freeze({ entryDeleted: 'hosted-entry-deleted' }),
+  notice: Object.freeze({
+    entryDeleted: 'hosted-entry-deleted',
+    recordUnreadable: 'hosted-record-unreadable',
+  }),
   /** Logged (code only, never a value) when the record could not keep a key the child stored. */
   recordWriteFailed: 'hosted record not written (%s); the child holds the token',
   /** The host's own connector endpoint the child links to (K1 `PATHS.mcp`, restated: the instance does not import the connector). */
@@ -396,6 +407,40 @@ export const INITIAL_SYNC = Object.freeze({
   format: 1,
   failedLog: 'initial model sync failed (%s)',
   itemFailedLog: 'initial model sync: some providers were not added (%s)',
+})
+
+/**
+ * The `child-model` channel of the lifecycle wire: lets the main host's onboarding wizard read
+ * the child's model catalog and `fishball-core`'s `model` selection, and save a chosen model,
+ * through generic DSH services in `child-row.js` (no Fishball code imported).
+ */
+export const CHILD_MODEL = Object.freeze({
+  channel: 'child-model',
+  settingsNamespace: 'fishball-core',
+  path: Object.freeze(['model']),
+  mutateOp: 'set',
+  catalogService: 'sessionController',
+  op: Object.freeze({ read: 'read', set: 'set' }),
+  code: Object.freeze({
+    unavailable: 'CHILD_MODEL_CHANNEL_UNAVAILABLE',
+    notReady: REFUSAL.notReady,
+    namespaceMissing: 'namespace-missing',
+    invalidModel: 'invalid-model',
+    writeFailed: 'write-failed',
+  }),
+})
+
+/**
+ * First-run onboarding completion marker under `<home>/fishball/runtime`, so `uninstall.js`
+ * removes it along with the runtime tree and a reinstall starts onboarding fresh.
+ */
+export const ONBOARDING = Object.freeze({
+  file: 'onboarding.json',
+  format: 1,
+  outcome: Object.freeze({ completed: 'completed', skipped: 'skipped', preconfigured: 'preconfigured' }),
+  /** Outcomes accepted by `complete()` and `POST /api/dsh-instance/onboarding/complete`. */
+  completeOutcomes: Object.freeze(['completed', 'skipped']),
+  writeFailedLog: 'onboarding marker write failed (%s)',
 })
 
 /**

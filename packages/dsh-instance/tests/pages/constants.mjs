@@ -8,7 +8,7 @@
 export const PAGE_UI = Object.freeze({
   id: 'dsh-instance',
   entry: 'client.js',
-  chunks: Object.freeze(['client.status.js', 'client.models.js', 'client.fishball.js']),
+  chunks: Object.freeze(['client.status.js', 'client.models.js', 'client.fishball.js', 'client.onboarding.js']),
   base: 'http://127.0.0.1:47000/',
   langs: Object.freeze(['en', 'zh']),
 })
@@ -24,6 +24,7 @@ export const ROUTE = Object.freeze({
   add: '/api/dsh-instance/models/add',
   plugins: '/api/dsh-instance/plugins',
   use: '/api/dsh-instance/plugins/use',
+  toggle: '/api/dsh-instance/plugins/toggle',
   uninstall: '/api/dsh-instance/plugins/uninstall',
 })
 
@@ -56,8 +57,7 @@ export const SLOT = Object.freeze({
   overlay: 'shell.overlay',
 })
 
-/** The bundles the instance owns, which the Host lists as `protected` (README "Plugins for Fishball"). */
-export const PROTECTED = Object.freeze(['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', 'fishball-core', 'fishball-ui', 'dsh-instance'])
+export { PROTECTED } from '../support/constants.mjs'
 
 /** The per-bundle buttons (README "Plugins for Fishball"). */
 export const DETAIL = Object.freeze({ uninstall: 'Uninstall from Fishball', use: 'Use in Fishball', install: 'Install to Fishball' })
@@ -68,6 +68,7 @@ export const HOOK = Object.freeze({
   open: 'data-dsh-instance-open', reconnect: 'data-dsh-instance-reconnect', target: 'data-dsh-instance-target',
   check: 'data-fishball-model-check', add: 'data-fishball-model-add', entry: 'data-fishball-model-entry',
   tab: 'data-fishball-tab', installOpen: 'data-fishball-install-open',
+  card: 'data-fishball-plugin', toggleWrap: 'data-fishball-toggle-wrap', uninstall: 'data-fishball-uninstall',
 })
 
 /** The settings page's section headings in page order (README order: actions, model sync, launch). */

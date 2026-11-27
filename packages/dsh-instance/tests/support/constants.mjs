@@ -13,6 +13,9 @@ export const MODULE = Object.freeze({
   credential: 'src/native-runtime/credential.js',
 })
 
+/** Fishball plugin management (README "Plugins for Fishball"): packages the child owns. */
+export const PROTECTED = Object.freeze(['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', 'fishball-amenities', 'fishball-core', 'fishball-ui', 'dsh-instance'])
+
 /** K3a HOSTED_IMPORT names: the reserved parent's credential in the child, and the channel's ops. */
 export const HOSTED_IMPORT = Object.freeze({
   credentialRef: 'DSH_AGENT_TOKEN',

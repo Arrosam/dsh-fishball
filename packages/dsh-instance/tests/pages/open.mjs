@@ -33,7 +33,7 @@ export async function openTab(t, sdk, { lang, world = scriptedInstance(), mainBu
 }
 
 /** Mount the per-bundle action entry (plugins.detail.actions) with `subject`. */
-export async function openDetail(t, sdk, { world = scriptedInstance(), mainBundles = [], subject }) {
+export async function openDetail(t, sdk, { world = scriptedInstance(), mainBundles, subject }) {
   const page = await openInstancePage(t, { sdk, respond: world.respond, mainBundles })
   const [entry] = page.entriesOf(SLOT.detailActions)
   assert.ok(entry, 'no ' + SLOT.detailActions + ' entry; errors ' + page.errors.join('; '))

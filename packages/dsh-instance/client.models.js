@@ -508,6 +508,11 @@ window.__ModuleLoader__.load({
         }, PLUGIN.id + ': settings page')
       },
     })
+    /** Shared model-sync transport & vocabulary for `client.onboarding.js` (single source of truth). */
+    exports.syncKit = Object.freeze({
+      paths: MODEL_SYNC_UI,
+      request: syncRequest,
+    })
     return module.exports
   },
 })

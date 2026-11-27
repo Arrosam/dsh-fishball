@@ -1,0 +1,82 @@
+diff --git a/packages/dsh-connector/host-services/child.d.ts b/packages/dsh-connector/host-services/child.d.ts
+index d63acfb..5feea8d 100644
+--- a/packages/dsh-connector/host-services/child.d.ts
++++ b/packages/dsh-connector/host-services/child.d.ts
+@@ -83,9 +83,8 @@ export interface TargetStatus {
+  * and `admit` answers it `not-ready` and `origin` `null` (I-HOST, the user's answer Q5 = A: a
+  * second loopback listener is not designed). A host name is case-insensitive (RFC 3986 §3.2.2) and a WHATWG URL's `hostname` is
+  * already lower-case, so a caller passes the hostname of the main page's request as its URL parsed
+- * it; a page opened as `LOCALHOST` therefore arrives as `localhost`. Embed-UI's admit route checks
+- * the main page's hostname against these three before it calls the locator, and refuses any other
+- * name itself (design §4.1); the locator still rejects any other value from an untyped caller.
++ * it; a page opened as `LOCALHOST` therefore arrives as `localhost`. The original `admit` method
++ * rejects non-loopback names even when an opt-in same-origin relay is available via `admitRemote`.
+  */
+ export type LoopbackHostname = '127.0.0.1' | 'localhost' | '[::1]'
+ 
+@@ -184,6 +183,13 @@ export interface DshInstanceChild {
+    */
+   admit(request: AdmitRequest): Promise<{ readonly url: string }>
+ 
++  /**
++   * Optional opt-in admission from the owner-only connector Fetch route. The instance matches the
++   * request's Host and Origin against its configured HTTPS root. Resolves to the same-origin relay
++   * URL, or undefined when disabled/unmatched; the relay authenticates again on every request.
++   */
++  admitRemote?(request: Request, frame: Pick<AdmitRequest, 'view' | 'lang'>): Promise<{ readonly url: string } | undefined>
++
+   /**
+    * Retry (decided 1 = A; R-HOST-10 amended by 1.29 R6 = B, 1.32 R11). It never creates a token,
+    * and it acts in exactly two cases, changing nothing otherwise, so a Retry before the host is
+diff --git a/packages/dsh-connector/ui/src/host/constants.js b/packages/dsh-connector/ui/src/host/constants.js
+index d692bad..09b069b 100644
+--- a/packages/dsh-connector/ui/src/host/constants.js
++++ b/packages/dsh-connector/ui/src/host/constants.js
+@@ -44,7 +44,7 @@ export const LOOPBACK = Object.freeze({
+ 
+ /**
+  * K3 `AdmitErrorCode` (child.d.ts; DECIDED #15, #16) and K3 `AdmitView` / `AdmitLang`. embed-UI's
+- * admit route answers `hostname-refused` itself for any other name, before it calls the locator.
++ * admit route answers `hostname-refused` for other names unless the instance offers a remote relay.
+  */
+ export const ADMIT = Object.freeze({
+   code: Object.freeze({ hostnameRefused: 'hostname-refused', notReady: 'not-ready' }),
+diff --git a/packages/dsh-connector/ui/src/host/routes.js b/packages/dsh-connector/ui/src/host/routes.js
+index ba3abb9..cfeb27d 100644
+--- a/packages/dsh-connector/ui/src/host/routes.js
++++ b/packages/dsh-connector/ui/src/host/routes.js
+@@ -10,9 +10,8 @@
+  *
+  * Security (R-UI-02, R-UI-06; K3 child.d.ts `admit`):
+  * - DSH's `connection.fetch` is owner-only and applies its Host/Origin fence first;
+- * - admit's hostname is the main page's own request Host, never a client field, so the ticket is
+- *   bound to the name the page was opened under; any name but the three loopback names is refused
+- *   here, before the locator is called (`hostname-refused`);
++ * - an opt-in instance may offer a same-origin remote admission through the host relay; otherwise
++ *   the original admission binds the ticket to the request's own loopback hostname (never a client field);
+  * - the admission URL goes only into the admit answer: it is never logged, stored or put in an error;
+  * - a locator failure without a K3 code answers REFUSAL.failed and never echoes its message.
+  */
+@@ -85,11 +84,19 @@ export function routes(ctx) {
+       methods: [FETCH.post],
+       fetch: withChild(ctx, async (child, request) => {
+         const hostname = loopbackHostname(request)
+-        if (hostname === undefined) return refused(HTTP.conflict, ADMIT.code.hostnameRefused)
++        if (hostname === undefined && typeof child.admitRemote !== 'function') return refused(HTTP.conflict, ADMIT.code.hostnameRefused)
+         const body = admitBody(await jsonBody(request))
+-        if (body === undefined) return refused(HTTP.badRequest, REFUSAL.invalid)
++        if (body === undefined) return hostname === undefined
++          ? refused(HTTP.conflict, ADMIT.code.hostnameRefused)
++          : refused(HTTP.badRequest, REFUSAL.invalid)
+         let admitted
+-        try { admitted = await child.admit({ ...body, hostname }) } catch (error) { return admitRefusal(error) }
++        try {
++          admitted = await child.admitRemote?.(request, body)
++          if (admitted === undefined) {
++            if (hostname === undefined) return refused(HTTP.conflict, ADMIT.code.hostnameRefused)
++            admitted = await child.admit({ ...body, hostname })
++          }
++        } catch (error) { return admitRefusal(error) }
+         return typeof admitted?.url === 'string' ? json(HTTP.ok, { ok: true, url: admitted.url }) : refused(HTTP.badGateway, REFUSAL.failed)
+       }),
+     },

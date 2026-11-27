@@ -3,7 +3,8 @@
  * for one host-row world (its URL carries the world's tag). It plays only the runtime's documented
  * surface (index.js JSDoc and exports): `RUNTIME_LIMITS` and `createNativeRuntime(options)` with
  * `start`, `stop`, `shutdown`, `parentExit`, `health`, `mintTicket`, `childOrigin`, `hostId`,
- * `limits`, `onCredentialTransport` and `onProviderSyncTransport`; no child process is launched.
+ * `limits`, `onCredentialTransport`, `onProviderSyncTransport`, and `onChildModelTransport`;
+ * no child process is launched.
  *
  * A start calls `options.child()` once as it prepares the launch (the overlay's `{targetUrl}`, kept
  * in `launches`), even while queued behind an earlier step; it may wait on the world's `startGate`
@@ -47,6 +48,8 @@ class FakeRuntime {
     this.#syncListeners.add(listener)
     return () => this.#syncListeners.delete(listener)
   }
+  // These worlds do not publish a child-model channel; the host still subscribes and disposes it.
+  onChildModelTransport() { return () => {} }
   childOrigin() { return this.#ready ? this.#ctl.childOrigin : undefined }
   async mintTicket(claims) { this.#ctl.minted.push(claims); return this.#ctl.launchToken }
   async health() { return { state: this.#ready ? ROW.state.ready : ROW.state.stopped, warnings: [] } }

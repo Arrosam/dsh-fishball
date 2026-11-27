@@ -8,6 +8,9 @@ is the same; where a behaviour was renamed, split or merged, the row says so.
 
 ## Result
 
+The table below records the original rewrite at `fab3837` before the staging merge. The inventory
+rows also describe that comparison, not the additional staging cases.
+
 | | Cases |
 | --- | --- |
 | Inventory (old cases, counted once, not per SDK) | 786 |
@@ -58,11 +61,11 @@ A case is rewritten only when a later, recorded decision changed the requirement
 | HOST-ST-01 K (K3 declaration) | MULTI-0 withdrew the `target-remote` refusal | four refusal codes, not five |
 | PLAT-EP-07 row 5 | since the split (a9c8832) this repository packs one tarball | the instance bundles every dependency it lists; its bundled fishball-core carries fishball-shared |
 
-**Not changed, but see the note below.** After this branch was cut, main went on (12 commits, up to
-`e0cf1c1`, dsh-instance 1.0.0-alpha.2). In particular `52ada5c` places `fishball-amenities` beside
-fishball-core, which changes the placed set these tests check again. This branch is based on
-`fab3837` as asked; rebasing it onto current main needs the set cases (and the new onboarding,
-directory-permission and HMR-barrier cases main added under `test/v3`) to be brought over the same way.
+**Staging merge (`22912fb`).** Placement tests now expect `fishball-amenities` before
+`fishball-core`. Board, heartbeat and taskboard are amenities rather than independent enabled
+bundles; Fishball UI still ships in core. The merge also moved staging's plugin toggle, Cordis
+proxy regression, onboarding, directory-permission, HMR-barrier and remote embedding coverage
+from `test/v3` into the package suite.
 
 ## Every inventory case
 

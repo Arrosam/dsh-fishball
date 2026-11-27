@@ -327,6 +327,25 @@ export function createChildPlugins({ ctx, restart, enabled, warn }) {
     },
 
     /**
+     * Enable or disable an installed bundle in the child profile (toggling its presence in
+     * `dsh.profile.bundles` without running pnpm), then apply the change (applyChange).
+     * Note: for a shipped optional bundle (`installed: false, availability: 'installation'`),
+     * disabling removes it from `dsh.profile.bundles` so it is no longer listed as enabled.
+     * @returns {{ok: true, name, enabled: boolean, applied: 'restarting' | 'next-start'} | {ok: false, code}}
+     */
+    setEnabled(name, nextEnabled) {
+      return exclusive(async () => {
+        if (OWN.has(name)) return refusal(C.code.protected)
+        const bundle = await bundleNamed(name)
+        if (bundle === undefined || !(bundle.installed || bundle.enabled)) return refusal(C.code.unknown)
+        if (Boolean(bundle.enabled) === nextEnabled) return { ok: true, name, enabled: nextEnabled, applied: C.applied.nextStart }
+        if (nextEnabled) await addBundle(name)
+        else await dropBundle(name)
+        return { ok: true, name, enabled: nextEnabled, applied: applyChange() }
+      })
+    },
+
+    /**
      * Remove a bundle from the child: `pnpm remove` first for a package the child profile declares
      * itself, then off its bundle list; then apply the change (applyChange).
      * @returns {{ok: true, name, applied: 'restarting' | 'next-start'} | {ok: false, code}}

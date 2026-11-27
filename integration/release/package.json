@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "The packed dsh-instance: scripts/pack.mjs output layout and --check, and a packed instance placing fishball-core from its bundled tarball with a dead registry.",
+  "description": "The packed dsh-instance: scripts/pack.mjs output layout and --check, and a packed instance placing fishball-amenities then fishball-core from bundled tarballs with a dead registry.",
   "scripts": {
     "test": "node ../../scripts/test-package.mjs"
   }

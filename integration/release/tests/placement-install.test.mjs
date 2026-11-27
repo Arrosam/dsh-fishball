@@ -1,9 +1,8 @@
 /**
- * PINST: a PACKED dsh-instance places the hosted child's set from its bundled tarball (README
- * "Placement": sources `bundled/<dir>` in a packed instance; constants.js PLACEMENT: exact npm spec
- * first, the bundled tarballs offline when the registry fails, only when the profile lacks that
- * exact version; R-BND-02 a disable survives; PLACEMENT_INSTALL_FAILED when both fail). Set:
- * fishball-core only (8fdd0ef "place unified fishball-core bundle"; was fishball-ui, fishball-core).
+ * PINST: a PACKED dsh-instance places fishball-amenities, then fishball-core, from its bundled
+ * tarballs (README "Placement"). It tries exact npm specs first, falls back to those tarballs
+ * offline when the registry fails, and skips installation when both members are already at that
+ * version. A disable survives (R-BND-02); if neither install works, PLACEMENT_INSTALL_FAILED.
  *
  * The packed instance is this file's own build (`node scripts/pack.mjs`), its tarball unpacked into
  * scratch; its public seam is the manifest export './native-runtime' `composedProfile({mainHome,
@@ -27,7 +26,7 @@ import { pathToFileURL } from 'node:url'
 import { caseTest, eachSdk } from '@dsh-instance/test-helpers/cases'
 import { tempRoot } from '@dsh-instance/test-helpers/scratch'
 import { runtimeOf } from '@dsh-instance/test-helpers/sdk'
-import { DEAD, INSTANCE, PACK, PROXIES, RETIRED, SET, build, flipByte, missingRelease, tail, unpack } from './support/release.mjs'
+import { CORE, DEAD, INSTANCE, NOT_STANDALONE, PACK, PROXIES, SET, VERSION, build, flipByte, missingRelease, tail, unpack } from './support/release.mjs'
 
 const skip = missingRelease()
 const show = (v) => JSON.stringify(v)
@@ -35,7 +34,6 @@ const CHILD = Object.freeze({ profile: Object.freeze(['fishball', 'runtime', 'ds
 const FAILED = 'PLACEMENT_INSTALL_FAILED'
 const UNSAFE = 'UNSAFE_DIRECTORY'
 const STALE = '1.0.0-alpha.0'
-const CORE = SET.at(-1)
 const fileScope = { stack: [], defer(fn) { this.stack.push(fn) } }
 let scratch
 let packed
@@ -52,6 +50,7 @@ const childProfile = (home) => path.join(home, ...CHILD.profile)
 const readJson = (file) => JSON.parse(fs.readFileSync(file, 'utf8'))
 const manifestOf = (home) => readJson(path.join(childProfile(home), 'package.json'))
 const bundlesOf = (home) => manifestOf(home).dsh?.profile?.bundles ?? []
+const fishballBundles = (bundles) => bundles.filter((b) => b.startsWith('fishball-'))
 const installed = (home, name) => path.join(childProfile(home), 'node_modules', name)
 const bundled = (pkg) => path.join(packed, PACK.bundled, pkg.tarball)
 let homes = 0
@@ -78,20 +77,22 @@ function assertPlaced(home) {
   const m = manifestOf(home)
   for (const pkg of SET) {
     assert.ok(Object.hasOwn(m.dependencies ?? {}, pkg.name), 'no dependency ' + pkg.name)
-    assert.equal(readJson(path.join(installed(home, pkg.name), 'package.json')).version, readJson(path.join(packed, 'package.json')).version, pkg.name + ' version')
+    const dir = installed(home, pkg.name)
+    assert.equal(readJson(path.join(dir, 'package.json')).version, VERSION, pkg.name + ' version')
+    for (const dep of pkg.libraries) assert.ok(fs.existsSync(path.join(dir, 'node_modules', dep, 'package.json')), dep + ' not in ' + pkg.name)
   }
-  const fishball = bundlesOf(home).filter((b) => b.startsWith('fishball-'))
-  assert.deepEqual(fishball, SET.map((p) => p.name), 'the Fishball bundles ' + show(bundlesOf(home)))
-  assert.equal(bundlesOf(home).at(-1), CORE.name, 'core is not last')
-  // Core's own libraries come from its own bundle (REL-PACK item 2).
-  for (const dep of ['fishball-shared', '@modelcontextprotocol/client']) assert.ok(fs.existsSync(path.join(installed(home, CORE.name), 'node_modules', dep, 'package.json')), dep + ' not in core\'s bundle')
+  const bundles = bundlesOf(home)
+  const names = SET.map((p) => p.name)
+  assert.deepEqual(fishballBundles(bundles), names, 'the Fishball bundles ' + show(bundles))
+  assert.equal(bundles.at(-1), CORE.name, 'core is not last')
+  assert.deepEqual(readJson(path.join(childProfile(home), CHILD.record)).placed, names)
 }
-/** Nothing of the retired fishball-ui or the shelved fishball-board anywhere in the child profile. */
-function retiredTraces(home) {
+/** No standalone UI or amenity package at the profile level; nested amenity dependencies are expected. */
+function standaloneTraces(home) {
   const p = childProfile(home)
   const m = manifestOf(home)
   const record = fs.existsSync(path.join(p, CHILD.record)) ? fs.readFileSync(path.join(p, CHILD.record), 'utf8') : ''
-  return RETIRED.flatMap((name) => [
+  return NOT_STANDALONE.flatMap((name) => [
     ...['vendor', 'node_modules'].flatMap((d) => (fs.existsSync(path.join(p, d)) ? fs.readdirSync(path.join(p, d)).filter((f) => f.startsWith(name)).map((f) => d + '/' + f) : [])),
     ...(Object.hasOwn(m.dependencies ?? {}, name) ? ['dependency ' + name] : []),
     ...(bundlesOf(home).includes(name) ? ['bundle ' + name] : []),
@@ -109,7 +110,7 @@ eachSdk((sdk) => {
   let home
   const placed = () => { assert.ok(home, 'the first placement case did not run'); return home }
 
-  caseTest(sdk, 'PINST-ST-01', 'first', `fresh child profile, registry dead → the bundled fallback places the set: vendor tarball, dependency, version, bundles end ${CORE.name} (core last; 8fdd0ef)`, async () => {
+  caseTest(sdk, 'PINST-ST-01', 'first', `fresh child profile, registry dead → the bundled fallback places the set: vendor tarballs, dependencies, versions and bundle order`, async () => {
     home = undefined
     const h = newHome()
     await compose(sdk, h)
@@ -121,8 +122,8 @@ eachSdk((sdk) => {
     }
     assertPlaced(h)
   }, { skip })
-  caseTest(sdk, 'PINST-SHELVE', 'first', `after the first placement the child profile holds nothing of ${RETIRED.join(' or ')} (vendor, node_modules, dependencies, bundles, ${CHILD.record}, install spec)`, () => {
-    assert.deepEqual(retiredTraces(placed()), [])
+  caseTest(sdk, 'PINST-SHELVE', 'first', `after the first placement the child profile holds no standalone ${NOT_STANDALONE.join(' or ')} (vendor, node_modules, dependencies, bundles, ${CHILD.record}, install spec)`, () => {
+    assert.deepEqual(standaloneTraces(placed()), [])
   }, { skip })
   caseTest(sdk, 'PINST-ST-01', 'skip', 'second run with the set installed at the instance version → nothing installed: package.json and pnpm-lock.yaml byte-identical', async () => {
     const h = placed()
@@ -130,9 +131,9 @@ eachSdk((sdk) => {
     const before = bytes()
     await compose(sdk, h)
     bytes().forEach((b, i) => assert.ok(b.equals(before[i]), ['package.json', CHILD.lock][i] + ' changed'))
-    assert.deepEqual(retiredTraces(h), [], 'after the second run')
+    assert.deepEqual(standaloneTraces(h), [], 'after the second run')
   }, { skip })
-  caseTest(sdk, 'PINST-ST-01', 'disable ' + CORE.name, `${CORE.name} disabled by the owner (bundles edited while the child is down) → the next run keeps it off (R-BND-02)`, async () => {
+  caseTest(sdk, 'PINST-ST-01', 'disable ' + CORE.name, `${CORE.name} disabled by the owner (bundles edited while the child is down) → the next run keeps it off and the other member on (R-BND-02)`, async () => {
     const h = placed()
     const file = path.join(childProfile(h), 'package.json')
     const original = fs.readFileSync(file)
@@ -141,7 +142,8 @@ eachSdk((sdk) => {
       m.dsh.profile.bundles = m.dsh.profile.bundles.filter((b) => b !== CORE.name)
       fs.writeFileSync(file, JSON.stringify(m, null, 2))
       await compose(sdk, h)
-      assert.equal(bundlesOf(h).includes(CORE.name), false, CORE.name + ' switched back on: ' + show(bundlesOf(h)))
+      const bundles = fishballBundles(bundlesOf(h))
+      assert.deepEqual(bundles, SET.filter((p) => p !== CORE).map((p) => p.name), 'the enabled Fishball bundles ' + show(bundles))
     } finally { fs.writeFileSync(file, original) }
   }, { skip })
   caseTest(sdk, 'PINST-DT-01', 'stale ' + CORE.name, `installed ${CORE.name} at ${STALE} (just below the instance version) → the next run installs again: the set back at the instance version`, async () => {
@@ -185,5 +187,5 @@ eachSdk((sdk) => {
     for (const pkg of SET) assert.equal(fs.readFileSync(path.join(outside, pkg.tarball), 'utf8'), planted, pkg.tarball + ' outside the profile changed')
     assert.deepEqual(fs.readdirSync(outside).sort(), SET.map((p) => p.tarball).sort(), 'the outside folder changed')
   }, { skip })
-  caseTest(sdk, 'PINST-UC-01', 'main', `a reachable registry: DSH's plugin-manager add of ${SET.map((p) => p.name + '@<v>').join(', ')} places the set (no vendor fallback)`, () => {}, { skip: 'REL-PUBLISH: the registry spec path needs fishball-core published at the instance version; nothing is published, and this package runs offline' })
+  caseTest(sdk, 'PINST-UC-01', 'main', `a reachable registry: DSH's plugin-manager add of ${SET.map((p) => p.name + '@<v>').join(', ')} places the set (no vendor fallback)`, () => {}, { skip: 'REL-PUBLISH: the registry spec path needs both hosted bundles published at the instance version; nothing is published, and this package runs offline' })
 })

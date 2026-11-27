@@ -12,7 +12,7 @@ import path from 'node:path'
 import { bindRoot, importBound, importSdk, runtimeOf } from '@dsh-instance/test-helpers/sdk'
 import { tempRoot } from '@dsh-instance/test-helpers/scratch'
 import { importInstance } from '../support/instance.mjs'
-import { CHILD, FAKE_REPO, MANIFEST, PLACEMENT_FROM, PLACEMENT_MODULE, RUNTIME_MODULE, SET, SHIPPED_PRESETS } from './constants.mjs'
+import { AMENITY_PACKAGES, CHILD, FAKE_REPO, MANIFEST, PLACEMENT_FROM, PLACEMENT_MODULE, RUNTIME_MODULE, SET, SHIPPED_PRESETS } from './constants.mjs'
 
 /** A POSIX fixture path in the platform's separator. */
 export const native = (posix) => posix.split('/').join(path.sep)
@@ -91,33 +91,37 @@ export function tracesOf(mainHome, name) {
 /** The fake core's guard patch: what K3 says core's patch does to the DSH-shipped presets (switches them off). */
 const corePatch = (presets) => presets.map((id) => `- { id: ${id}, disabled: true }`).join('\n') + '\n'
 
+/** Write a fixture bundle or library with pinned bundled dependencies when supplied. */
+function writePackage(root, name, { files, tree = [], patch, bundled = [], engines }) {
+  writeFile(path.join(root, MANIFEST), {
+    name, version: SET.version, type: 'module', files, engines,
+    ...(bundled.length ? { dependencies: Object.fromEntries(bundled.map((dep) => [dep, SET.version])), bundleDependencies: bundled } : {}),
+    ...(patch === undefined ? {} : { dsh: { bundle: { patch: './' + FAKE_REPO.patch } } }),
+  })
+  if (patch !== undefined) writeFile(path.join(root, FAKE_REPO.patch), patch)
+  for (const rel of tree) writeFile(path.join(root, native(rel)), '// ' + rel + '\n')
+}
+
 /**
- * A fake dsh-fishball checkout under `root`: packages/core is fishball-core (its files list holds
- * "ui/" and "!ui/tests/", as the real core's does), with its bundled library fishball-shared at
- * core's version in its own node_modules, plus sibling folders of the retired fishball-ui and the
- * shelved fishball-board, which must never be placed.
- * @returns {{repo: string, core: string}}
+ * A fake checkout: core lists its real file exclusions; both bundles resolve a hoisted shared
+ * library, and amenities resolves its member packages from sibling workspace folders. The
+ * retired standalone UI is present as a source but stays out of a fresh child profile.
  */
 export function fakeFishball(root, { presets = SHIPPED_PRESETS, engines = FAKE_REPO.engines } = {}) {
   const repo = path.join(root, FAKE_REPO.root)
   const packages = path.join(repo, FAKE_REPO.packages)
   const core = path.join(packages, FAKE_REPO.coreFolder)
   writeFile(path.join(repo, MANIFEST), { name: FAKE_REPO.root, private: true })
-  writeFile(path.join(core, MANIFEST), {
-    name: SET.core, version: SET.version, type: 'module', files: [...FAKE_REPO.coreFiles], engines,
-    dependencies: { [SET.library]: SET.version }, bundleDependencies: [SET.library],
-    dsh: { bundle: { patch: './' + FAKE_REPO.patch } },
+  writePackage(core, SET.core, {
+    files: FAKE_REPO.coreFiles, tree: FAKE_REPO.coreTree, patch: corePatch(presets), bundled: [SET.library], engines,
   })
-  writeFile(path.join(core, FAKE_REPO.patch), corePatch(presets))
-  for (const rel of FAKE_REPO.coreTree) writeFile(path.join(core, native(rel)), '// ' + rel + '\n')
-  const library = path.join(core, CHILD.copyDirs[1], SET.library)
-  writeFile(path.join(library, MANIFEST), { name: SET.library, version: SET.version, type: 'module', files: [...FAKE_REPO.libraryFiles] })
-  for (const rel of FAKE_REPO.libraryFiles) writeFile(path.join(library, rel), '// ' + rel + '\n')
-  for (const { folder, name } of FAKE_REPO.others) {
-    const dir = path.join(packages, folder)
-    writeFile(path.join(dir, MANIFEST), { name, version: SET.version, files: [FAKE_REPO.patch], dsh: { bundle: { patch: './' + FAKE_REPO.patch } } })
-    writeFile(path.join(dir, FAKE_REPO.patch), '[]\n')
-  }
+  const emptyPatch = { files: [FAKE_REPO.patch], patch: '[]\n' }
+  writePackage(path.join(packages, SET.amenities), SET.amenities, { ...emptyPatch, bundled: [...AMENITY_PACKAGES, SET.library] })
+  writePackage(path.join(packages, SET.retired), SET.retired, emptyPatch)
+
+  const library = { files: FAKE_REPO.libraryFiles, tree: FAKE_REPO.libraryFiles }
+  writePackage(path.join(repo, FAKE_REPO.modules, SET.library), SET.library, library)
+  for (const name of AMENITY_PACKAGES) writePackage(path.join(packages, name), name, library)
   return { repo, core }
 }
 

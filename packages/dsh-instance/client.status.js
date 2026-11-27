@@ -112,6 +112,7 @@ window.__ModuleLoader__.load({
       'restartRefused.instance-disabled': 'The instance is switched off, so there is nothing to restart.',
       'restartRefused.busy': 'A Fishball plugin change is still running. Wait for it, then restart.',
       'notice.hosted-entry-deleted': 'The hosted token entry was deleted in the connector, so Retry created no token. To connect again, press Reconnect below, or generate a new token in the connector\'s settings and paste it into the token field in Fishball\'s settings, or use Connect there.',
+      'notice.hosted-record-unreadable': 'Could not read or create the hosted token record (fishball/hosted.json), so Fishball cannot pair or appear in the sidebar. Check the permissions and contents of <DSH_HOME>/fishball/ and restart DSH.',
     }
     const zh = {
       status: '状态',
@@ -137,6 +138,7 @@ window.__ModuleLoader__.load({
       'restartRefused.instance-disabled': '实例已关闭，没有可重启的内容。',
       'restartRefused.busy': 'Fishball 插件更改仍在进行。请等它结束后再重启。',
       'notice.hosted-entry-deleted': '连接器中的托管 token 条目已被删除，所以重试没有创建 token。要重新连接，请点击下方的“重新连接”；或在连接器设置中生成新 token，粘贴到 Fishball 设置的 token 输入框；或在那里使用 Connect。',
+      'notice.hosted-record-unreadable': '无法读取或创建托管 token 记录（fishball/hosted.json），因此 Fishball 无法自动配对或显示在侧边栏。请检查 <DSH_HOME>/fishball/ 目录权限及文件内容后重启 DSH。',
     }
 
     /**

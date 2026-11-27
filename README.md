@@ -1,5 +1,8 @@
 # DSH Fishball Instance
 
+> **Looking to install Fishball or connect an agent via MCP?**
+> This repository holds the underlying `dsh-instance` package for **advanced users and developers**. For the one-click embedded bundle (`dsh-fishball-bundle`), standalone setup, and MCP integration guide, see **[`dsh-fishball-bundle`](https://github.com/Arrosam/dsh-fishball-bundle)**.
+
 Bridge plugin (`dsh-instance`) that installs and runs a hosted Fishball child DSH inside your main
 DeepSeek Harness (DSH), connecting it to `dsh-agent-connector`. Split from `dsh-fishball@84078e5f`.
 
@@ -10,7 +13,7 @@ own README describes that package.
 
 | Folder | Package | Shipped | What it is |
 | --- | --- | --- | --- |
-| [packages/dsh-instance](<packages/dsh-instance/README.md>) | `dsh-instance` | yes (npm, `alpha`) | The plugin: launches Fishball in a private child DSH profile under `<DSH_HOME>/fishball/runtime`, places `fishball-core` in it, provisions a hosted token from `dsh-agent-connector`, syncs model providers, its settings page, Fishball's plugins on DSH's Plugins page, and the `uninstall.js` cleanup command. |
+| [packages/dsh-instance](<packages/dsh-instance/README.md>) | `dsh-instance` | yes (npm, `alpha`) | The plugin: launches Fishball in a private child DSH profile under `<DSH_HOME>/fishball/runtime`, places `fishball-core` (with `fishball-ui`) and `fishball-amenities` in it, provisions a hosted token from `dsh-agent-connector`, syncs model providers, its settings page, Fishball's plugins on DSH's Plugins page, and the `uninstall.js` cleanup command. |
 | [packages/test-helpers](<packages/test-helpers/README.md>) | `@dsh-instance/test-helpers` | no (private) | Shared test tools: per-SDK module binding, case naming, scratch folders, waits, a scripted DSH page, a real host DSH, and the test runner. |
 
 ## Integration packages
@@ -48,14 +51,10 @@ is installed; the runner links the workspace packages into `node_modules/`.
 
 ## Install and uninstall
 
-Install it next to `dsh-agent-connector` (the hosted token comes from it; without it the child still
-starts, with no parent target):
-
-```bash
-dsh plugin add dsh-instance@1.0.0-alpha.1
-```
-
-An offline install from a release folder is in that folder's `INSTALL.md` (`npm run pack` writes it).
+For the one-click setup use [`dsh-fishball-bundle`](https://github.com/Arrosam/dsh-fishball-bundle)
+instead; do not install the bundle alongside `dsh-instance`. For a manual install, see the
+[installation options](<packages/dsh-instance/README.md#installation-options>). The hosted token
+comes from `dsh-agent-connector`; without it the child still starts, with no parent target.
 
 DSH runs no plugin code on removal, so remove the instance's private data first. Quit DSH (that also
 stops the child), then:
@@ -78,16 +77,20 @@ list. It refuses, deleting nothing, with:
 
 Then remove the package on DSH's Plugins page or with `dsh plugin remove dsh-instance`.
 
+For the opt-in `remoteEmbedUrl` override and companion sidebar patch, see
+[Remote embedding](<packages/dsh-instance/README.md#remote-embedding-opt-in>).
+
 ## Local development and packing
 
-- In a checkout, `dsh-instance` places `fishball-core` from `$FISHBALL_REPO/packages/core`, or from
-  the sibling `dsh-fishball/packages/core` beside the instance's real folder.
+- In a checkout, `dsh-instance` places `fishball-core` and the Fishball amenities from
+  `$FISHBALL_REPO/packages/` or the sibling `dsh-fishball/packages/` checkout.
 - `npm run pack` builds the release into `.runtime/release/<version>/`; pass `--fishball-release <dir>`
-  (or set `FISHBALL_RELEASE_DIR`, or pack `../dsh-fishball` first) to embed the fishball-core tarball
-  in `bundled/`. `npm run pack:check` checks an existing release offline.
+  (or set `FISHBALL_RELEASE_DIR`, or pack `../dsh-fishball` first) to embed the Fishball core and
+  amenities tarballs in `bundled/`. `npm run pack:check` checks an existing release offline.
 
 ## Related repositories
 
-- `dsh-connector`: the generic DSH MCP connector (`dsh-agent-connector`, `dsh-connector-adapter`,
+- [`dsh-fishball-bundle`](https://github.com/Arrosam/dsh-fishball-bundle): the all-in-one embedded bundle and user-facing setup guide.
+- [`dsh-connector`](https://github.com/Arrosam/dsh-connector): the generic DSH MCP connector (`dsh-agent-connector`, `dsh-connector-adapter`,
   `dsh-connector-shared`, …).
-- `dsh-fishball`: the Fishball plugins (`fishball-core`, `fishball-shared`, the amenities).
+- [`dsh-fishball`](https://github.com/Arrosam/dsh-fishball): the Fishball plugins (`fishball-core`, `fishball-shared`, the amenities).

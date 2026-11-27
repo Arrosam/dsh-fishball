@@ -9,12 +9,10 @@
  * `{id, ok: false, code}`. The channel rides the authenticated lifecycle wire (mutual HMAC proof,
  * wire.js), so nobody else can write to it. No value is ever logged, and a refusal carries a code only.
  */
-import { randomUUID } from 'node:crypto'
 import { HOSTED, REFUSAL, NativeRuntimeError } from './constants.js'
+import { createChannelClient, createChannelReceiver } from './channel-rpc.js'
 
 const { op: OP, code: CODE } = HOSTED
-const isRecord = (value) => value !== null && typeof value === 'object' && !Array.isArray(value)
-const parse = (text) => { try { return JSON.parse(text) } catch { return undefined } }
 const unavailable = () => new NativeRuntimeError(CODE.unavailable)
 
 /**
@@ -28,48 +26,18 @@ const unavailable = () => new NativeRuntimeError(CODE.unavailable)
  *   import is not "not stored". Only the receiver's own `{ok: false, code}` means not stored.
  */
 export function createCredentialClient(transport, { timeoutMs, importTimeoutMs = timeoutMs }) {
-  const pending = new Map()
-  let closed = false
-  const settle = (id, settleWith) => {
-    const entry = pending.get(id)
-    if (entry === undefined) return
-    pending.delete(id)
-    clearTimeout(entry.timer)
-    settleWith(entry)
-  }
-  const failAll = () => { for (const id of [...pending.keys()]) settle(id, (entry) => entry.reject(unavailable())) }
-  const disposers = [
-    transport.onMessage((text) => {
-      const reply = parse(text)
-      if (isRecord(reply) && typeof reply.id === 'string') settle(reply.id, (entry) => entry.resolve(reply))
-    }),
-    transport.onClose(() => { closed = true; failAll() }),
-  ]
-  function request(frame, bound) {
-    if (closed) return Promise.reject(unavailable())
-    const id = randomUUID()
-    return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => settle(id, (entry) => entry.reject(unavailable())), bound)
-      timer.unref?.()
-      pending.set(id, { resolve, reject, timer })
-      try { transport.send(JSON.stringify({ id, ...frame })) } catch { settle(id, (entry) => entry.reject(unavailable())) }
-    })
-  }
+  const rpc = createChannelClient(transport, CODE.unavailable)
   return Object.freeze({
     async probe() {
-      const reply = await request({ op: OP.probe }, timeoutMs)
+      const reply = await rpc.request({ op: OP.probe }, timeoutMs)
       if (reply.ok !== true || typeof reply.present !== 'boolean') throw unavailable()
       return reply.present
     },
     async importToken(value) {
-      const reply = await request({ op: OP.import, value }, importTimeoutMs)
+      const reply = await rpc.request({ op: OP.import, value }, importTimeoutMs)
       return reply.ok === true ? { ok: true } : { ok: false, code: typeof reply.code === 'string' ? reply.code : REFUSAL.unwritable }
     },
-    close() {
-      closed = true
-      for (const dispose of disposers.splice(0)) { try { dispose() } catch { /* the wire is gone */ } }
-      failAll()
-    },
+    close: () => rpc.close(),
   })
 }
 
@@ -80,8 +48,6 @@ export function createCredentialClient(transport, { timeoutMs, importTimeoutMs =
  * @returns {{attach(transport): void, close(): void}}
  */
 export function createCredentialReceiver({ credentials }) {
-  let detach = () => {}
-  let closed = false
   async function answer(request) {
     if (request.op === OP.probe) {
       const [reference, record] = await Promise.all([credentials.describe(HOSTED.credentialRef), credentials.describeRecord(HOSTED.savedRecord)])
@@ -91,19 +57,5 @@ export function createCredentialReceiver({ credentials }) {
     try { await credentials.set(HOSTED.credentialRef, request.value) } catch { return { ok: false, code: REFUSAL.unwritable } }
     return { ok: true }
   }
-  function receive(transport, text) {
-    const request = parse(text)
-    if (closed || !isRecord(request) || typeof request.id !== 'string') return
-    answer(request)
-      .catch(() => ({ ok: false, code: request.op === OP.import ? REFUSAL.unwritable : REFUSAL.invalid }))
-      .then((outcome) => { try { transport.send(JSON.stringify({ id: request.id, ...outcome })) } catch { /* the wire is gone */ } })
-  }
-  return Object.freeze({
-    attach(transport) {
-      detach()
-      const off = transport.onMessage((text) => receive(transport, text))
-      detach = () => { try { off() } catch { /* the wire is gone */ } }
-    },
-    close() { closed = true; detach() },
-  })
+  return createChannelReceiver(answer, (request) => ({ ok: false, code: request.op === OP.import ? REFUSAL.unwritable : REFUSAL.invalid }))
 }

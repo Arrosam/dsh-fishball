@@ -13,17 +13,21 @@ import path from 'node:path'
 import Schema from '@deepseek-ai/schemastery'
 import { createNativeRuntime, RUNTIME_LIMITS } from './src/native-runtime/index.js'
 import { INSTANCE_PACKAGE, LIFETIME, HOSTED, LOCATOR, LOOPBACK, CHILD_STATE, LIFECYCLE_CODE, PLACEMENT, REFUSAL, RUNTIME } from './src/native-runtime/constants.js'
-import { fishballDirectory, pathsFor } from './src/native-runtime/files.js'
+import { ensureFishballDirectory, existingLayout, pathsFor, privateDirectory } from './src/native-runtime/files.js'
 import { createCredentialClient } from './src/native-runtime/credential.js'
+import { createChildModelClient } from './src/native-runtime/child-model.js'
 import { openHostedRecord } from './src/host/hosted-record.js'
 import { childTargetUrl, createHostedToken, usableTokens } from './src/host/hosted.js'
 import { createChildLocator } from './src/host/locator.js'
+import { parseRemoteEmbedUrl, registerRemoteEmbed, remoteEmbedAdmission } from './src/host/remote-embed.js'
 import { registerInstanceRoutes } from './src/host/routes.js'
 import { registerProviderSyncRoutes } from './src/host/provider-sync-routes.js'
 import { CHILD_PLUGINS, createChildPlugins } from './src/host/child-plugins.js'
 import { registerChildPluginRoutes } from './src/host/child-plugin-routes.js'
 import { createChildProviderSync, CHILD_SYNC } from './src/provider-sync-service.js'
 import { createInitialSync } from './src/host/initial-sync.js'
+import { createOnboarding } from './src/host/onboarding.js'
+import { registerOnboardingRoutes } from './src/host/onboarding-routes.js'
 import { launchDetail, launchStatus } from './src/host/launch-detail.js'
 
 const PLUGIN = Object.freeze({
@@ -47,6 +51,7 @@ const PLUGIN = Object.freeze({
     // V3 is a fresh install, so I-READY removed the migration).
   ],
   cleanup: 'fishball native host: stop owned child and retain private data',
+  remoteEmbedEffect: 'dsh-instance: authenticated remote Fishball relay',
   // The loader's event after a volatile-only config change (cordis-plugin-loader, both versions).
   volatileUpdate: 'loader/volatile-update',
   // Bound request/exit waits well inside rc.3's whole-app five-second grace.
@@ -86,19 +91,23 @@ export const inject = [...PLUGIN.dependencies]
  * form can write it (§0.7); model sync is the "Model for Fishball" button I6 adds, an action
  * rather than a field, and there is no `providerSync` switch (D26). There is no launch field: the
  * child is started as the main DSH is (D28, src/native-runtime/constants.js HOST_LAUNCH), and an
- * old stored `nodeExecutable` or `executableSearchPath` is ignored (the schema keeps unknown keys
- * as they are and nothing reads them).
+ * old stored `nodeExecutable` or `executableSearchPath` is ignored. `remoteEmbedUrl` is an
+ * ordinary instance-patch field, not part of the editable form or the child's launch config.
  */
 export const Config = Schema.object({
+  remoteEmbedUrl: Schema.string().description('Opt in to owner-only Fishball embedding through the main DSH public HTTPS URL.'),
   enabled: Schema.boolean().default(true).volatile().description('Start the private native child after main appReady. Turning it off stops the child at once and turning it on starts it, as the row switch does; private data is retained.'),
 })
 const unavailable = code => Object.assign(new Error(code), { code })
 /**
  * The hosted record, beside the runtime folder under the main home (hosted-record.js says why).
- * Only through the runtime layout's own proof of that folder (fishballDirectory): an aliased main
- * home is refused before anything is read or created there (R-FIX-INSTANCE F08).
+ * Only through the runtime layout's own proof of that folder (ensureFishballDirectory): an aliased
+ * main home is refused before anything is read or created there (R-FIX-INSTANCE F08), and an
+ * existing user-owned non-group/world-writable `<home>/fishball` (e.g. a `0755` leftover from a
+ * pre-V3 release) is safely tightened to `0700` so `openHostedRecord` never fails while the child
+ * boots cleanly.
  */
-const hostedRecordFile = async (home) => path.join(await fishballDirectory(home), HOSTED.record.file)
+const hostedRecordFile = async (home) => path.join(await ensureFishballDirectory(home), HOSTED.record.file)
 /**
  * The card's detail for a failed start: the specific code, then the failure's own first message
  * line when it has one beyond the code. Only the message text is handed on (never the error
@@ -118,11 +127,13 @@ function bounded(promise, milliseconds) {
     timer = setTimeout(() => reject(unavailable(PLUGIN.code.timeout)), milliseconds)
   })]).finally(() => clearTimeout(timer))
 }
-// Symbol.for survives ESM/HMR module replacement. A failed stop remains a barrier:
-// a successor must never silently take over an uncertain live child.
+// Symbol.for survives ESM/HMR module replacement. A failed stop stays a barrier for automatic
+// startup so a successor never silently takes over an uncertain live child; explicit stop/retry/
+// restart or a later HMR shutdown re-verifies the predecessor instead of poisoning the process.
 const registry = globalThis[Symbol.for(LIFETIME.registryKey)] ??= new Map()
 
 export async function apply(ctx, config) {
+  const remoteEmbedUrl = parseRemoteEmbedUrl(config.remoteEmbedUrl)
   let enabled = fieldValue(config.enabled) !== false
   const logger = typeof ctx.logger === 'function' ? ctx.logger(PLUGIN.name) : undefined
   let state = enabled ? PLUGIN.state.waiting : PLUGIN.state.disabled
@@ -155,6 +166,10 @@ export async function apply(ctx, config) {
   /** The current wire's hosted-token channel (credential.js), or undefined. */
   let credentialClient
   let unsubscribeCredential = () => {}
+  /** The current wire's onboarding child-model channel (child-model.js), or undefined. */
+  let childModelClient
+  let unsubscribeChildModel = () => {}
+  let unsubscribeChildModelClose = () => {}
   /** Listeners of the locator's onChange (K3: status, origin or target status changed). */
   const changeListeners = new Set()
   const changed = () => { for (const listener of [...changeListeners]) { try { listener() } catch { /* one listener never stops the others */ } } }
@@ -177,11 +192,29 @@ export async function apply(ctx, config) {
    * that resolves; before it, Reconnect answers not-ready and the target status reads target-unset.
    */
   let hostedNow
+  let hostedFailed = false
   const key = ctx.profileContext.home
-  const predecessor = registry.get(key)
+  let predecessor = registry.get(key)
+  let barrierFailed = false
+  let barrier = Promise.resolve()
+  const trackBarrier = (next) => {
+    barrierFailed = false
+    barrier = next
+    next.then(
+      () => { if (barrier === next) predecessor = undefined },
+      () => {
+        if (barrier === next) barrierFailed = true
+        if (!closed) set(PLUGIN.state.failed, PLUGIN.code.stop)
+      },
+    )
+    return next
+  }
   // Start teardown immediately, before the new module can queue startup.
-  const barrier = predecessor ? predecessor.shutdown() : Promise.resolve()
-  barrier.catch(() => { if (!closed) set(PLUGIN.state.failed, PLUGIN.code.stop) })
+  if (predecessor) trackBarrier(predecessor.shutdown())
+  const awaitBarrier = ({ retry = false } = {}) => {
+    if (retry && barrierFailed && predecessor) return trackBarrier(predecessor.shutdown())
+    return barrier
+  }
   // Opened after the predecessor row is gone, whatever its shutdown's outcome: its record writes
   // have drained by then (shutdown awaits them), so its last write never lands on top of this row's
   // (R-FIX-INSTANCE F05). Each row keeps its own copy of the record.
@@ -202,7 +235,14 @@ export async function apply(ctx, config) {
     // dsh-connector-ui re-reads which agent has a window here.
     changed()
     return hostedNow
-  }, (error) => { logger?.warn(PLUGIN.hostedRecordFailed, error?.code ?? PLUGIN.code.failed); return undefined })
+  }, (error) => {
+    logger?.warn(PLUGIN.hostedRecordFailed, error?.code ?? PLUGIN.code.failed)
+    if (!closed) {
+      hostedFailed = true
+      changed()
+    }
+    return undefined
+  })
   const hostedProxy = Object.freeze({
     reconnect: async () => (await hostedReady)?.reconnect() ?? { ok: false, code: REFUSAL.notReady },
     targetStatus: () => hostedNow?.targetStatus() ?? HOSTED.target.unset,
@@ -268,6 +308,15 @@ export async function apply(ctx, config) {
       changed()
       void hostedReady.then((hosted) => hosted?.firstStart()).catch(() => {})
     })
+    unsubscribeChildModel = owner.onChildModelTransport((transport) => {
+      if (closed) return
+      unsubscribeChildModelClose()
+      childModelClient?.close()
+      // Model catalog reads can touch provider verification; give them the full runtime request bound.
+      const next = createChildModelClient(transport, { timeoutMs: RUNTIME_LIMITS.requestTimeoutMs })
+      childModelClient = next
+      unsubscribeChildModelClose = transport.onClose(() => { if (childModelClient === next) childModelClient = undefined })
+    })
   } catch (error) { failStart(error, PLUGIN.code.failed) }
 
   /** The state of an instance with no child: off, or stopped. */
@@ -294,7 +343,7 @@ export async function apply(ctx, config) {
     const current = (async () => {
       set(PLUGIN.state.starting)
       try {
-        await barrier
+        await awaitBarrier()
         if (closed) return status()
         await bounded(owner.start(), owner.limits.startupTimeoutMs)
         if (!closed && state === PLUGIN.state.starting) {
@@ -329,7 +378,7 @@ export async function apply(ctx, config) {
     stops++
     set(PLUGIN.state.stopping)
     try {
-      await barrier
+      await awaitBarrier({ retry: true })
       await owner.shutdown()
       return set(idleState())
     } catch { return set(PLUGIN.state.failed, PLUGIN.code.stop) }
@@ -366,47 +415,62 @@ export async function apply(ctx, config) {
   function requestRestart() {
     return follow(() => (enabled ? restart() : { ...status(), refused: REFUSAL.disabled }))
   }
+  let stopped = false
+  let hostedDrained
   function shutdown() {
+    if (stopped) return Promise.resolve()
     if (disposal) return disposal
-    closed = true
-    cancelReady()
-    unsubscribeCredential()
-    credentialClient?.close()
-    // Its steps still running end here (the credential channel just closed, so none waits long);
-    // the successor opens the record only after this disposal (below).
-    const hostedDrained = hostedNow?.close()
-    changeListeners.clear()
-    unsubscribeProviderSync()
-    providerSync?.close()
-    set(PLUGIN.state.stopping)
+    if (!closed) {
+      closed = true
+      cancelReady()
+      unsubscribeCredential()
+      credentialClient?.close()
+      unsubscribeChildModel()
+      unsubscribeChildModelClose()
+      unsubscribeChildModelClose = () => {}
+      childModelClient?.close()
+      childModelClient = undefined
+      // Its steps still running end here (the credential channel just closed, so none waits long);
+      // the successor opens the record only after this disposal (below).
+      hostedDrained = hostedNow?.close()
+      changeListeners.clear()
+      unsubscribeProviderSync()
+      providerSync?.close()
+      set(PLUGIN.state.stopping)
+    }
     // Do not swallow here: HMR successor awaits confirmed teardown, not a UI status.
-    disposal = (async () => {
+    const current = (async () => {
       try {
-        await barrier
+        await awaitBarrier({ retry: true })
         if (owner) await owner.shutdown()
+        stopped = true
+        if (registry.get(key) === entry) registry.delete(key)
         set(enabled ? PLUGIN.state.stopped : PLUGIN.state.disabled)
-        process.off('exit', onProcessExit)
       } catch {
         set(PLUGIN.state.failed, PLUGIN.code.stop)
         throw unavailable(PLUGIN.code.stop)
       } finally {
+        process.off('exit', onProcessExit)
         // Whatever the child's stop did: the record's open (a new record writes at once) and the
         // hosted steps still running finish before a successor opens its copy (F05). Neither rejects.
         // Not bounded: a step may be inside the connector's own createHosted or retire, in-process
         // calls with no wait of their own, and giving up on one would reopen F05's lost write.
         await hostedReady
         await hostedDrained
+        if (!stopped && disposal === current) disposal = undefined
       }
     })()
-    disposal.catch(() => {})
-    return disposal
+    disposal = current
+    current.catch(() => {})
+    return current
   }
   // rc.3 already owns SIGTERM/SIGINT and appExit, and awaits fiber disposal.
   // Do not install competing signal handlers. Explicit process.exit only allows
   // synchronous EOF; the pre-CLI child preload performs graceful bounded exit.
   const onProcessExit = () => owner?.parentExit()
   process.on('exit', onProcessExit)
-  registry.set(key, { shutdown })
+  const entry = { shutdown }
+  registry.set(key, entry)
   ctx.effect(() => shutdown, PLUGIN.cleanup)
   const service = Object.freeze({
     status, start, stop, restart, retry,
@@ -429,11 +493,19 @@ export async function apply(ctx, config) {
     },
   })
   ctx.provide(PLUGIN.service, service)
-  // The K3 locator (child.d.ts) for dsh-connector-ui, and the instance's own page routes.
+  // Both the relay and the existing loopback admission must track the currently ready child.
+  const onChange = (fn) => { changeListeners.add(fn); return () => changeListeners.delete(fn) }
+  const childOrigin = () => owner?.childOrigin()
+  const ticket = (claims) => owner.mintTicket(claims)
+  const admitRemote = remoteEmbedUrl && ((request, args) => remoteEmbedAdmission(remoteEmbedUrl, request, args))
+  if (remoteEmbedUrl) ctx.effect(() => registerRemoteEmbed(ctx, {
+    publicUrl: remoteEmbedUrl, childOrigin: () => !closed && state === CHILD_STATE.ready ? childOrigin() : undefined, onChange, ticket,
+  }), PLUGIN.remoteEmbedEffect)
   const locator = createChildLocator({
-    lifecycle: { status: locatorStatus, onChange: (fn) => { changeListeners.add(fn); return () => changeListeners.delete(fn) }, retry: () => retry() },
-    origin: () => owner?.childOrigin(),
-    ticket: (claims) => owner.mintTicket(claims),
+    lifecycle: { status: locatorStatus, onChange, retry: () => retry() },
+    origin: childOrigin,
+    ticket,
+    admitRemote,
     hosted: hostedProxy,
     providerSync: service.providerSync,
   })
@@ -444,20 +516,43 @@ export async function apply(ctx, config) {
   registerChildPluginRoutes(ctx, childPlugins)
   registerInstanceRoutes(ctx, {
     status,
-    notice: () => hostedNow?.notice() ?? null,
+    // Surface an unreadable hosted record whenever the instance itself is not already failed
+    // (otherwise the instance reports "running" while never pairing or appearing in the sidebar).
+    notice: () => hostedNow?.notice() ?? (hostedFailed && state !== PLUGIN.state.failed ? HOSTED.notice.recordUnreadable : null),
     busy: () => childPlugins.busy(),
     retry: async () => { await locator.retry(); return status() },
     // The page's Restart is refused while a Fishball plugin change (or the restart it queued) runs;
     // that change's own restart goes straight to requestRestart, so it is never refused this way.
     restart: () => (childPlugins.busy() ? { ...status(), refused: CHILD_PLUGINS.code.busy } : requestRestart()),
     reconnect: () => locator.reconnect(),
-    open: async ({ hostname, lang }) => {
-      try { return { ok: true, url: (await locator.admit({ view: LOOPBACK.openView, lang, hostname })).url } } catch (error) { return { ok: false, code: error?.code ?? REFUSAL.failed } }
+    open: async ({ hostname, lang, request }) => {
+      try {
+        const args = { view: LOOPBACK.openView, lang }
+        const admitted = await locator.admitRemote?.(request, args) ?? await locator.admit({ ...args, hostname })
+        return { ok: true, url: admitted.url }
+      } catch (error) { return { ok: false, code: error?.code ?? REFUSAL.failed } }
     },
   })
   // The model-sync routes (models/check, models/add) sit beside the page's routes, on the same
   // owner-only Fetch registry, with their own same-origin fence (§10).
   registerProviderSyncRoutes(ctx, service)
+  // First-run onboarding routes (state, Fishball model selection, completion marker).
+  // The runtime root is resolved through the layout proofs (F08) so an aliased mainHome or symlink
+  // runtime folder is refused before onboarding.json is read or written.
+  const onboarding = createOnboarding({
+    childModel: () => (state === PLUGIN.state.ready ? childModelClient : undefined),
+    root: async (create = false) => {
+      const existing = await existingLayout(key)
+      if (existing) return existing.root
+      if (!create) return undefined
+      await ensureFishballDirectory(key)
+      const root = pathsFor(key).root
+      await privateDirectory(root)
+      return root
+    },
+    warn: (format, value) => logger?.warn(format, value),
+  })
+  registerOnboardingRoutes(ctx, onboarding)
   // R-HOST-02: the child starts after the main DSH's app ready signal.
   cancelReady = ctx.appReady.onReady(() => {
     appReady = true

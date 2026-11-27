@@ -17,9 +17,15 @@ import { siblingRepo } from '@dsh-instance/test-helpers/siblings'
 const INSTANCE_MANIFEST = JSON.parse(fs.readFileSync(path.join(REPO, 'packages', 'dsh-instance', 'package.json'), 'utf8'))
 export const VERSION = INSTANCE_MANIFEST.version
 export const INSTANCE = Object.freeze({ name: INSTANCE_MANIFEST.name, tarball: INSTANCE_MANIFEST.name + '-' + VERSION + '.tgz', folder: 'packages/dsh-instance' })
-/** The hosted set a packed instance carries in bundled/ (README "Placement"; 8fdd0ef: fishball-core only). */
-export const SET = Object.freeze([Object.freeze({ name: 'fishball-core', tarball: 'fishball-core-' + VERSION + '.tgz' })])
-export const RETIRED = Object.freeze(['fishball-ui', 'fishball-board'])
+const SHARED = 'fishball-shared'
+const AMENITY_PACKAGES = Object.freeze(['fishball-board', 'fishball-heartbeat', 'fishball-taskboard'])
+const setMember = (name, libraries) => Object.freeze({ name, tarball: name + '-' + VERSION + '.tgz', libraries: Object.freeze(libraries) })
+const AMENITIES = setMember('fishball-amenities', [...AMENITY_PACKAGES, SHARED])
+export const CORE = setMember('fishball-core', [SHARED, '@modelcontextprotocol/client'])
+/** The hosted set a packed instance carries in bundled/, in profile bundle order (README "Placement"). */
+export const SET = Object.freeze([AMENITIES, CORE])
+/** No standalone UI bundle on a fresh profile; the amenity packages ship inside the umbrella tarball. */
+export const NOT_STANDALONE = Object.freeze(['fishball-ui', ...AMENITY_PACKAGES])
 
 export const PACK = Object.freeze({
   script: path.join(REPO, 'scripts', 'pack.mjs'),

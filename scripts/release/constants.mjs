@@ -11,7 +11,7 @@ export const PACKAGES = Object.freeze([
   Object.freeze({ key: 'instance', folder: 'packages/dsh-instance' }),
 ])
 
-export const HOSTED_SET = Object.freeze(['fishball-core'])
+export const HOSTED_SET = Object.freeze(['fishball-amenities', 'fishball-core'])
 export const SET_CARRIER = Object.freeze({ key: 'instance', folder: 'bundled' })
 
 export const INSTALL_SETS = Object.freeze({

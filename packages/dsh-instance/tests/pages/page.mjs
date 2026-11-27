@@ -12,8 +12,8 @@
  *
  * Root services the page declares (package.json dsh.client.inject and the plugins' inject):
  * `slots`, `locale` (helpers pageServices), `configForms` (one ConfigForm and DSH's `whileServed`,
- * dsh-client-ui-settings README "Following served namespaces") and `remote`
- * (`pluginManager.listBundles` → `{ok, value: BundleInfo[]}`, `$on`).
+ * dsh-client-ui-settings README "Following served namespaces"), `remote` (`$on`) and, when
+ * supplied, the separate Cordis service `remote.pluginManager` (`listBundles`).
  */
 import fs from 'node:fs'
 import path from 'node:path'
@@ -70,10 +70,10 @@ export function pageClock(settleAll) {
  * @param options.sdk - the SDK whose Cordis applies the plugins and whose bundle gives the form logic.
  * @param options.lang - the page language.
  * @param options.respond - `(request) => Response | Promise<Response>` for the page's fetch.
- * @param options.mainBundles - BundleInfo[] that DSH's own listBundles answers.
+ * @param options.mainBundles - BundleInfo[] that DSH's own listBundles answers; omit for no service.
  * @param options.served - whether the Host serves the instance's settings namespace (default true).
  */
-export async function openInstancePage(t, { sdk, lang = 'en', respond, mainBundles = [], served = true }) {
+export async function openInstancePage(t, { sdk, lang = 'en', respond, mainBundles, served = true }) {
   const requests = []
   const errors = []
   const loads = new Set()
@@ -116,7 +116,8 @@ export async function openInstancePage(t, { sdk, lang = 'en', respond, mainBundl
   }
   const remoteListeners = new Map()
   const remote = {
-    pluginManager: { listBundles: async () => ({ ok: true, value: structuredClone(mainBundles) }) },
+    // Model the strict proxy even when the separately injected service is available.
+    get pluginManager() { throw new Error('cannot get property "remote.pluginManager" without inject') },
     $on(name, listener) {
       const list = remoteListeners.get(name) ?? new Set()
       remoteListeners.set(name, list)
@@ -130,6 +131,9 @@ export async function openInstancePage(t, { sdk, lang = 'en', respond, mainBundl
   root.provide('locale', services.locale)
   root.provide('configForms', configForms)
   root.provide('remote', remote)
+  if (mainBundles !== undefined) {
+    root.provide('remote.pluginManager', { listBundles: async () => ({ ok: true, value: structuredClone(mainBundles) }) })
+  }
   const plugins = applyPlugins(root, graph, table, errors)
   await settleAll()
   t.after(async () => {

@@ -17,8 +17,9 @@
  * caller was core's V2 settings page.
  */
 import Schema from '@deepseek-ai/schemastery'
-import { HOSTED, LOOPBACK, TICKET } from './src/native-runtime/constants.js'
+import { CHILD_MODEL, HOSTED, LOOPBACK, TICKET } from './src/native-runtime/constants.js'
 import { createCredentialReceiver } from './src/native-runtime/credential.js'
+import { createChildModelReceiver } from './src/native-runtime/child-model.js'
 import { mountProviderSyncTarget } from './src/child/provider-sync-target.js'
 
 export const name = HOSTED.childRow
@@ -108,9 +109,10 @@ export function admitAndPublish(ctx) {
   return () => { unpublish(); unregister() }
 }
 
-/** The row's four parts. Each is its own effect, and a part that fails is logged with its code only. */
+/** The row's five parts. Each is its own effect, and a part that fails is logged with its code only. */
 const PART = Object.freeze({
   credential: HOSTED.childRow + ': credential receiver',
+  childModel: HOSTED.childRow + ': child model receiver',
   admission: ADMIT.label,
   sync: HOSTED.childRow + ': provider sync',
   target: HOSTED.childRow + ': target announcement',
@@ -135,6 +137,14 @@ export function apply(ctx) {
   part(PART.credential, () => {
     const receiver = createCredentialReceiver({ credentials: ctx.credentials })
     const off = ctx.nativeRuntime.onCredentialTransport((transport) => receiver.attach(transport))
+    return () => { off(); receiver.close() }
+  })
+  part(PART.childModel, () => {
+    const receiver = createChildModelReceiver({
+      settings: ctx.settings,
+      getCatalog: () => ctx.get(CHILD_MODEL.catalogService)?.modelCatalog?.(),
+    })
+    const off = ctx.nativeRuntime.onChildModelTransport((transport) => receiver.attach(transport))
     return () => { off(); receiver.close() }
   })
   part(PART.admission, () => admitAndPublish(ctx))

@@ -1,13 +1,14 @@
 import net from 'node:net'
 import { EventEmitter } from 'node:events'
 import { randomUUID, createHmac, timingSafeEqual } from 'node:crypto'
-import { RUNTIME, HOSTED, NativeRuntimeError, fail } from './constants.js'
+import { RUNTIME, HOSTED, CHILD_MODEL, NativeRuntimeError, fail } from './constants.js'
 
 /**
  * Payload channels that ride the authenticated lifecycle wire beside its own operations. Each
  * carries one JSON string per frame: T16's provider-sync target owns `provider-sync`
- * (`PROVIDER_SYNC_TARGET.channel` in src/lib/provider-sync-codec.js), and the hosted
- * token's probe and one import own `mcp-credential` (`HOSTED.channel`, credential.js; design §5.4).
+ * (`PROVIDER_SYNC_TARGET.channel` in src/lib/provider-sync-codec.js), the hosted
+ * token's probe and one import own `mcp-credential` (`HOSTED.channel`, credential.js; design §5.4),
+ * and onboarding model inspection/selection owns `child-model` (`CHILD_MODEL.channel`, child-model.js).
  * Any other channel closes the connection, so this list is the wire's protocol, not an open
  * tunnel. I-READY removed V2's `control` (the session bridge), `admin` (the admin relay, the
  * user's answer 2026-11-16: delete it) and `instance-settings` (the V2 child settings panel).
@@ -16,6 +17,7 @@ import { RUNTIME, HOSTED, NativeRuntimeError, fail } from './constants.js'
 const PAYLOAD_CHANNEL = Object.freeze({
   providerSync: Object.freeze({ name: 'provider-sync', invalidFrame: 'INVALID_PROVIDER_SYNC_FRAME' }),
   credential: Object.freeze({ name: HOSTED.channel, invalidFrame: 'INVALID_CREDENTIAL_FRAME' }),
+  childModel: Object.freeze({ name: CHILD_MODEL.channel, invalidFrame: 'INVALID_CHILD_MODEL_FRAME' }),
 })
 
 /**
@@ -149,6 +151,8 @@ export class Wire extends EventEmitter {
   providerSyncTransport() { return this.payloadTransport(this.channels.get(PAYLOAD_CHANNEL.providerSync.name)) }
   /** The hosted token's channel (credential.js), on the same wire. */
   credentialTransport() { return this.payloadTransport(this.channels.get(PAYLOAD_CHANNEL.credential.name)) }
+  /** Onboarding's child-model channel (child-model.js), on the same wire. */
+  childModelTransport() { return this.payloadTransport(this.channels.get(PAYLOAD_CHANNEL.childModel.name)) }
   close() { this.socket.destroy() }
 }
 

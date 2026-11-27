@@ -12,20 +12,21 @@ It runs with dead proxies and registry and no user npm config, because the pack 
 - `tests/pack.test.mjs`: the release layout (the one `dsh-instance` tarball, `SHA256SUMS`,
   `INSTALL.md`, `PUBLISH.md`, `offline-store.mjs`, `pnpm-store/`, `pnpm-cache/`). It covers the
   tarball manifest and contents: no links, no junk, `bundled/` holding exactly the
-  fishball-core tarball byte for byte, and npm's own file list. It covers `--check` state
-  transitions on a copy, `PLAT-EP-07 row 5` (library copies) and an offline
+  `fishball-amenities` and `fishball-core` tarballs byte for byte, and npm's own file list. It
+  covers `--check` state transitions on a copy, `PLAT-EP-07 row 5` (bundled library copies,
+  including board, heartbeat and taskboard inside amenities), and an offline
   `dsh plugin add` of the tarball with each SDK's CLI.
 - `tests/placement-install.test.mjs` (`PINST-*`, `RFI-F02`): the packed instance, unpacked,
-  places fishball-core from its bundled tarball while the registry is dead (`composedProfile`,
-  export `./native-runtime`). It then checks the skip when already installed, a disable
-  surviving, a stale or missing install being redone, a tampered or missing tarball giving
-  `PLACEMENT_INSTALL_FAILED`, and a `vendor/` symlink giving `UNSAFE_DIRECTORY`.
+  places `fishball-amenities` then `fishball-core` from the bundled tarballs while the registry
+  is dead (`composedProfile`, export `./native-runtime`). It checks that an exact-version install
+  is skipped, a disable survives, a stale or missing install is redone, a tampered or missing
+  tarball gives `PLACEMENT_INSTALL_FAILED`, and a `vendor/` symlink gives `UNSAFE_DIRECTORY`.
 
 ## What it needs
 
 - The Fishball release folder `../dsh-fishball/.runtime/release/<instance version>` with
-  `fishball-core-<version>.tgz` (pack dsh-fishball first). It is only read. Without it the cases
-  are skipped with the reason.
+  both `fishball-amenities-<version>.tgz` and `fishball-core-<version>.tgz` (pack dsh-fishball
+  first). The tests read but do not modify the folder, and skip if either tarball is missing.
 - The installed DSH SDKs, plus `npm`, `pnpm` (used by DSH's plugin manager) and `tar` on PATH.
 
 ## Run

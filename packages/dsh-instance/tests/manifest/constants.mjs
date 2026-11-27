@@ -43,7 +43,7 @@ export const CHILD_ROW = Object.freeze({ file: 'child-row.js', export: './child-
 export const SECRET_LIKE = /token|credential|secret|key/i
 
 /** The settings page (QD1 = B) and its chunks, which a packed instance ships. */
-export const PAGE = Object.freeze({ entry: 'client.js', chunks: Object.freeze(['client.status.js', 'client.models.js', 'client.fishball.js']) })
+export const PAGE = Object.freeze({ entry: 'client.js', chunks: Object.freeze(['client.status.js', 'client.models.js', 'client.fishball.js', 'client.onboarding.js']) })
 /** REL-PACK output, never committed (Q-22): absent in a checkout, so it is not a missing source. */
 export const PACK_OUTPUT = 'bundled/'
 /** `npm pack --dry-run` lists what a packed instance would hold, without writing a tarball. */

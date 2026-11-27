@@ -24,14 +24,15 @@ export function fetchRegistry() {
 /**
  * One request to a route registered on the Fetch registry, as a same-origin page sends it at
  * `origin`: a JSON body (a string is sent as it is) and a `host` header (default: the origin's
- * host). Answers `{status, json, headers, text}`; `json` is undefined when the body is not JSON.
+ * host). Override `headers` to exercise a route's own fence. Answers `{status, json, headers, text}`;
+ * `json` is undefined when the body is not JSON.
  */
-export async function callRoute(routes, method, routePath, { origin, body, host = new URL(origin).host } = {}) {
+export async function callRoute(routes, method, routePath, { origin, body, host = new URL(origin).host, headers = {} } = {}) {
   const route = routes.find((r) => r.path === routePath)
   assert.ok(route, 'no route registered at ' + routePath + '; registered: ' + routes.map((r) => r.path).join(', '))
   const request = new Request(new URL(routePath, origin).href, {
     method,
-    headers: { host, 'content-type': PAGE_REQUEST.contentType, 'sec-fetch-site': PAGE_REQUEST.fetchSite },
+    headers: { host, 'content-type': PAGE_REQUEST.contentType, 'sec-fetch-site': PAGE_REQUEST.fetchSite, ...headers },
     ...(body === undefined ? {} : { body: typeof body === 'string' ? body : JSON.stringify(body) }),
   })
   const response = await route.fetch(request)

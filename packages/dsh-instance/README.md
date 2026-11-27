@@ -6,8 +6,28 @@ plugins in the child, gives the child a token from this DSH's connector once, sy
 and has its own settings page. It imports no Fishball-side code and has no `dsh-connector` peer: it
 looks the connector's services up at runtime (`dshConnectorTokens`).
 
-Version `1.0.0-alpha.1`. Install and uninstall are in the [root README](<../../README.md>);
-the repository's documents are indexed there too.
+Version `1.0.0-alpha.1`. Uninstall instructions and the repository index are in the
+[root README](<../../README.md>).
+
+## Installation options
+
+Use [`dsh-fishball-bundle`](https://github.com/Arrosam/dsh-fishball-bundle) for an all-in-one
+install; do not install it alongside `dsh-instance`. To install the components manually, quit DSH,
+then install `dsh-agent-connector@1.0.0-alpha.2` and `dsh-instance@1.0.0-alpha.1` in the same
+profile through the Plugins page, or run (replace `web` with your profile name):
+
+```bash
+dsh plugin --profile web add dsh-agent-connector@1.0.0-alpha.2 dsh-instance@1.0.0-alpha.1
+```
+
+Missing peer warnings about DSH's own `@deepseek-ai/*` packages are expected; the host provides
+these at runtime. For a source or offline install, pack the sibling `dsh-fishball` and
+`dsh-connector` checkouts first, then use this repository's `npm run pack` and the generated
+release's `INSTALL.md`.
+
+The compatibility test SDKs are **0.2.1-rc.5** and **0.2.2-rc.1** (Web or DSH-X). Use Node **22.14+**
+for packing and **24.9+** for DSH. After starting DSH, open Fishball from the sidebar or from
+**DSH → Plugins → dsh-instance → Open Fishball** and choose a model when prompted.
 
 ## The child
 
@@ -19,13 +39,12 @@ the repository's documents are indexed there too.
   instance rows (the lifecycle row and the child-side row `dsh-instance-child`, whose config holds
   the target URL) and the isolation of the child's instructions and skills from yours. No guard row
   and no token: the guards are fishball-core's own patch.
-- **Placement:** at every start, before the profile loads, `fishball-core` (which carries the
-  Fishball UI since fishball-ui was merged into it) is copied into `<profile>/vendor/fishball-core`
-  and `<profile>/node_modules/fishball-core` and appended to the profile's bundles, last.
-  `fishball-ui` and `fishball-board` are never placed; a `fishball-ui` an earlier instance placed is
-  still treated as the child's own. Sources: the bundled tarball in a packed instance, else
-  `$FISHBALL_REPO/packages/core` or the sibling `dsh-fishball` checkout's `packages/core`. Only the
-  files its manifest's `files` list ships are copied, read as npm pack reads them: an entry
+- **Placement:** at every start, before the profile loads, `fishball-amenities` and `fishball-core`
+  (which carries the Fishball UI) are copied into the child's profile and added to its bundles in
+  that order. The amenities bundle supplies board, heartbeat, and taskboard. A standalone
+  `fishball-ui` from an earlier instance is still treated as the child's own. Sources: the bundled
+  tarballs in a packed instance, else `$FISHBALL_REPO/packages/` or the sibling Fishball checkout.
+  Only the files each manifest's `files` list ships are copied, read as npm pack reads them: an entry
   starting with `!` excludes that path. The record
   `fishball-placement.json` keeps your switches: a plugin is on at its first placement, a later
   disable survives, and one deleted while off comes back off. An enabled plugin the child cannot
@@ -70,9 +89,27 @@ Fishball tab is `client.fishball.js`, below):
   stopped; disabled while it starts or stops and while a Fishball plugin change runs. Route
   `POST /api/dsh-instance/restart` (queued behind other starts and stops; refused with
   `instance-disabled` while the instance is off and `busy` while a Fishball plugin change runs);
-- **Reconnect** and **Open Fishball** (a new tab; open DSH at `127.0.0.1` or `localhost`);
+- **Reconnect** and **Open Fishball** (a new tab; use `127.0.0.1`, `localhost` or the configured HTTPS URL below);
 - `enabled` (saving it off stops the child at once, on starts it; private data is kept);
 - **Model for Fishball**: model sync.
+
+## Remote embedding (opt-in)
+
+Set `remoteEmbedUrl` on the host's `dsh-instance` row using an instance patch (profile `cordis.patch.yml` or the invocation's `--patch`). Use the same public **main DSH** root the browser opens, including any mount prefix. This is not the Fishball URL or the MCP target. For example:
+
+```yaml
+- id: dsh-instance
+  config:
+    enabled: true
+    remoteEmbedUrl: https://dsh.example.com/ui/
+```
+
+Preserve other values in the row if editing an existing override, then restart the main DSH. Without the field (or with an empty string), only the original local access is available.
+
+- For sidebar access, install a connector built with the [companion change](../../patches/dsh-connector-remote-embed.patch). Older connectors refuse non-loopback sidebar admission; the instance settings page's **Open Fishball** does not depend on that change.
+- Continue to configure the main DSH's `--trusted-host` and TLS as usual. If an outer reverse proxy terminates TLS, it must preserve `Host`, strip only the main DSH prefix (`/ui` in the example), and forward WebSocket upgrades at `/ui/fishball/api/remote.mux` to the **main** DSH. Do not publish the child's port. Use the native Node Web host with mount-aware frontend assets and the Connection owner APIs (0.2.2-rc.3 Web SDK contract).
+- HTTP requests and WebSocket handshakes require the existing main DSH browser-owner session. The relay exchanges a one-use ticket with the ready child, and keeps the resulting child credential server-side. Connector tokens are not used for webpage authentication.
+- **Trust boundary:** the proxied page and its frontend plugins share the main DSH's browser origin. A path prefix is not a JavaScript or browser-storage sandbox; enable this only for Fishball plugins you also trust with the main DSH web session. Child login endpoints, the experimental inspector and requests to register a child Service Worker are not relayed.
 
 ## Plugins for Fishball
 
@@ -88,11 +125,10 @@ settled; the child's bundle list is written under DSH's profile lock.
 
 On DSH's Plugins page (`client.fishball.js`):
 
-- a **Fishball** tab: the child's own plugins (name, version, on/off) with **Uninstall**
-  (confirmed first), **Restart** (the settings page's, same rules and confirmation),
-  **Install for Fishball**, and the **Recommended** list (a copy of
-  fishball-core's `ui/src/recommended.js`, which a standalone Fishball shows; change both
-  together; each entry **Install**, or "Installed in Fishball");
+- a **Fishball** tab: the child's own plugins (name, optional version, description) with an
+  on/off switch and **Uninstall** (confirmed first), plus **Restart** (the settings page's,
+  same rules and confirmation) and **Install for Fishball**. Switching off keeps the package
+  installed; the switch changes only the child's enabled bundle list;
 - **Install for Fishball** in DSH's Add plugin menu;
 - on each bundle's page: **Uninstall from Fishball** when Fishball has it; else **Use in
   Fishball** for an official bundle DSH ships (added to the child's list, no pnpm run); else
@@ -106,7 +142,7 @@ On DSH's Plugins page (`client.fishball.js`):
 The child's base bundles, the Fishball set and dsh-instance are never listed or uninstalled.
 Routes (owner-only, same-origin): `GET /api/dsh-instance/plugins`, `POST …/plugins/inspect`
 `{spec}`, `…/install` `{spec, requestId, approvedBuilds?}`, `…/cancel` `{requestId}`,
-`…/uninstall` `{name}`, `…/use` `{name}`. Progress arrives as DSH's own
+`…/uninstall` `{name}`, `…/use` `{name}`, `…/toggle` `{name, enabled}`. Progress arrives as DSH's own
 `plugin-manager/install-state` and `install-log` events. Uninstall first runs `pnpm remove` for
 a package the child profile declares, then drops the plugin from the child's list, so a failed
 removal (`remove-failed`) changes nothing.
@@ -121,9 +157,9 @@ Limits:
 
 ## Model sync
 
-The instance copies the main DSH's API-key providers and their model lists into the child. It
-syncs the list only; the model Fishball uses is chosen in fishball-core's settings or fishball-ui's
-model dialog.
+The instance copies the main DSH's API-key providers and model lists into the child. On first
+open, if Fishball does not have a configured model, onboarding asks for a model and lets you set
+its reasoning effort separately. After onboarding, change the model in Fishball's settings.
 
 - **Once, automatically, at first install:** when a newly created child first becomes ready, the
   instance runs a Check, then Adds every missing provider (`src/host/initial-sync.js`). The marker
@@ -149,8 +185,8 @@ command and its refusal codes (`CHILD_RUNNING`, `CHILD_STATE_UNKNOWN`, `UNSAFE_D
 
 ## Testing
 
-`npm test` in this folder runs this package's own tests (`tests/`, about 10 s): 1312 cases, each once
-on DSH 0.2.1-rc.5 and once on 0.2.2-rc.1. Pass a path to run one area:
+`npm test` in this folder runs this package's own tests (`tests/`). The compatibility suites run
+on DSH 0.2.1-rc.5 and 0.2.2-rc.1. Pass a path to run one area:
 `node ../../scripts/test-package.mjs . tests/placement`.
 
 | Area | What it covers |
@@ -161,6 +197,10 @@ on DSH 0.2.1-rc.5 and once on 0.2.2-rc.1. Pass a path to run one area:
 | `tests/manifest` | the package's manifest, shipped files and imports (no Fishball-side package) |
 | `tests/ready` | readiness of the child, the first model sync, the published surface |
 | `tests/pages` | the settings page, Restart, the Fishball tab and the per-bundle buttons, on a scripted DSH page |
+| `tests/onboarding` | first-open onboarding and the child model selection, including reasoning effort |
+| `tests/fishball-dir-perms` | directory permission checks and host and UI notices |
+| `tests/hmr-barrier` | host reload and child shutdown ordering |
+| `tests/remote-embed` | opt-in remote embedding and the host/child relay contract |
 | `tests/stderr-log` | the child's stderr log: line buffering through redaction, one rotation, the cut |
 | `tests/uninstall` | `uninstall.js` and `runtime.uninstall()`: removes only a tree proven dead and this home's |
 

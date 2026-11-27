@@ -6,7 +6,7 @@
  *
  * Only what applies to this repository is kept from the old test/v3/release/pack suite: since the
  * split (a9c8832) this repo packs one tarball, dsh-instance; the connector and Fishball tarballs
- * are their repositories' releases. The instance's bundled/ set is fishball-core only (8fdd0ef).
+ * are their repositories' releases. The instance carries fishball-amenities and fishball-core in bundled/.
  *
  * Techniques: EP per rule over the one tarball, BVA (sha line shape; the tampered byte at the
  * first/middle/last offset; engines.dsh just below its bound), State Transition under --check
@@ -27,7 +27,7 @@ import { canonicalTmp, cleanups, tempRoot } from '@dsh-instance/test-helpers/scr
 import { runtimeOf } from '@dsh-instance/test-helpers/sdk'
 import { REPO } from '@dsh-instance/test-helpers/constants'
 import {
-  INSTANCE, PACK, RETIRED, SET, VERSION, build, check, filesOf, fishballRelease, flipByte, isJunk, isolatedEnv, listing, memberOf, missingRelease, run, sha256, tail,
+  INSTANCE, NOT_STANDALONE, PACK, SET, VERSION, build, check, filesOf, fishballRelease, flipByte, isJunk, isolatedEnv, listing, memberOf, missingRelease, run, sha256, tail,
 } from './support/release.mjs'
 
 const skip = missingRelease()
@@ -117,10 +117,10 @@ eachSdk((sdk) => {
   caseTest(sdk, 'REL-EP-08', INSTANCE.name, `${INSTANCE.tarball} holds no test or runtime junk`, () => {
     assert.deepEqual(filesOf(tarball()).filter(isJunk), [])
   }, { skip })
-  caseTest(sdk, 'REL-EP-07', 'set', `${INSTANCE.tarball} ${PACK.bundled} holds exactly the hosted child's set as tarballs (${SET.map((p) => p.tarball).join(', ')}; 8fdd0ef), nothing of ${RETIRED.join(' or ')}`, () => {
+  caseTest(sdk, 'REL-EP-07', 'set', `${INSTANCE.tarball} ${PACK.bundled} holds exactly the hosted child's set as tarballs (${SET.map((p) => p.tarball).join(', ')}), with no standalone ${NOT_STANDALONE.join(' or ')}`, () => {
     const files = filesOf(tarball())
     assert.deepEqual(files.filter((f) => f.startsWith(PACK.bundled)).sort(), SET.map((p) => PACK.bundled + p.tarball).sort())
-    assert.deepEqual(files.filter((f) => RETIRED.some((n) => f.includes(n))), [])
+    assert.deepEqual(files.filter((f) => NOT_STANDALONE.some((n) => f.includes(n))), [])
   }, { skip })
   for (const pkg of SET) {
     caseTest(sdk, 'REL-EP-07', pkg.name, `${INSTANCE.tarball} ${PACK.bundled}${pkg.tarball} is a regular file byte-identical to the Fishball release's`, () => {
@@ -132,21 +132,28 @@ eachSdk((sdk) => {
   }, { skip })
   // PLAT-EP-07 row 5 (P-1 mechanism B), on this release: the instance lists no library dependency
   // any more (it imports no dsh-connector-shared: 98f0b93 / src/native-runtime/placement.js
-  // librarySources is empty), so it bundles none; its bundled fishball-core carries fishball-shared.
-  caseTest(sdk, 'PLAT-EP-07', 5, "every importer's tarball carries a real copy of its side's library (P-1 mechanism B): the instance bundles each dependency it lists, and its bundled fishball-core carries fishball-shared as regular files", (t) => {
+  // librarySources is empty), so it bundles none; the hosted set members bundle their own libraries.
+  caseTest(sdk, 'PLAT-EP-07', 5, "every importer's tarball carries real copies of its bundled libraries (P-1 mechanism B), including the packages inside the amenities umbrella", (t) => {
     const m = manifest()
     const files = filesOf(tarball())
     for (const dep of Object.keys(m.dependencies ?? {})) {
       assert.ok((m.bundleDependencies ?? m.bundledDependencies ?? []).includes(dep), dep + ' is not bundled')
       assert.ok(files.includes('node_modules/' + dep + '/package.json'), 'no real copy of ' + dep)
     }
-    const core = path.join(tempRoot(cleanups(t)), SET[0].tarball)
-    fs.writeFileSync(core, memberOf(tarball(), PACK.bundled + SET[0].tarball))
-    const coreManifest = JSON.parse(memberOf(core, 'package.json').toString('utf8'))
-    const entries = listing(core).filter((e) => e.path.startsWith(PACK.prefix + 'node_modules/fishball-shared/'))
-    assert.ok(coreManifest.bundleDependencies.includes('fishball-shared'), 'core does not bundle fishball-shared')
-    assert.ok(entries.some((e) => e.path.endsWith('/package.json')), 'no fishball-shared copy in core')
-    assert.deepEqual(entries.filter((e) => e.type !== '-' && e.type !== 'd').map((e) => e.path), [], 'fishball-shared entries that are not regular files')
+    const dir = tempRoot(cleanups(t))
+    for (const pkg of SET) {
+      const file = path.join(dir, pkg.tarball)
+      fs.writeFileSync(file, memberOf(tarball(), PACK.bundled + pkg.tarball))
+      const bundled = JSON.parse(memberOf(file, 'package.json').toString('utf8')).bundleDependencies ?? []
+      const entries = listing(file)
+      for (const dep of pkg.libraries) {
+        const prefix = PACK.prefix + 'node_modules/' + dep + '/'
+        const library = entries.filter((e) => e.path.startsWith(prefix))
+        assert.ok(bundled.includes(dep), pkg.name + ' does not bundle ' + dep)
+        assert.ok(library.some((e) => e.path === prefix + 'package.json' && e.type === '-'), 'no real copy of ' + dep + ' in ' + pkg.name)
+        assert.deepEqual(library.filter((e) => e.type !== '-' && e.type !== 'd').map((e) => e.path), [], dep + ' entries that are not regular files')
+      }
+    }
   }, { skip })
 
   // ---------------------------------------------------------------- REL-EP-09: npm's own list

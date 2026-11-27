@@ -17,6 +17,8 @@ export const MODULE = Object.freeze({
   hosted: 'src/host/hosted.js',
   record: 'src/host/hosted-record.js',
   routes: 'src/host/routes.js',
+  childPluginRoutes: 'src/host/child-plugin-routes.js',
+  childPlugins: 'src/host/child-plugins.js',
   syncRoutes: 'src/host/provider-sync-routes.js',
   syncHost: 'src/lib/provider-sync-host.js',
   syncTarget: 'src/child/provider-sync-target.js',
@@ -92,6 +94,17 @@ export const ROUTE = Object.freeze({
   json: /^application\/json/,
   ok: 200,
   disabled: 'instance-disabled',
+})
+
+/** Toggle answers (README "Plugins for Fishball"; child-plugins / child-plugin-routes contracts). */
+export const TOGGLE = Object.freeze({
+  route: '/api/dsh-instance/plugins/toggle',
+  maxBytes: 16384, badRequest: 400, forbidden: 403,
+  name: 'fbtest-toggle', unknownName: 'fbtest-toggle-not-installed', version: '1.0.0',
+  crossOrigin: 'https://other.example',
+  refusedSites: Object.freeze(['same-site', 'cross-site']),
+  restarting: 'restarting', nextStart: 'next-start',
+  protected: 'protected', unknown: 'unknown-bundle', busy: 'busy',
 })
 
 /** The connector's MCP route the child links to (README; HOSTED.mcpPath). */

@@ -18,7 +18,7 @@
     "test": "node ../../scripts/test-package.mjs"
   },
   "//locale": "The Plugins page card title (design §0.7): DSH reads meta.title from the exported ./locale/*.json without loading this package, and shows the package name when that file is absent.",
-  "//exports": "./client is the instance's own settings page (I-HOST; requirements 1.33 Q-D1 = B, R-ARCH-05), with its chunks client.status.js, client.models.js and client.fishball.js (the Fishball tab, design §28) beside it. ./child-row is the child-side row the launch overlay inserts from the lifecycle snapshot (a path there, so this export is for readers and tests). The status-line export moved with the page: dsh-connector-ui draws no instance card any more.",
+  "//exports": "./client is the instance's own settings page (I-HOST; requirements 1.33 Q-D1 = B, R-ARCH-05), with its chunks client.status.js, client.models.js, client.fishball.js (the Fishball tab, design §28) and client.onboarding.js (first-run portal onboarding) beside it. ./child-row is the child-side row the launch overlay inserts from the lifecycle snapshot (a path there, so this export is for readers and tests). The status-line export moved with the page: dsh-connector-ui draws no instance card any more.",
   "exports": {
     ".": "./host.js",
     "./client": "./client.js",
@@ -34,6 +34,7 @@
     "client.status.js",
     "client.models.js",
     "client.fishball.js",
+    "client.onboarding.js",
     "child-row.js",
     "native-child.js",
     "uninstall.js",

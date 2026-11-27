@@ -10,6 +10,8 @@
  * Decision table: C1 in Fishball's list · C2 official AND shipped (availability installation) ·
  * C3 has an install source · C4 the name is protected → Uninstall | Use | Install | nothing.
  * Row 10: a subject that is not a bundle (an official plugin's page) → nothing.
+ * DSH's strict Cordis proxy rejects direct `remote.pluginManager` reads; only the named
+ * service is available. Row 11 has no such service, but still renders the child-list action.
  */
 import assert from 'node:assert/strict'
 import { caseTest, eachSdk } from '@dsh-instance/test-helpers/cases'
@@ -38,6 +40,9 @@ const bundleInfo = (name, official, source) => ({
   name, version: '1.0.0', official, availability: official ? 'installation' : 'profile', installed: !official, enabled: true,
   optional: official, removable: !official, rows: [], overrides: [], ...(source ? { source: '/fbtest/source/' + name.replace(/\W/g, '-') + '.tgz' } : {}),
 })
+const bundleSubject = ({ name, version, installed, availability, official }) => ({
+  kind: 'bundle', pkg: { name, version, installed, availability, official, enabled: true, rows: [] },
+})
 const actionWords = (tree) => findAll(tree(), (n) => n.tag === 'button').map(wordsOf)
 const childListRead = (page) => requestsTo(page, 'GET', ROUTE.plugins).length > 0
 
@@ -47,9 +52,9 @@ eachSdk((sdk) => {
       const info = bundleInfo(name, official, source)
       const world = scriptedInstance()
       world.plugins = { ...world.plugins, bundles: inFishball ? [{ name, version: '1.0.0', enabled: true }] : [] }
-      const subject = { kind: 'bundle', pkg: { name, version: info.version, installed: info.installed, availability: info.availability, official, enabled: true, rows: [] } }
-      const { page, tree } = await openDetail(t, sdk, { world, mainBundles: [info], subject })
-      await page.until(() => childListRead(page))
+      const { page, tree } = await openDetail(t, sdk, { world, mainBundles: [info], subject: bundleSubject(info) })
+      assert.ok(childListRead(page), 'did not request the child inventory')
+      assert.deepEqual(page.errors, [])
       if (expected === null) { assert.deepEqual(actionWords(tree), [], 'a control for ' + name); return }
       assert.deepEqual(actionWords(tree).filter((w) => Object.values(DETAIL).includes(w)), [expected], 'actions ' + show(actionWords(tree)))
       if (expected === DETAIL.use) {
@@ -65,5 +70,18 @@ eachSdk((sdk) => {
     const { page, tree } = await openDetail(t, sdk, { subject: { kind: 'item', id: 'fbtest-item' } })
     await page.until(() => childListRead(page))
     assert.deepEqual(actionWords(tree), [])
+  })
+  caseTest(sdk, 'CPB-DETAIL', '11 no remote service', 'strict proxy without remote.pluginManager: no main-bundle action; a child-only uninstall still works', async (t) => {
+    const [, name, , official, source] = ROWS[3]
+    const info = bundleInfo(name, official, source)
+    const subject = bundleSubject(info)
+    const world = scriptedInstance()
+    const absent = await openDetail(t, sdk, { world, subject })
+    assert.ok(childListRead(absent.page), 'did not request the child inventory')
+    assert.deepEqual(actionWords(absent.tree), [])
+    world.plugins.bundles = [{ name, version: info.version, enabled: true }]
+    const childOnly = await openDetail(t, sdk, { world, subject })
+    assert.deepEqual(actionWords(childOnly.tree), [DETAIL.uninstall])
+    assert.deepEqual([...absent.page.errors, ...childOnly.page.errors], [])
   })
 })

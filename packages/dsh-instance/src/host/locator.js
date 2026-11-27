@@ -15,9 +15,10 @@ const reject = (code) => Promise.reject(new NativeRuntimeError(code))
  * @param deps.ticket - `({audience, view, lang}) => Promise<string>` for the current generation
  * @param deps.hosted - the hosted-token rules (hosted.js); `agentEntry()` is the entry the child holds
  * @param deps.providerSync - `{status, check, add}`
+ * @param deps.admitRemote - optional `(request, {view, lang})` returning the opt-in relay URL or undefined
  * @returns {object} the K3 `DshInstanceChild`
  */
-export function createChildLocator({ lifecycle, origin, ticket, hosted, providerSync }) {
+export function createChildLocator({ lifecycle, origin, ticket, hosted, providerSync, admitRemote }) {
   const ready = () => lifecycle.status().state === CHILD_STATE.ready
   /** The child's origin under a served hostname, or null. */
   function originUnder(hostname) {
@@ -43,6 +44,14 @@ export function createChildLocator({ lifecycle, origin, ticket, hosted, provider
       const url = new URL(TICKET.path, base)
       url.searchParams.set(TICKET.param, minted)
       return { url: url.href }
+    },
+    ...admitRemote && {
+      async admitRemote(request, { view, lang } = {}) {
+        if (!LOOPBACK.views.includes(view) || !LOOPBACK.langs.includes(lang)) return reject(REFUSAL.invalid)
+        const admitted = admitRemote(request, { view, lang })
+        if (admitted !== undefined && !ready()) return reject(REFUSAL.notReady)
+        return admitted
+      },
     },
     async retry() {
       if (lifecycle.status().state === CHILD_STATE.failed) { await lifecycle.retry(); return }

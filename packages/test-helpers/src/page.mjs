@@ -76,6 +76,36 @@ export function pageServices(shim, lang) {
   return { slots, locale, entries, setLang }
 }
 
+/** Observe locale registration and missing active-language keys without changing the rendered copy. */
+export function trackLocale() {
+  const registeredDicts = new Map()
+  const missingKeys = []
+  return {
+    registeredDicts, missingKeys,
+    decorateLocale(base) {
+      return {
+        ...base,
+        register(ns, dicts) {
+          registeredDicts.set(ns, dicts)
+          const dispose = base.register(ns, dicts)
+          return () => {
+            if (registeredDicts.get(ns) === dicts) registeredDicts.delete(ns)
+            dispose()
+          }
+        },
+        bind(ns) {
+          const translate = base.bind(ns)
+          return (key, params) => {
+            const active = base.getLocale().active
+            if (!(key in (registeredDicts.get(ns)?.[active] ?? {}))) missingKeys.push({ ns, lang: active, key })
+            return translate(key, params)
+          }
+        },
+      }
+    },
+  }
+}
+
 /** A ConfigForm (dsh-client-ui-settings) serving one namespace's `value`. */
 export function configForm(value) {
   const listeners = new Set()
@@ -99,8 +129,9 @@ export function configForm(value) {
  * @param options.primitives - `(React) => module` for @deepseek-ai/dsh-client-ui-primitives.
  * @param options.respond - `({method, path, body, headers}) => Response | Promise<Response>`; default 404.
  * @param options.services - `(shim) => ({name: service})`, extra root services (configForms, remote …).
+ * @param options.decorateLocale - wrap the page's own locale service before its single root registration.
  */
-export async function openPage(t, { sdk, packageDir, id, entry = 'client.js', lang = 'en', base = 'http://127.0.0.1:47000/', primitives, respond, services: extraServices = () => ({}) }) {
+export async function openPage(t, { sdk, packageDir, id, entry = 'client.js', lang = 'en', base = 'http://127.0.0.1:47000/', primitives, respond, services: extraServices = () => ({}), decorateLocale }) {
   const requests = []
   const errors = []
   const pageFetch = async (input, init = {}) => {
@@ -130,6 +161,7 @@ export async function openPage(t, { sdk, packageDir, id, entry = 'client.js', la
   const Context = await cordisOf(sdk)
   const root = new Context()
   root.provide('slots', services.slots)
+  if (decorateLocale) services.locale = decorateLocale(services.locale)
   root.provide('locale', services.locale)
   for (const [name, service] of Object.entries(extraServices(shim))) root.provide(name, service)
   const plugins = applyPlugins(root, graph, table, errors)

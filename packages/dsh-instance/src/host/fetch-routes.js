@@ -10,6 +10,51 @@
  */
 const FETCH = Object.freeze({ method: 'POST', get: 'GET', body: 'buffered' })
 
+/** Shared JSON response and bounded-object-body helpers for same-origin feature routes. */
+export const JSON_ROUTE = Object.freeze({
+  maxBodyBytes: 16384,
+  headers: Object.freeze({ 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }),
+  http: Object.freeze({ ok: 200, badRequest: 400, forbidden: 403 }),
+})
+
+export const isJsonRecord = (value) => typeof value === 'object' && value !== null && !Array.isArray(value)
+export const jsonResponse = (status, value, headers = JSON_ROUTE.headers) => new Response(JSON.stringify(value), { status, headers })
+
+/** Reads a bounded JSON object body, or returns `undefined` if unreadable, oversized or non-object. */
+export async function readJsonObjectBody(request, maxBytes = JSON_ROUTE.maxBodyBytes) {
+  let text
+  try { text = await request.text() } catch { return undefined }
+  if (Buffer.byteLength(text) > maxBytes) return undefined
+  try { const value = JSON.parse(text); return isJsonRecord(value) ? value : undefined } catch { return undefined }
+}
+
+/**
+ * Wraps a same-origin JSON route handler: enforces `sameOrigin(connection, request)` (403 on
+ * refusal) and catches unexpected throws into HTTP 200 `{ok: false, code: failCode}`.
+ */
+export function sameOriginJsonHandler(connection, sameOrigin, failCode, run) {
+  const failed = () => ({ ok: false, code: failCode })
+  return async (request) => {
+    if (!sameOrigin(connection, request)) return jsonResponse(JSON_ROUTE.http.forbidden, failed())
+    try {
+      const outcome = await run(request)
+      return outcome instanceof Response ? outcome : jsonResponse(JSON_ROUTE.http.ok, isJsonRecord(outcome) ? outcome : failed())
+    } catch {
+      return jsonResponse(JSON_ROUTE.http.ok, failed())
+    }
+  }
+}
+
+/** Wraps a same-origin JSON POST route with bounded object parsing and HTTP 400 on invalid input. */
+export function sameOriginJsonPost(connection, sameOrigin, { failCode, invalidCode, maxBodyBytes = JSON_ROUTE.maxBodyBytes, parse, run }) {
+  return sameOriginJsonHandler(connection, sameOrigin, failCode, async (request) => {
+    const body = await readJsonObjectBody(request, maxBodyBytes)
+    const argument = body === undefined ? undefined : parse(body)
+    if (argument === undefined) return jsonResponse(JSON_ROUTE.http.badRequest, { ok: false, code: invalidCode })
+    return run(argument)
+  })
+}
+
 /**
  * Register one exact GET route. An absent registry or a path another row already claimed leaves
  * the page without it (the page then reads "unavailable"), never failing the row.
