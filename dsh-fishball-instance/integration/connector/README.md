@@ -1,6 +1,6 @@
 # @dsh-instance/integration-connector
 
-The instance against the **real** `dsh-agent-connector` of the sibling `dsh-connector` checkout.
+The instance against the **real** `dsh-agent-connector` from the in-tree connector component.
 
 ## What it tests
 
@@ -20,13 +20,14 @@ The instance against the **real** `dsh-agent-connector` of the sibling `dsh-conn
 
 ## What it needs
 
-- The sibling checkouts `../dsh-connector` (or `DSH_CONNECTOR_REPO`) and `../dsh-fishball`
-  (or `FISHBALL_REPO`) next to this repository's main checkout. They are only read. A missing one
-  registers the cases as skipped, with the reason.
+- In-tree connector and Fishball sources, read only (`DSH_CONNECTOR_REPO` and `FISHBALL_REPO`
+  can override them). A missing source registers the cases as skipped, with the reason.
 - The installed DSH SDKs (0.2.1-rc.5 and 0.2.2-rc.1; `FBTEST_DSH_VERSIONS` moves their folder).
 - No network.
 
 ## Run
+
+From `dsh-fishball-instance/`:
 
 ```bash
 node scripts/test-package.mjs integration/connector

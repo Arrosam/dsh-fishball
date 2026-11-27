@@ -7,8 +7,8 @@ the connector's public MCP surface is its own (`contracts/constants.js`, `MCP` a
 against the connector's published contract by its contract tests.
 
 Version `1.0.0-alpha.1`. Requires DSH `>=0.2.1-rc.5`. In hosted mode `dsh-instance` (the
-dsh-fishball-instance repository) places it in Fishball's child, last, so its guard patch reaches every
-row; in a standalone DSH you install it yourself, last (see the [root README](<../../README.md>)).
+[hosted instance component](../../../dsh-fishball-instance/README.md)) places it in Fishball's child, last, so its guard patch reaches every
+row; in a standalone DSH you install it yourself, last (see the [Fishball installation guide](<../../README.md>)).
 [fishball-ui](<ui/README.md>) is its own package in `./ui/`, shipped inside this package's tarball.
 
 ## What it does
@@ -148,7 +148,7 @@ sessions every 15 s for the sidebar (DESIGN §35); with no page open it sends no
 Core runs normally without `fishball-ui` (no page, no strip) and reports nothing about it. Core's
 status's set check has no member in 1.0.0-alpha.1, so it always reports the set `ok`. Core and
 fishball-ui name the amenities nowhere (`fishball-board`, `fishball-heartbeat`, `fishball-taskboard`, `fishball-consultant` ship
-through the [`fishball-amenities`](<../fishball-amenities/README.md>) umbrella and bind to
+through the [`fishball-amenities`](<../../../amenities/fishball-amenities/README.md>) umbrella and bind to
 `fishballInstance` themselves).
 
 ### Known limits

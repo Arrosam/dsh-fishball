@@ -1,13 +1,11 @@
 # @dsh-instance/integration-fishball-core
 
-The instance's hosted-child composition with the **real** `fishball-core` of the sibling
-`dsh-fishball` checkout.
+The instance's hosted-child composition with the **real** `fishball-core` from the in-tree Fishball component.
 
 ## What it tests
 
 The instance's public `composedProfile` (manifest export `./native-runtime`) does what a start does
-without launching anything: layout, placement of fishball-amenities and fishball-core from the sibling checkout
-(`FISHBALL_REPO`), profile load and launch overlay. Its result is composed with each SDK's own
+without launching anything: layout, placement of fishball-amenities and fishball-core from the Fishball sources, profile load and launch overlay. Its result is composed with each SDK's own
 `dsh-app-boot`.
 
 - `tests/guards.test.mjs`: the guards come from core's own patch. `LITE-UC-03`, `LITE-EP-13` and
@@ -25,11 +23,13 @@ without launching anything: layout, placement of fishball-amenities and fishball
 
 ## What it needs
 
-- The sibling checkout `../dsh-fishball` (or `FISHBALL_REPO`), read only. When it is missing, the
+- The in-tree Fishball sources, read only (`FISHBALL_REPO` can override them). When absent, the
   cases are skipped with the reason.
 - The installed DSH SDKs, and `npm` on PATH (the dry run writes nothing and runs offline).
 
 ## Run
+
+From `dsh-fishball-instance/`:
 
 ```bash
 node scripts/test-package.mjs integration/fishball-core

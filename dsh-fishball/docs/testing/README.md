@@ -1,6 +1,6 @@
 # Testing
 
-How Fishball is tested since the restructure of 2026-11-22. The rules are the user's:
+How the Fishball component is tested. The per-package testing rules from the 2026-11-22 restructure still apply:
 
 1. **Every package has its own independent tests**, based on the functionality inside that package.
    Day to day only the changed package's tests run. There is no whole-repo test run.
@@ -30,29 +30,32 @@ scripts/test.mjs                   day to day: one package's tests on the curren
 scripts/test-release.mjs           release: every package and integration package, in parallel, over the DSH matrix
 ```
 
-Package folders and their test folders:
+Paths in the table are relative to `dsh-fishball/` for `packages/` and to the monorepo root for `amenities/`.
 
 | package | folder | tests |
 |---|---|---|
 | fishball-core | `packages/core` | `packages/core/tests` |
 | fishball-ui | `packages/core/ui` | `packages/core/ui/tests` |
-| fishball-board | `packages/fishball-board` | `packages/fishball-board/tests` |
-| fishball-heartbeat | `packages/fishball-heartbeat` | `packages/fishball-heartbeat/tests` |
-| fishball-taskboard | `packages/fishball-taskboard` | `packages/fishball-taskboard/tests` |
-| fishball-consultant | `packages/fishball-consultant` | `packages/fishball-consultant/tests` |
-| fishball-amenities | `packages/fishball-amenities` | `packages/fishball-amenities/tests` |
+| fishball-board | `amenities/board` | `amenities/board/tests` |
+| fishball-heartbeat | `amenities/heartbeat` | `amenities/heartbeat/tests` |
+| fishball-taskboard | `amenities/taskboard` | `amenities/taskboard/tests` |
+| fishball-consultant | `amenities/consultant` | `amenities/consultant/tests` |
+| fishball-amenities | `amenities/fishball-amenities` | `amenities/fishball-amenities/tests` |
 | fishball-shared | `packages/shared` | `packages/shared/tests` |
 | fishball-test-helpers | `packages/test-helpers` | `packages/test-helpers/tests` |
 | fishball-integration-core-ui | `packages/integration-core-ui` | fishball-core with fishball-ui: core's patch as DSH composes it, the drawn ask cards, the Fishball-page header entries, the guards, a booted DSH with both |
 | fishball-integration-page-ui | `packages/integration-page-ui` | fishball-page in Chromium over a booted DSH: message_user rows and paging; fishball-child-plugins in an instance-run child (§28) |
 | fishball-integration-page-stream | `packages/integration-page-stream` | core's one page stream (§34) with fishball-ui and fishball-taskboard: the carrier, the board's topic, the Task board tab on the carrier |
 | fishball-integration-amenities | `packages/integration-amenities` | the amenities with core, fishball-ui and the repository: the icon family, settings namespaces, the root workspaces |
-| fishball-integration-release | `packages/integration-release` | every package: the package boundaries, the release pack (tarballs, checksums, no tests/ shipped; its artifact rows need `node scripts/pack-v3.mjs` first, `FBTEST_RELEASE_REQUIRED=1` makes a missing release fail) |
+| fishball-integration-release | `packages/integration-release` | every package: the package boundaries, the release pack (tarballs, checksums, no tests/ shipped; its artifact rows need `npm run pack:v3` from the monorepo root first, `FBTEST_RELEASE_REQUIRED=1` makes a missing release fail) |
 
 fishball-ui sits inside fishball-core's folder (`packages/core/ui`) but is its own package with its own
 manifest; fishball-core's tests never run fishball-ui's and the reverse.
 
 ## Running
+
+Run the scripts below from `dsh-fishball/`. From the monorepo root, use
+`npm test --workspace <npm-name>` for one package, or prefix the script path with `dsh-fishball/`.
 
 ```bash
 node scripts/test.mjs fishball-taskboard          # one package, current DSH

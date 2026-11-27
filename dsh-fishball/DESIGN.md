@@ -1,6 +1,6 @@
 # Fishball: the design decisions in force
 
-This is the approved plan and decision record of this repository (AGENTS.md: change it when a spike
+This is the approved plan and decision record for Fishball ([AGENTS.md](../AGENTS.md): change it when a spike
 or the user changes the design). It holds only what is in force for the packages here: fishball-core,
 fishball-ui, fishball-board, fishball-heartbeat, fishball-taskboard, fishball-consultant,
 fishball-amenities and fishball-shared, plus the test and release tooling. The full V3 design is
@@ -16,9 +16,10 @@ documents at e5a8450c. Kept from it: Fishball's role and the bold-punctuation ru
 persona), the private Skills rule, and the Recommended tab (§10f), which code still cites.
 
 **Sections about the DSH side.** dsh-connector, dsh-connector-ui, dsh-connector-adapter and dsh-instance
-left this repository on 2026-11-20 (6b7c53bf: the dsh-connector and dsh-fishball-instance repositories).
-§17, §18, §19, §21 and §27 decide their behaviour; they stay here because Fishball's side relies on them,
-but those repositories own them now: change them there.
+split out on 2026-11-20 (6b7c53bf) and are now in the [connector](../dsh-connector/README.md) and
+[instance](../dsh-fishball-instance/README.md) components of the same monorepo. §17, §18, §19, §21
+and §27 record decisions Fishball relies on. Keep the components independently packaged and the
+Fishball-to-connector boundary on public MCP.
 
 **Current release.** 1.0.0-alpha.1. The board ships again inside the fishball-amenities umbrella with
 fishball-heartbeat, fishball-taskboard (§33) and fishball-consultant; fishball-core and fishball-ui name none of them, and the
@@ -492,4 +493,4 @@ after any actual change is durable. See [Task board auto-update](docs/plugins/fi
 
 ## Fishball Consultant
 
-The Consultant is an independently installable amenity. It owns its configuration, owner-only disclosure cards, topic ledger and advisory results. One approval covers only the exact question, evidence, replay history and destination. The current staging host has no protected connector port: only catalog reads are allowed and there is no worker fallback. Physical removal of a member supplied by the collection requires instance packaging changes; this build supports disabling its row. See the [amenity guide](packages/fishball-consultant/README.md) and [private port contract](packages/fishball-consultant/CONTRACT.md).
+The Consultant is an independently installable amenity. It owns its configuration, owner-only disclosure cards, topic ledger and advisory results. One approval covers only the exact question, evidence, replay history and destination. The current staging host has no protected connector port: only catalog reads are allowed and there is no worker fallback. Physical removal of a member supplied by the collection requires instance packaging changes; this build supports disabling its row. See the [amenity guide](../amenities/consultant/README.md) and [private port contract](../amenities/consultant/CONTRACT.md).

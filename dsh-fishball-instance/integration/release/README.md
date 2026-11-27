@@ -1,6 +1,6 @@
 # @dsh-instance/integration-release
 
-The packed release of this repository, built by the tests themselves.
+The packed instance release, built by the tests themselves.
 
 ## What it tests
 
@@ -25,11 +25,12 @@ It runs with dead proxies and registry and no user npm config, because the pack 
 ## What it needs
 
 - The Fishball release folder `../dsh-fishball/.runtime/release/<instance version>` with
-  both `fishball-amenities-<version>.tgz` and `fishball-core-<version>.tgz` (pack dsh-fishball
-  first). The tests read but do not modify the folder, and skip if either tarball is missing.
+  (or the directory set by `FISHBALL_RELEASE_DIR`), with both `fishball-amenities-<version>.tgz` and `fishball-core-<version>.tgz` (run `npm run pack:v3` at the monorepo root first). The tests read but do not modify the folder, and skip if either tarball is missing.
 - The installed DSH SDKs, plus `npm`, `pnpm` (used by DSH's plugin manager) and `tar` on PATH.
 
 ## Run
+
+From `dsh-fishball-instance/`:
 
 ```bash
 node scripts/test-package.mjs integration/release

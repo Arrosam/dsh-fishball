@@ -1,7 +1,7 @@
 # `host-services`: the K3 freeze of a main DSH's host-only services
 
 Types only (`*.d.ts`); nothing here runs. Sources:
-[v3-design.md](<../../../docs/planning/v3-design.md>) §3.6, §4.1, §5.4; requirements R-CON-11,
+[v3-design.md](<../../../../dsh-fishball/docs/planning/v3-design.md>) §3.6, §4.1, §5.4; requirements R-CON-11,
 R-HOST-05/06/09/10, R-UI-01/02/10; spikes V3-S3 `b4dca86` and V3-S4 `b9809b7`. Changing a name
 or a code here is a K3 amendment.
 

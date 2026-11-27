@@ -2,7 +2,7 @@
 
 A helper of the agent that manages a session (such as Fishball): it supervises the session against its purpose and answers its permission requests within the approvable scope. Its own package and DSH bundle; it is also installed by the `dsh-connector-amenities` umbrella.
 
-Design: [watchdog-project-notes.md](../../docs/watchdog-project-notes.md). It needs `dsh-agent-connector` in the same DSH. Without it, the row loads and stays idle.
+Design: [watchdog-project-notes.md](../../dsh-connector/docs/watchdog-project-notes.md). It needs `dsh-agent-connector` in the same DSH. Without it, the row loads and stays idle.
 
 - **Tools for the managing agent** (over the connector's MCP, namespaced `dsh-connector-watchdog.*`):
   - `watchdog_session_start({folder, title, message, attachments, model?, reasoningEffort?, purpose, scope?})` starts a session exactly as the connector's `session_start` does, and briefs Watchdog on it before its first message is sent. Watchdog then supervises the session from its very first request. The answer is `session_start`'s plus `supervised`. It is listed only when the connector offers `dshConnectorSessions.start`.
@@ -27,7 +27,7 @@ Design: [watchdog-project-notes.md](../../docs/watchdog-project-notes.md). It ne
 ## Structure
 
 ```
-packages/dsh-connector-watchdog/
+amenities/watchdog/
   index.js          the row: wires core.js to the connector's services, the judge and the store
   src/core.js       the behaviour over injected ports: briefs, permission decisions, patrol, drift
   src/judge.js      the judge: one side session per supervised session on the `watchdog` preset
@@ -56,6 +56,6 @@ npm test --workspace dsh-connector-watchdog
 
 Watchdog running beside the connector in one real DSH (WD-L01…13: the delegate path, Stop,
 `watchdog_session_start`, the settlements the manager sees) is the integration package
-[`integration/connector-watchdog`](<../../integration/connector-watchdog/README.md>). Its icon is
-checked in [`integration/package-icons`](<../../integration/package-icons/README.md>). Both run
-before a release. See [the testing guide](<../../docs/testing/README.md>).
+[`integration/connector-watchdog`](<../../dsh-connector/integration/connector-watchdog/README.md>). Its icon is
+checked in [`integration/package-icons`](<../../dsh-connector/integration/package-icons/README.md>). Both run
+before a release. See [the testing guide](<../../dsh-connector/docs/testing/README.md>).

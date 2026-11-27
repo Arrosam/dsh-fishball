@@ -1,8 +1,8 @@
 # `dsh-connector/tools`: the K2 freeze
 
 The contract of the contribution service `dshConnectorTools`. Sources:
-[v3-design.md §13](<../../../docs/planning/v3-design.md>), R-EXT-01…20 in
-[v3-requirements.md](<../../../docs/planning/v3-requirements.md>), and spike V3-S5 (`8f2788e`).
+[v3-design.md §13](<../../../../docs/planning/v3-design.md>), R-EXT-01…20 in
+[v3-requirements.md](<../../../../docs/planning/v3-requirements.md>), and spike V3-S5 (`8f2788e`).
 This module holds data, pure validators and types only. The registry behind the service belongs to
 C-EXT (`packages/dsh-connector/src/contrib/`). Each name below is frozen, so changing one is a K2
 amendment. A value marked **PROPOSED** is one the requirements do not fix: it is frozen as written

@@ -1,10 +1,10 @@
 # F-WIRE manager acceptance (reminders, singleton, identity, model)
 
-Authority: [.runtime/f-wire-interface.md](../../../../.runtime/f-wire-interface.md) (fixed 2026-11-16),
+Authority: `.runtime/f-wire-interface.md` (historical local design note, fixed 2026-11-16),
 DESIGN.md §20, R-FB-02, R-FB-13, R-ID-10, R-OA-22 (`agent_id`), the V2 reminder rules core keeps
 "unchanged" (docs/slim-native-design.md T10) and the session route X1a
 (docs/plugins/instance-extension-points.md). Black box: core runs as an installed bundle in a real
-standalone DSH ([world.mjs](world.mjs)); no connector, instance or hosted child. The scripted model
+standalone DSH (`world.mjs` in the original suite); no connector, instance or hosted child. The scripted model
 (test/support/fixtures/fake-llm.mjs) is DSH's default model and drives the manager's tool calls.
 
 One scenario per SDK, two boots of one home under the repo's TEST_HOMES (os.tmpdir()):
@@ -55,7 +55,7 @@ One scenario per SDK, two boots of one home under the repo's TEST_HOMES (os.tmpd
 
 ## Harness facts
 - Reminder results are read from the tool-role message the next model request carries. A one-shot that fired is "ended" if it is gone or listed with a status other than a scheduled one's (DSH's list keeps ended records).
-- Connect needs a target that passes the connector check, so [subject.mjs](subject.mjs) serves K1's RFC 9728/8414 metadata on loopback; nothing is ever authorized.
+- Connect needs a target that passes the connector check, so `subject.mjs` in the original suite serves K1's RFC 9728/8414 metadata on loopback; nothing is ever authorized.
 
 ## MULTI-1 re-baseline
 - MGR-ID rows: MULTI-0 withdrew `target.url` and `/api/fishball/connect{,/cancel}`. Boot A adds the

@@ -45,6 +45,6 @@ node scripts/test.mjs fishball-board --against=<git-ref>
 | `peers.test.mjs` | the board without core (`fishball-core-missing`, boot ok, does nothing), with a fake core (its manager setup), the 30-day visibility window and the append-only archive (7 cases) |
 
 Details and the case-id index: [tests/README.md](<tests/README.md>). Integration:
-[`integration-amenities`](<../integration-amenities/README.md>) checks the board's `Config` through DSH's
-settings service and its icon in the family; [`integration-release`](<../integration-release/>) the
-package boundaries and release folder. Rules and runner: [docs/testing/README.md](<../../docs/testing/README.md>).
+[`integration-amenities`](<../../dsh-fishball/packages/integration-amenities/README.md>) checks the board's `Config` through DSH's
+settings service and its icon in the family; [`integration-release`](<../../dsh-fishball/packages/integration-release/README.md>) the
+package boundaries and release folder. Rules and runner: [docs/testing/README.md](<../../dsh-fishball/docs/testing/README.md>).

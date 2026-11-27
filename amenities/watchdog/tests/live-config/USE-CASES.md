@@ -17,7 +17,7 @@ DSH 0.2.1-rc.5, 0.2.2-rc.1 and 0.2.2-rc.3.
   answers no messages; `stop` records) and `dshConnectorTools` (records the registered tools).
 - node:test MockTimers on setTimeout and Date. A patrol is one recorded `sessions.read`.
 - The served namespace: DSH's own `dsh-settings` `SettingsForms.describe()` over a scripted
-  configEditor with one running entry of the row's Config ([settings-schema.mjs](<../../../dsh-connector-test-helpers/src/dsh/settings-schema.mjs>)).
+  configEditor with one running entry of the row's Config ([settings-schema.mjs](<../../../../dsh-connector/packages/dsh-connector-test-helpers/src/dsh/settings-schema.mjs>)).
 
 ## Use case
 

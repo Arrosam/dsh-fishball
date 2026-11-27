@@ -18,21 +18,20 @@ of a file run in order and later ones build on the earlier ones' state (restarts
 ## What it needs
 
 - The installed DSH SDKs `0.2.1-rc.5` and `0.2.2-rc.1` (`FBTEST_DSH_VERSIONS` moves their folder).
-- The sibling checkouts, **read only**: `dsh-connector` (the connector and its shared library are
-  linked into the host profile) and `dsh-fishball` (placement copies fishball-amenities, fishball-core,
-  and their shipped dependencies from it into the child under the throwaway home). They are found beside this
-  repository's main checkout, or where `DSH_CONNECTOR_REPO` / `FISHBALL_REPO` point. When either is
-  absent, every case is registered skipped with the reason.
+- In-tree sources, **read only**: the connector and its shared library are linked into the host
+  profile; Fishball core, amenities and their shipped dependencies are copied into the child under
+  the throwaway home. `DSH_CONNECTOR_REPO` and `FISHBALL_REPO` can override these sources. If either
+  source is absent, cases are registered as skipped with the reason.
 - `npm` on the PATH, for `npm pack --offline` of the fixtures in `fixtures/` (written into the
   throwaway home). Nothing is downloaded: the one registry the tests use is a local socket that never
   answers.
 
 The incompatible-member cases boot once with `FISHBALL_REPO` pointing at a scratch copy of the
-sibling's core (its `engines.dsh` made impossible) under the OS temp folder, removed afterwards.
+Fishball core (its `engines.dsh` made impossible) under the OS temp folder, removed afterwards.
 
 ## How to run
 
-From the repository root:
+From `dsh-fishball-instance/`:
 
 ```sh
 node scripts/test-package.mjs integration/hosted-child

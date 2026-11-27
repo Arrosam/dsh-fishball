@@ -8,10 +8,10 @@ Version `1.0.0-alpha.1`, DSH `>=0.2.1-rc.5`.
 
 | Package | What it is |
 |---|---|
-| [`fishball-board`](<../fishball-board/README.md>) | Fishball's session-linked work board (binds `fishballInstance` apiVersion 1, so beside today's core it stays idle). |
-| [`fishball-heartbeat`](<../fishball-heartbeat/README.md>) | Keeps Fishball's prompt cache warm while it is idle with useful heartbeat turns; off until both of its timer settings are set; when it stops, it compacts a long context once. |
-| [`fishball-taskboard`](<../fishball-taskboard/README.md>) | Fishball's own task board and memo pad, which the user views and edits in the right sidebar's **Task board** tab. |
-| [`fishball-consultant`](<../fishball-consultant/README.md>) | Advisory-only second opinions. Configuration and threads are available; no consultation is sent without a proven protected connector capability. |
+| [`fishball-board`](<../board/README.md>) | Fishball's session-linked work board (binds `fishballInstance` apiVersion 1, so beside today's core it stays idle). |
+| [`fishball-heartbeat`](<../heartbeat/README.md>) | Keeps Fishball's prompt cache warm while it is idle with useful heartbeat turns; off until both of its timer settings are set; when it stops, it compacts a long context once. |
+| [`fishball-taskboard`](<../taskboard/README.md>) | Fishball's own task board and memo pad, which the user views and edits in the right sidebar's **Task board** tab. |
+| [`fishball-consultant`](<../consultant/README.md>) | Advisory-only second opinions. Configuration and threads are available; no consultation is sent without a proven protected connector capability. |
 
 All four ship in this release through this umbrella (DESIGN §33). Installing `fishball-amenities`
 installs all four and loads them: its dependencies bring the packages (bundled in its tarball with
@@ -66,7 +66,7 @@ node scripts/test.mjs fishball-amenities --against=<git-ref>
 | `settings-page.test.mjs` | the umbrella's client: the bundle hint and each configurable member row's page over DSH's real settings service and form (40 cases) |
 
 Details and the case-id index: [tests/README.md](<tests/README.md>). Integration:
-[`integration-amenities`](<../integration-amenities/README.md>) (the icons as one family with core's and
+[`integration-amenities`](<../../dsh-fishball/packages/integration-amenities/README.md>) (the icons as one family with core's and
 fishball-ui's, the board's `Config` through DSH's settings service, the root workspaces) and
-[`integration-release`](<../integration-release/>) (package boundaries, release folder). Rules and runner:
-[docs/testing/README.md](<../../docs/testing/README.md>).
+[`integration-release`](<../../dsh-fishball/packages/integration-release/README.md>) (package boundaries, release folder). Rules and runner:
+[docs/testing/README.md](<../../dsh-fishball/docs/testing/README.md>).

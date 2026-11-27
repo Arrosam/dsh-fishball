@@ -17,7 +17,7 @@ node scripts/test.mjs fishball-taskboard
 Ported from `test/v3/fishball-taskboard` (2026-11-22, the test restructure). The cases, their
 derivation and the oracle sources are in [taskboard/USE-CASES.md](<taskboard/USE-CASES.md>); the
 oracle values, each with its source (REQ, DOC §n of
-[docs/plugins/fishball-taskboard.md](<../../../docs/plugins/fishball-taskboard.md>), SURFACE, DSH), are in
+[docs/plugins/fishball-taskboard.md](<../../../dsh-fishball/docs/plugins/fishball-taskboard.md>), SURFACE, DSH), are in
 [taskboard/constants.mjs](<taskboard/constants.mjs>).
 
 **Techniques.** Use Cases (TB-UC), Equivalence Partitioning (TB-EP), Boundary Value Analysis (TB-BVA),

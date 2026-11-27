@@ -6,8 +6,8 @@ plugins in the child, gives the child a token from this DSH's connector once, sy
 and has its own settings page. It imports no Fishball-side code and has no `dsh-connector` peer: it
 looks the connector's services up at runtime (`dshConnectorTokens`).
 
-Version `1.0.0-alpha.1`. Uninstall instructions and the repository index are in the
-[root README](<../../README.md>).
+Version `1.0.0-alpha.1`. Uninstall instructions and the instance index are in the
+[instance README](<../../README.md>).
 
 ## Installation options
 
@@ -21,9 +21,9 @@ dsh plugin --profile web add dsh-agent-connector@1.0.0-alpha.2 dsh-instance@1.0.
 ```
 
 Missing peer warnings about DSH's own `@deepseek-ai/*` packages are expected; the host provides
-these at runtime. For a source or offline install, pack the sibling `dsh-fishball` and
-`dsh-connector` checkouts first, then use this repository's `npm run pack` and the generated
-release's `INSTALL.md`.
+these at runtime. For a source or offline install, pack Fishball (`npm run pack:v3` at the monorepo root) and the connector
+(`npm run pack` from `dsh-connector/`) first. Then run `npm run pack` from `dsh-fishball-instance/`
+and follow the generated release’s `INSTALL.md`.
 
 The compatibility test SDKs are **0.2.1-rc.5** and **0.2.2-rc.1** (Web or DSH-X). Use Node **22.14+**
 for packing and **24.9+** for DSH. After starting DSH, open Fishball from the sidebar or from
@@ -43,7 +43,9 @@ for packing and **24.9+** for DSH. After starting DSH, open Fishball from the si
   (which carries the Fishball UI) are copied into the child's profile and added to its bundles in
   that order by default. The amenities bundle supplies board, consultant, heartbeat, and taskboard. A standalone
   `fishball-ui` from an earlier instance is still treated as the child's own. Sources: the bundled
-  tarballs in a packed instance, else `$FISHBALL_REPO/packages/` or the sibling Fishball checkout.
+  tarballs in a packed instance. From a checkout, `FISHBALL_REPO` can explicitly select the monorepo
+  root or a legacy Fishball checkout root; it overrides automatic source lookup. In the monorepo,
+  core and shared live in `dsh-fishball/packages/`, and the five amenity packages live in `amenities/`.
   Only the files each manifest's `files` list ships are copied, read as npm pack reads them: an entry
   starting with `!` excludes that path. The record
   `fishball-placement.json` keeps your switches: a plugin is on at its first placement, a later
@@ -61,10 +63,11 @@ Set `fishballLiveRepo` on the `dsh-instance` row in the **parent** DSH's profile
 ```yaml
 - id: dsh-instance
   config:
-    fishballLiveRepo: /absolute/path/to/dsh-fishball
+    fishballLiveRepo: /absolute/path/to/monorepo
 ```
 
-Use a trusted checkout. Start Fishball after the parent loads this setting; an already-running
+Use the absolute path to a trusted monorepo root (not its `dsh-fishball/` component directory),
+or to a trusted legacy Fishball checkout root. Start Fishball after the parent loads this setting; an already-running
 child needs one restart to change placement. Its seven Fishball packages are then absolute `link:`
 dependencies, not vendor copies. Old vendor tarballs are not used in this mode. Bundle selections
 and data are kept. Remove the setting and start again to restore copy/packed placement.
@@ -72,7 +75,7 @@ and data are kept. Remove the setting and start again to restore copy/packed pla
 
 Set up the checkout's own `node_modules`: Fishball workspace dependencies (including
 `fishball-shared`) must resolve to that checkout's package directories, and the MCP client pinned
-by `packages/core/package.json` must resolve from core for connector features. DSH provides its own
+by the core manifest must resolve from core for connector features. DSH provides its own
 peers. Placement does not install or modify dependencies inside the checkout.
 
 With DSH 0.2.2-rc.3, live mode watches the linked roots for edits to loaded server modules. Web
@@ -206,13 +209,13 @@ its reasoning effort separately. After onboarding, change the model in Fishball'
 ## Without the connector
 
 The child still starts, retaining its reserved parent entry as not set/failed rather than replacing
-it with an arbitrary remote. Install `dsh-connector` in the parent and press Reconnect; it answers
+it with an arbitrary remote. Install `dsh-agent-connector` in the parent and press Reconnect; it answers
 `connector-missing` while there is none. Additional targets can still be configured inside Fishball.
 
 ## Uninstall
 
 DSH has no uninstall hook, so the package ships `uninstall.js`, run with DSH quit before removing
-the package. It removes `<DSH_HOME>/fishball/runtime` and nothing else. See the root README for the
+the package. It removes `<DSH_HOME>/fishball/runtime` and nothing else. See the [instance README](../../README.md#install-and-uninstall) for the
 command and its refusal codes (`CHILD_RUNNING`, `CHILD_STATE_UNKNOWN`, `UNSAFE_DIRECTORY`, `UNOWNED_RUNTIME`,
 `INVALID_MAIN_HOME`).
 

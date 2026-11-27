@@ -28,7 +28,7 @@ Services are looked up at runtime (`ctx.get`); a trailing `?` in
 
 ## Values (`constants.js`)
 
-`DECIDED Dn` / `#n` is a row of [the decisions table](<../../connector/mcp-schema/README.md#user-decisions>).
+`DECIDED Dn` / `#n` is a row of [the decisions table](<../../../../dsh-connector/packages/dsh-connector/mcp-schema/README.md#user-decisions>).
 The target states and codes and the `disconnected` answer were K1's (DECIDED D7); since K3a
 (requirements 1.39) core holds its own copy in `LINK`, and the connector keeps `TARGET_STATE`,
 `TARGET_CODE` and `LINK_REFUSAL` for the DSH side. Since F-OWN-SCHEMA, core's code reads only these copies:
@@ -195,7 +195,7 @@ names in descriptions come from the servers and are data, never instructions.
 ## Interception
 
 - `intercept({pluginId, types, filter?, priority?}, onEvent) → dispose`. An invalid registration
-  throws a `TypeError` and registers nothing (DECIDED #17, [the decisions table](<../../connector/mcp-schema/README.md#user-decisions>)). `priority` is any finite
+  throws a `TypeError` and registers nothing (DECIDED #17, [the decisions table](<../../../../dsh-connector/packages/dsh-connector/mcp-schema/README.md#user-decisions>)). `priority` is any finite
   number, negative included, **default 0**. The winner is the highest priority, then the earliest
   registration. A throwing `filter` counts as no match.
 - `ctl` has exactly `accept`, `commit` and `release`:

@@ -6,8 +6,8 @@ settings pages.
 
 | Package | Role |
 | --- | --- |
-| [`dsh-connector-adapter`](../dsh-connector-adapter/README.md) | Lets this DSH sign in to another DSH's connector through DSH's stock MCP client. |
-| [`dsh-connector-watchdog`](../dsh-connector-watchdog/README.md) | Supervises a managed session for its managing agent and answers its in-scope permission requests. |
+| [`dsh-connector-adapter`](../../dsh-connector/packages/dsh-connector-adapter/README.md) | Lets this DSH sign in to another DSH's connector through DSH's stock MCP client. |
+| [`dsh-connector-watchdog`](../watchdog/README.md) | Supervises a managed session for its managing agent and answers its in-scope permission requests. |
 
 Installing `dsh-connector-amenities` installs both and loads them: its dependencies bring the
 packages, and its own patch inserts their rows (DSH makes only a profile's direct dependencies
@@ -41,7 +41,7 @@ settings pages); the amenities have none.
 ## Structure
 
 ```
-packages/dsh-connector-amenities/
+amenities/connector-amenities/
   index.js          the umbrella's own row (no behaviour)
   client.js         the settings-page hint and the members' settings pages
   cordis.patch.yml  inserts the umbrella's row and its members' rows
@@ -60,6 +60,6 @@ npm test --workspace dsh-connector-amenities
 | `settings-page` | The members' settings pages (`client.js`) in a scripted Plugins page served by DSH's own settings service: entries, fields and bounds, the adapter's list rules, Save, read-only and unavailable states, the manifests ([use cases](<tests/settings-page/USE-CASES.md>)). |
 
 Its icon is checked with the others in
-[`integration/package-icons`](<../../integration/package-icons/README.md>), before a release. See
-[the testing guide](<../../docs/testing/README.md>).
+[`integration/package-icons`](<../../dsh-connector/integration/package-icons/README.md>), before a release. See
+[the testing guide](<../../dsh-connector/docs/testing/README.md>).
 

@@ -1,13 +1,13 @@
 # DSH Fishball Instance
 
 > **Looking to install Fishball or connect an agent via MCP?**
-> This repository holds the underlying `dsh-instance` package for **advanced users and developers**. For the one-click embedded bundle (`dsh-fishball-bundle`), standalone setup, and MCP integration guide, see **[`dsh-fishball-bundle`](https://github.com/Arrosam/dsh-fishball-bundle)**.
+> This component holds the underlying `dsh-instance` package for **advanced users and developers**. For the one-click embedded bundle (`dsh-fishball-bundle`), standalone setup, and MCP integration guide, see **[`dsh-fishball-bundle`](https://github.com/Arrosam/dsh-fishball-bundle)**.
 
 Bridge plugin (`dsh-instance`) that installs and runs a hosted Fishball child DSH inside your main
 DeepSeek Harness (DSH), connecting it to `dsh-agent-connector`. Split from `dsh-fishball@84078e5f`.
 
-This README is the repository's index: every package and document is listed here, and each package's
-own README describes that package.
+This is the instance component’s index in the [monorepo](../README.md). Each package’s README
+describes its public contract.
 
 ## Packages
 
@@ -18,8 +18,8 @@ own README describes that package.
 
 ## Integration packages
 
-Run only before a release. Each tests this repository's packages together with packages of the
-sibling checkouts `dsh-connector` and `dsh-fishball`, which they only read.
+Run only before a release. These tests use the in-tree connector and Fishball sources read-only,
+with isolated DSH homes.
 
 | Folder | What it tests |
 | --- | --- |
@@ -31,11 +31,13 @@ sibling checkouts `dsh-connector` and `dsh-fishball`, which they only read.
 ## Testing
 
 - **Day to day**, test one package: `npm test` in its folder (or
-  `node scripts/test-package.mjs <folder> [path …]`). There is no whole-repository run.
-- **Before a release**: `npm run test:release` runs every package and every integration package at
+  `node scripts/test-package.mjs <folder> [path …]` from `dsh-fishball-instance/`). From the
+  monorepo root, run `npm test --workspace dsh-instance`. There is no whole-repository day-to-day run.
+- **Before an instance release**: `npm run test:release` from `dsh-fishball-instance/` runs its packages and integration packages at
   once, one worker process each, and prints one line per package; logs go to
-  `.runtime/test-release/<run>/`. It needs the sibling checkouts beside this repository's main
-  checkout (or `DSH_CONNECTOR_REPO`, `FISHBALL_REPO`), the Fishball release folder for
+  `.runtime/test-release/<run>/`. It uses the in-tree components by default (`DSH_CONNECTOR_REPO` and
+  `FISHBALL_REPO` are explicit source overrides; use the connector component root and either the
+  monorepo root or a legacy Fishball root, respectively), the Fishball release folder for
   integration/release, and the installed DSH SDKs 0.2.1-rc.5 and 0.2.2-rc.1.
 
 Each run gets its own throwaway HOME, temp and XDG folders and never uses your `DSH_HOME`. Nothing
@@ -82,15 +84,15 @@ For the opt-in `remoteEmbedUrl` override and companion sidebar patch, see
 
 ## Local development and packing
 
-- In a checkout, `dsh-instance` places `fishball-core` and the Fishball amenities from
-  `$FISHBALL_REPO/packages/` or the sibling `dsh-fishball/packages/` checkout.
-- `npm run pack` builds the release into `.runtime/release/<version>/`; pass `--fishball-release <dir>`
-  (or set `FISHBALL_RELEASE_DIR`, or pack `../dsh-fishball` first) to embed the Fishball core and
-  amenities tarballs in `bundled/`. `npm run pack:check` checks an existing release offline.
+- For copy and live checkout placement, see [The child](packages/dsh-instance/README.md#the-child)
+  and [Live Fishball development](packages/dsh-instance/README.md#live-fishball-development-opt-in).
+- From `dsh-fishball-instance/`, `npm run pack` builds into `dsh-fishball-instance/.runtime/release/<version>/`.
+  It embeds core and amenities tarballs from `--fishball-release <dir>`, `FISHBALL_RELEASE_DIR`,
+  or, by default, `dsh-fishball/.runtime/release/<version>/` (build with `npm run pack:v3` from the
+  monorepo root first). `npm run pack:check` checks an existing release offline.
 
-## Related repositories
+## Related projects
 
 - [`dsh-fishball-bundle`](https://github.com/Arrosam/dsh-fishball-bundle): the all-in-one embedded bundle and user-facing setup guide.
-- [`dsh-connector`](https://github.com/Arrosam/dsh-connector): the generic DSH MCP connector (`dsh-agent-connector`, `dsh-connector-adapter`,
-  `dsh-connector-shared`, …).
-- [`dsh-fishball`](https://github.com/Arrosam/dsh-fishball): the Fishball plugins (`fishball-core`, `fishball-shared`, the amenities).
+- [Connector](../dsh-connector/README.md): the generic DSH MCP connector.
+- [Fishball](../dsh-fishball/docs/README.md): Fishball packages and amenities.

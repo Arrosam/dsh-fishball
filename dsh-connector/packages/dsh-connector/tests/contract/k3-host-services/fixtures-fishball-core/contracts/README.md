@@ -4,7 +4,7 @@ Types plus one data-only `constants.js` (K3 amendment 2026-11-14): the `.d.ts` f
 contracts, and `constants.js` holds their runtime values, defined once there; core's code and the
 tests import them from it. It holds frozen data and pure template formatters only: no import, no
 other call, no behaviour. Sources:
-[v3-design.md](<../../../docs/planning/v3-design.md>) §5a.2, §6.4; requirements 1.21, 1.24,
+[v3-design.md](<../../../../../../../../dsh-fishball/docs/planning/v3-design.md>) §5a.2, §6.4; requirements 1.21, 1.24,
 R-INT-01…09, R-HOST-11, R-FB-02/09/11/12/13; spikes V3-S2 `a499141`, V3-S3 `b4dca86`, V3-S6
 `86800d2` and `7c2230e`. Changing a name here is a K3 amendment. Values marked PROPOSED in the
 `.d.ts` files are **product choices**: frozen as they stand (decided 3 = A), and the user may still
@@ -28,7 +28,7 @@ Services are looked up at runtime (`ctx.get`); a trailing `?` in
 
 ## Values (`constants.js`)
 
-`DECIDED Dn` / `#n` is a row of [the decisions table](<../../connector/mcp-schema/README.md#user-decisions>).
+`DECIDED Dn` / `#n` is a row of [the decisions table](<../../../../../mcp-schema/README.md#user-decisions>).
 The target states and codes and the `disconnected` answer were K1's (DECIDED D7); since K3a
 (requirements 1.39) core holds its own copy in `LINK`, and the connector keeps `TARGET_STATE`,
 `TARGET_CODE` and `LINK_REFUSAL` for the DSH side. Since F-OWN-SCHEMA, core's code reads only these copies:
@@ -104,7 +104,7 @@ Additions only; no frozen name or value changes meaning:
 
 ## MULTI-0 amendment (K3/K3a, 2026-11-18): multiple DSH targets
 
-Source: [PLAN-MULTI](<../../../docs/planning/v3-multi-dsh.md>) §3–§7 (D01–D11, Q01–Q12). Types in
+Source: [PLAN-MULTI](<../../../../../../../../dsh-fishball/docs/planning/v3-multi-dsh.md>) §3–§7 (D01–D11, Q01–Q12). Types in
 [targets.d.ts](<targets.d.ts>); core's values `TARGETS` and `MCP.identity` / `MCP.serverIdentity`
 ([constants.js](<constants.js>)); fishball-ui's values `SEAM_TARGETS` (`fishball-shared/ui-seam`).
 
@@ -195,7 +195,7 @@ names in descriptions come from the servers and are data, never instructions.
 ## Interception
 
 - `intercept({pluginId, types, filter?, priority?}, onEvent) → dispose`. An invalid registration
-  throws a `TypeError` and registers nothing (DECIDED #17, [the decisions table](<../../connector/mcp-schema/README.md#user-decisions>)). `priority` is any finite
+  throws a `TypeError` and registers nothing (DECIDED #17, [the decisions table](<../../../../../mcp-schema/README.md#user-decisions>)). `priority` is any finite
   number, negative included, **default 0**. The winner is the highest priority, then the earliest
   registration. A throwing `filter` counts as no match.
 - `ctl` has exactly `accept`, `commit` and `release`:

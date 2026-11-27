@@ -17,7 +17,7 @@ node scripts/test.mjs fishball-board
 Ported from `test/v3/fishball-board/peers` (2026-11-22, the test restructure). Written from the
 requirements R-FB-06 and R-BRD-01/02, the cases PLAT-EP-04 row 1, PLAT-UC-06 and PLAT-BVA-01, and the
 contracts (K3 `fishballInstance` apiVersion 1, X1/X2 and §12.6/§12.7 of
-[instance-extension-points.md](<../../../docs/plugins/instance-extension-points.md>)). The values and
+[instance-extension-points.md](<../../../dsh-fishball/docs/history/plugins/instance-extension-points.md>)). The values and
 their sources are in [peers/constants.mjs](<peers/constants.mjs>). The one K1 word it names
 (`unsupported-operation`, the fake attention member's refusal) is restated there with its source, so
 these tests need no connector contract.

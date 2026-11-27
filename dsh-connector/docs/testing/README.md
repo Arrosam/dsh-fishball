@@ -1,4 +1,4 @@
-# Testing in this repository
+# Testing connector packages
 
 ## Rules
 
@@ -29,11 +29,13 @@
 
 ## Commands
 
+Run workspace tests from the monorepo root. Run the release command from `dsh-connector/`.
+
 | What | Command |
 | --- | --- |
 | One package (day to day) | `npm test --workspace <npm name>`, or `npm test` inside the package folder |
 | One package, some cases | `npm test --workspace <npm name> -- --test-name-pattern="MAILBOX"` |
-| The connector's UI component only | `node packages/dsh-connector-test-helpers/src/runner/cli.mjs packages/dsh-connector/ui` |
+| The connector's UI component only | `node dsh-connector/packages/dsh-connector-test-helpers/src/runner/cli.mjs dsh-connector/packages/dsh-connector/ui` |
 | Before a release (everything, release matrix, in parallel) | `npm run test:release` |
 
 `packages/dsh-connector/ui` (`dsh-connector-ui`) is a component that ships inside the
@@ -58,7 +60,7 @@ case reads or writes your real DSH or npm state.
 [`baseline-inventory.json`](baseline-inventory.json) records every behaviour the suites covered
 before this layout existed, including the staging cases brought in during the merge: package,
 case-id family, case name (without its SDK tag), statuses and SDKs.
-`node scripts/inventory-check.mjs <package>[,<package>...] <names.jsonl>[,<names.jsonl>...]` checks
+`node dsh-connector/scripts/inventory-check.mjs <package>[,<package>...] <names.jsonl>[,<names.jsonl>...]` checks
 a run against it. The check automatically uses [the staging case map](staging-case-map.json)
 for changed case titles and accepts an optional `--map <file>` for additional mappings.
 A baseline behaviour that is neither run nor mapped (renamed or withdrawn, with a reason)

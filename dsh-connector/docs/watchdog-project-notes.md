@@ -1,7 +1,7 @@
 # dsh-fishball-watchdog: handoff notes for a separate future project
 
 > **Status (2026-11-21):** implemented as its own package, `dsh-connector-watchdog`
-> (`packages/dsh-connector-watchdog/`), also installed by the `dsh-connector-amenities` umbrella. Its
+> (`amenities/watchdog/`), also installed by the `dsh-connector-amenities` umbrella. Its
 > tools and event are namespaced `dsh-connector-watchdog.*` (the drift event is
 > `contributed:dsh-connector-watchdog.drift`). Decisions made since these notes:
 > - **Name:** `dsh-connector-watchdog`.
@@ -126,7 +126,7 @@ helpers and the adapter's OAuth client), never on `fishball-shared`. The earlier
   supervision claims, health state and config. Interception and health do not fit the new role
   (main DSH, no failure design); the config's `minCheckIntervalSeconds` row and the supervision
   claim logic may be reused.
-- `test/v3/wd-route/**` (in dsh-fishball's history; this repository has no root `test/` folder):
+- `test/v3/wd-route/**` (in dsh-fishball's history; the connector component has no root `test/` folder):
   about 1,080 lines; black-box cases for the old routing.
 - The Watchdog test design: `docs/test-design/v3/05-watchdog.md` (WD-UC/EP/BVA/DT/ST cases) and
   the Watchdog rows of 04, 06, 08, 09, 10, 11.

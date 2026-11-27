@@ -24,6 +24,6 @@ session answer from the scripted fake model. Source: [watchdog-project-notes.md]
 | WD-L14 | ST | Switching Watchdog's model live switches subsequent judgements on the existing side session to the new model. |
 | WD-L15 | DT | An unroutable configured model fails with `delegate {watchdog, failed, judge-failed}` and never falls back to DSH's default model. |
 
-`watchdog_session_start`'s own logic (args without purpose/scope, the brief inside `afterManaged`, `managed: false` → `supervised: false`, no `start` → `forbidden`) is in `packages/dsh-connector-watchdog/tests/core.test.mjs` over a scripted `start`; the connector's `dshConnectorSessions.start` is SRV-START-01…06 in `packages/dsh-connector/tests/interactions/start-cases.mjs`.
+`watchdog_session_start`'s own logic (args without purpose/scope, the brief inside `afterManaged`, `managed: false` → `supervised: false`, no `start` → `forbidden`) is in `amenities/watchdog/tests/core.test.mjs` over a scripted `start`; the connector's `dshConnectorSessions.start` is SRV-START-01…06 in `packages/dsh-connector/tests/interactions/start-cases.mjs`.
 
-Not here: patrol timing (minimum 60 s) is covered over fake timers in `packages/dsh-connector-watchdog/tests/core.test.mjs`; a real model's judgement is not tested.
+Not here: patrol timing (minimum 60 s) is covered over fake timers in `amenities/watchdog/tests/core.test.mjs`; a real model's judgement is not tested.

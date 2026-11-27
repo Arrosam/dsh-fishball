@@ -1,9 +1,14 @@
 # SMART-PROMPT.md
 
-## Project
+> Original Fishball brief. Product statements below record the brief at the time, not current
+> installation or development instructions. See the [monorepo README](../README.md) and
+> [Fishball design](DESIGN.md) for current guidance.
+
+## Project (original brief)
 - Goal: a general, always-on personal-assistant agent named **Fishball**, built on DSH, that manages the user's daily life and work.
 - The project is a from-scratch rebuild. The user rejected the earlier direction and wants the current code deleted. The design/architecture plan lives in `DESIGN.md` (numbered sections, e.g. §4 plugins, §7 capabilities, §7a permissions, §10 button, §16 safety limits, §28).
-- Code is split across repos/plugins: `dsh-fishball` (the Fishball plugin) and `dsh-connector`.
+- The original implementation split Fishball and the connector across repositories. They now live in
+  one monorepo with the hosted instance bridge. The public MCP boundary still applies.
 - Fishball is a standard DSH plugin. It installs into the profile the user chooses and has no profile of its own. Its session folder is `~/.dsh/fishball/assistant`.
 - Once installed, it replaces the DeepSeek Harness logo/brand button in the DSH sidebar with a Fishball icon. Clicking the icon opens the Fishball session.
 - Fishball does not fully adopt DSH's global profile. It enables, disables and adds plugins for itself only, never for the whole DSH process. Adding a plugin needs the user's approval through DSH's normal permission escalation request.
@@ -32,4 +37,5 @@
 - For big changes, the user wants a design/architecture plan to review before any implementation or code deletion.
 - The user answers the agent's open questions by quoting each question with the answer after it.
 - When an agent's questions are unclear, the user asks for plain-language explanations.
-- The user tests changes by having the plugins updated in their local DSH install.
+- The user historically tested changes by updating plugins in their local DSH install. Agent-run
+  checks use isolated DSH homes instead.

@@ -3,8 +3,13 @@
 ## Git and the GitHub repo
 - Commit logical units on local branches. Pushing branches to `origin` (the GitHub repo) is allowed.
 - The repository has gone public on GitHub (the user confirmed this on 2026-11-02): anything pushed is visible to everyone. Never add another remote or open remote issues.
-- Never publish to npm or any registry yourself. V3 is published by the user from their own terminal, with the commands `scripts/pack-v3.mjs` writes to `.runtime/release/<version>/PUBLISH.md`.
+- Never publish to npm or any registry yourself. V3 is published by the user from their own terminal, with the commands `dsh-fishball/scripts/pack-v3.mjs` writes to `dsh-fishball/.runtime/release/<version>/PUBLISH.md`.
 - Never rewrite, reset or delete existing branch history or tags. The old preview is kept at tag `archive/df-preview-2026-10-23`.
+
+## Workspace and boundaries
+- The root is a private npm workspace, not a plugin. See the [root README](README.md) for the component map.
+- Fishball talks to the connector over its public MCP surface. Sharing a checkout adds no cross-side imports.
+- Run only the package you changed day to day: `npm test --workspace <npm-name>` from the monorepo root. Integration suites and DSH-version matrices are release-only. Use isolated test homes, never a real DSH profile.
 
 ## Coding principles
 Follow the user's `general-coding-principle` skill for all code and test work. In short:
@@ -17,5 +22,5 @@ Follow the user's `general-coding-principle` skill for all code and test work. I
 - Comment non-obvious constraints and the reasons behind design choices.
 
 ## Process
-- [DESIGN.md](DESIGN.md) is the approved plan. Change it when a spike or the user changes the design.
+- [Fishball’s DESIGN.md](dsh-fishball/DESIGN.md) is the approved plan. Change it when a spike or the user changes the design.
 - Each delivery phase ends with tests, an independent code review and a local commit.

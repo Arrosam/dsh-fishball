@@ -1,17 +1,15 @@
 # Package layout
 
-This repository holds the Fishball side's packages. The DSH side (dsh-connector, dsh-connector-ui,
-dsh-connector-adapter, dsh-connector-shared, dsh-instance) left it on 2026-11-20 (6b7c53bf) for the
-dsh-connector and dsh-fishball-instance repositories; the two sides never import each other (R-ARCH-10,
-design §1.0). The root `package.json` is private and not a plugin; it lists the workspaces and the
-day-to-day test command. Install, uninstall and the supported DSH versions are in the
-[README](<../README.md>).
+This guide covers the Fishball-side packages in the [monorepo](../../README.md). The DSH-side
+packages split out on 2026-11-20 (6b7c53bf) and now live in sibling directories in this checkout:
+[Connector](../../dsh-connector/README.md) and [Instance](../../dsh-fishball-instance/README.md).
+The private root `package.json` lists the workspaces; it is not a plugin. Sharing a checkout does not
+change the MCP-only boundary (R-ARCH-10, [design §1.0](planning/v3-design.md)).
 
 ## Tree
 
 ```
-package.json                    root, private: workspaces, scripts
-packages/
+dsh-fishball/packages/
   core/                         plugin fishball-core: the backend (manager session, link, Connect, events, asks, status, guards)
     client.js client.settings.js   its own settings page
     contracts/                  K3/K3a types and constants.js (runtime values, core's copy of the connector's MCP surface)
@@ -21,15 +19,16 @@ packages/
       fishball-page/ fishball-recommend-plugins/ fishball-child-plugins/   its sub-packages
       tests/                    fishball-ui's tests (not shipped)
     tests/                      fishball-core's tests (not shipped)
-  fishball-board/               plugin: the session-linked work board (shelved in core's view; ships in the umbrella)
-  fishball-heartbeat/           plugin: cache-warming heartbeat turns
-  fishball-taskboard/           plugin: task board and memo pad, with its own client.js (the Task board tab)
-  fishball-consultant/          plugin: opt-in cross-DSH skill consultation
-  fishball-amenities/           umbrella: depends on and bundles the four amenities and inserts their rows
   shared/                       library fishball-shared (no dsh field): ui-seam, instance-follower
   test-helpers/                 private, never shipped: fishball-test-helpers, the shared test tools
   integration-*/                private, never shipped: cross-package integration test packages
-scripts/
+amenities/
+  board/                       plugin: the session-linked work board (shelved in core’s view)
+  heartbeat/                   plugin: cache-warming heartbeat turns
+  taskboard/                   plugin: task board and memo pad (the Task board tab)
+  consultant/                  plugin: opt-in cross-DSH skill consultation
+  fishball-amenities/          umbrella: bundles the four Fishball amenities and inserts their rows
+dsh-fishball/scripts/
   test.mjs                      one package's tests on the current DSH
   test-release.mjs              every package and integration package in parallel over the DSH matrix
   pack-v3.mjs release/          the release tarballs
@@ -54,5 +53,5 @@ lists `ui/` and excludes `ui/tests/`), and the release stage drops any `tests` f
 
 ## Packing
 
-`node scripts/pack-v3.mjs` builds every tarball (one shared version `1.0.0-alpha.1`, `engines.dsh`
-`>=0.2.1-rc.5`, the bundled libraries) into `.runtime/release/<version>/`; `--check` re-verifies it.
+From the monorepo root, `npm run pack:v3` builds the Fishball tarballs (one shared version `1.0.0-alpha.1`, `engines.dsh`
+`>=0.2.1-rc.5`, the bundled libraries) into `dsh-fishball/.runtime/release/<version>/`; `npm run pack:v3:check` re-verifies them.

@@ -2,7 +2,7 @@
 
 Status: built 2026-11-21 on `feat/fishball-taskboard` (base `plugins-from-main-dsh` `165b734c`). Four
 choices the user has not answered yet are marked **PENDING**; their provisional values are the
-recommended answers, each one constant in `packages/fishball-taskboard/src/constants.js`.
+recommended answers, each one constant in `amenities/taskboard/src/constants.js`.
 
 ## 1. What it is
 
@@ -20,13 +20,13 @@ that a component of the `fishball-amenities` bundle), installed alone or through
 
 ### Why a sibling of `fishball-board`, not built on it
 
-`fishball-board` (shelved, `packages/fishball-board`) is session-centred: a card waits on `ses:<id>`, links to
+`fishball-board` (shelved, `amenities/board`) is session-centred: a card waits on `ses:<id>`, links to
 `ses:`/`ev:`/`bd_` references and keeps an append-only archive. Its panel is read-only by the
 user's decision (board Q3 A) and its cards are flat, with no subtasks or progress. The taskboard
 needs the opposite on each point: no session links, user editing, a task tree, progress, memos and a
 compaction reminder. Building on the board would change a shelved package's frozen contract, and a
 later unshelving of the board would then carry taskboard behaviour. So the taskboard is its own
-package (`packages/fishball-taskboard`), whose browser half is its own `dsh.client`. It shares only
+package (`amenities/taskboard`), whose browser half is its own `dsh.client`. It shares only
 the generic `followInstance` / `reportCoreMissing` with the board, through `fishball-shared`'s
 `instance-follower` (moved there unchanged from the board's `src/instance.js` at the split).
 

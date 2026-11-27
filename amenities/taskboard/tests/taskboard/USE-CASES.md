@@ -1,10 +1,10 @@
 # fishball-taskboard: derived cases
 
 Written from the user's requirements (relayed by the lead, 2026-11-21), the design document
-[docs/plugins/fishball-taskboard.md](../../../../docs/plugins/fishball-taskboard.md) and the lead's answers Q1–Q24
+[docs/plugins/fishball-taskboard.md](../../../../dsh-fishball/docs/plugins/fishball-taskboard.md) and the lead's answers Q1–Q24
 (folded into the document). Only the public surface was used: the row module's exports, its patch
 row and package manifest, the tools, the routes, the notify / inject calls and the log line. No
-file of `packages/fishball-taskboard/` (`packages/fishball-amenities/taskboard/` before the amenities
+file of `amenities/taskboard/` (`packages/fishball-amenities/taskboard/` before the amenities
 split, 2026-11-21) other than `package.json` and `cordis.patch.yml` was read.
 
 **Level.** Integration and system, in-process ([world.mjs](world.mjs)): the real row mounted as a loader

@@ -51,6 +51,6 @@ node scripts/test.mjs fishball-heartbeat --against=23e334c8 -- --test-name-patte
 | `live-settings.test.mjs` | `src/live-settings.js` on a fixture row (25 cases) |
 
 Details and the case-id index: [tests/README.md](<tests/README.md>). Integration:
-[`integration-amenities`](<../integration-amenities/README.md>) (beside fishball-board's `Config`, the icon
-family), [`integration-release`](<../integration-release/>) (package boundaries, release folder). Rules and
-runner: [docs/testing/README.md](<../../docs/testing/README.md>).
+[`integration-amenities`](<../../dsh-fishball/packages/integration-amenities/README.md>) (beside fishball-board's `Config`, the icon
+family), [`integration-release`](<../../dsh-fishball/packages/integration-release/README.md>) (package boundaries, release folder). Rules and
+runner: [docs/testing/README.md](<../../dsh-fishball/docs/testing/README.md>).

@@ -2,7 +2,7 @@
 
 Fishball's own task board and memo pad: tasks with subtasks, status and progress, not linked to
 sessions. The user views and edits it in the right sidebar's **Task board** tab, and each save wakes
-Fishball with what changed. See [the design](<../../docs/plugins/fishball-taskboard.md>) and DESIGN §31.
+Fishball with what changed. See [the design](<../../dsh-fishball/docs/plugins/fishball-taskboard.md>) and DESIGN §31.
 Version `1.0.0-alpha.1`, DSH `>=0.2.1-rc.5`.
 
 ## What it does
@@ -59,7 +59,7 @@ node scripts/test.mjs fishball-taskboard --against=746a18e0^ -- --test-name-patt
 | `view.test.mjs` | the Task board tab, scripted and rendered in headless Chromium, light and dark (112 cases) |
 
 Details, the regression rows and the case-id index: [tests/README.md](<tests/README.md>). Integration:
-[`integration-page-stream`](<../integration-page-stream/>) (the tab on fishball-ui's page carrier and the
-row's topic on core's page stream), [`integration-amenities`](<../integration-amenities/README.md>) (the icon
-family), [`integration-release`](<../integration-release/>) (package boundaries, release folder). Rules and
-runner: [docs/testing/README.md](<../../docs/testing/README.md>).
+[`integration-page-stream`](<../../dsh-fishball/packages/integration-page-stream/README.md>) (the tab on fishball-ui's page carrier and the
+row's topic on core's page stream), [`integration-amenities`](<../../dsh-fishball/packages/integration-amenities/README.md>) (the icon
+family), [`integration-release`](<../../dsh-fishball/packages/integration-release/README.md>) (package boundaries, release folder). Rules and
+runner: [docs/testing/README.md](<../../dsh-fishball/docs/testing/README.md>).

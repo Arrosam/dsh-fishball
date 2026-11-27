@@ -2,9 +2,12 @@
 
 Documents that no longer describe this repository's code, kept for their decisions' reasons. Nothing
 here is current: the V1/V2 design (never deployed), the V2 connector contract, the DSH-side packages that
-left this repository on 2026-11-20 (6b7c53bf; now the dsh-connector and dsh-fishball-instance
-repositories), and the old requirements-only test designs that the per-package tests replaced
-(docs/testing/). For what is in force, start at [docs/README.md](<../README.md>).
+left this repository on 2026-11-20 (6b7c53bf; the code is now in the
+[connector](../../../dsh-connector/README.md) and [instance](../../../dsh-fishball-instance/README.md)
+components of the monorepo), and the old requirements-only test designs that the per-package tests replaced
+([testing guide](../testing/README.md)).
+Archived paths may refer to deleted files, old checkouts or untracked test logs; they are evidence,
+not instructions for this checkout. For what is in force, start at [docs/README.md](<../README.md>).
 
 | document | what it was |
 |---|---|

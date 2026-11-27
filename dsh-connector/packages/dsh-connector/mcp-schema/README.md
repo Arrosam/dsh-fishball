@@ -1,8 +1,8 @@
 # `dsh-connector/mcp-schema`: the K1 freeze
 
 The contract of the connector's MCP surface and of the internal seams W2 builds against. Sources:
-[v3-requirements.md](<../../../docs/planning/v3-requirements.md>) and
-[v3-design.md](<../../../docs/planning/v3-design.md>) at `test/v3-cases` `b1295de`; spikes V3-S1
+[v3-requirements.md](<../../../../dsh-fishball/docs/planning/v3-requirements.md>) and
+[v3-design.md](<../../../../dsh-fishball/docs/planning/v3-design.md>) at `test/v3-cases` `b1295de`; spikes V3-S1
 `9499ec6`, S2 `a499141`, S3 `b4dca86`, S7 `8e92b84`, S7b `141ac3b`; K2 `d1d0b25` (`../tools`).
 The K1d gate (W4) amends it from `design/v3` `9a531192`: the token-reveal amendment (design §5.1,
 §5.9; requirements 1.27–1.32), the page id and no chain cap (R-OA-22, R-OA-23), the neutral names
@@ -544,13 +544,13 @@ The user removes `question_ask` and `question_answer_own` and their exclusive ow
 `question_answer` remains for forwarded managed-session DSH questions and plan reviews; shared
 question/answer validators and generic `settlement.answers` remain. The historical dotted
 `question.ask` / `question.answerOwn` design is superseded, not a compatibility surface. This
-amendment adds no Fishball arbitrary-question facility ([DESIGN §26](<../../../DESIGN.md#26-v3-conn-tools-remove-connector-owned-questions-2026-11-18>)).
+amendment adds no Fishball arbitrary-question facility ([DESIGN §26](<../../../../dsh-fishball/DESIGN.md#26-v3-conn-tools-and-ask-native-2026-11-18>)).
 Authorization precedence is unchanged (R-OA-04/R-ID-06): removed-tool calls with pair-only tokens
 receive HTTP 403 `insufficient_scope` without effects; full-scope tokens receive unknown-tool -32602.
 
 ## MULTI-0 amendment (2026-11-18): server identity
 
-Additive only ([PLAN-MULTI](<../../../docs/planning/v3-multi-dsh.md>) D04–D08, §4.1, §4.3, Q02); no
+Additive only ([PLAN-MULTI](<../../../../dsh-fishball/docs/planning/v3-multi-dsh.md>) D04–D08, §4.1, §4.3, Q02); no
 tool, schema, OAuth, receipt or event changes.
 
 - **`RESOURCE.identity`**: `dsh-identity`, `dsh-agent://identity`, `application/json`; listed by
