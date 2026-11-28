@@ -4,14 +4,14 @@
 
 <h1>Fishball for DeepSeek Harness</h1>
 
-<p>An always-on personal assistant and MCP/OAuth control plane for <b>DeepSeek Harness (DSH)</b>.</p>
+<p>A personal assistant that coordinates your <b>DeepSeek Harness (DSH)</b> sessions from its own child DSH.</p>
 
 <p>
-  <a href="#quick-start-embedded-edition"><b>Quick start</b></a> ·
-  <a href="#how-it-fits-together"><b>How it fits together</b></a> ·
-  <a href="#standalone-edition"><b>Standalone</b></a> ·
-  <a href="#connecting-external-agents-mcp--oauth-21"><b>MCP &amp; OAuth</b></a> ·
-  <a href="#repositories"><b>Repositories</b></a> ·
+  <a href="#install"><b>Install</b></a> ·
+  <a href="#how-it-fits-together"><b>How it works</b></a> ·
+  <a href="#components"><b>Components</b></a> ·
+  <a href="#the-connector-endpoints"><b>MCP &amp; OAuth</b></a> ·
+  <a href="TESTING.md"><b>Development</b></a> ·
   <a href="README.zh-CN.md"><b>中文</b></a>
 </p>
 
@@ -29,204 +29,314 @@
 
 ---
 
-**Fishball** runs a dedicated assistant session inside **DeepSeek Harness (DSH)** that coordinates your other DSH sessions, summarizes progress, relays or handles permission requests, questions, and plan reviews, and dispatches work on your behalf without modifying local files directly.
+**Fishball** is an always-on personal assistant for DeepSeek Harness. It runs one long-lived
+session in a **child DSH** of its own, and from there it manages sessions in your **main DSH**
+through **`dsh-connector`**. It reads their progress, answers or passes on their permission
+requests, questions and plan reviews, starts new sessions and messages them for you. It reads,
+sorts, decides and delegates, but does no work itself and never writes your local files (its own
+private Skills are the one exception).
 
-`dsh-fishball-bundle` is the **all-in-one embedded distribution** for general users: one plugin install brings in the isolated Fishball child runtime, the MCP/OAuth connector, the in-DSH portal UI, and the Watchdog & cross-DSH adapter amenities.
+Fishball is an ordinary MCP agent. The connector exposes a DSH's sessions over MCP with OAuth 2.1,
+and Fishball uses that public surface only. The two sides never import each other's code, and the
+connector serves any MCP client, not only Fishball.
 
-> **One-command embedded install** — no separate child profile to manage. `dsh-instance` launches and supervises Fishball's isolated child DSH, syncs your API-key providers, and provisions its token automatically.
+> **One install** — `dsh-fishball-bundle` brings the connector, the hosted instance, Watchdog and
+> the cross-DSH adapter into your main DSH. `dsh-instance` then creates, starts and supervises
+> Fishball's child DSH, gives it a connector token and copies your API-key model providers into it.
 >
-> **Watchdog & cross-DSH** — `dsh-connector-watchdog` supervises managed sessions with its own configurable model and auto-approves in-scope permissions; `dsh-connector-adapter` signs into other DSH connectors over MCP.
+> **Hand over, Take back** — you choose which sessions Fishball manages. It sees nothing else.
 >
-> **Open MCP + OAuth 2.1** — the same `dsh-agent-connector` endpoint lets Claude Code, custom bots, or any external MCP client manage handed-over DSH sessions safely.
+> **Watchdog** — an optional supervisor with its own model that keeps a managed session on purpose
+> and settles its in-scope permission requests before they reach Fishball.
 
 ---
 
 ## How it fits together
 
 ```
-Main DSH (your workspace & sessions)
+Main DSH  (your workspaces and sessions)
   │
-  ├── dsh-agent-connector        MCP (/api/agent/mcp) + OAuth 2.1 (/api/agent/oauth)
-  │     └── dsh-connector-ui     Sidebar Fishball entry, portal window, Hand over / Take back
-  ├── dsh-connector-watchdog     Supervises managed sessions (dedicated model + preset-watchdog)
-  ├── dsh-connector-adapter      Signs this DSH in to other DSH connectors (OAuth PKCE + CIMD)
-  └── dsh-instance               Launches & bridges the isolated child DSH
+  ├── dsh-agent-connector       MCP /api/agent/mcp + OAuth 2.1 /api/agent/oauth, Hand over / Take back
+  │     └── dsh-connector-ui    the Fishball sidebar entry and window, the notify prompt
+  ├── dsh-connector-watchdog    supervises managed sessions, decides in-scope permission requests
+  ├── dsh-connector-adapter     signs this DSH in to other DSHs' connectors
+  └── dsh-instance              creates, starts and supervises the child DSH
         │
-        └── Child DSH (~/.dsh/fishball/runtime)
-              ├── fishball-core        Assistant runtime, persona, private skills
-              └── fishball-amenities   Board, Heartbeat, and Taskboard
+        └── Child DSH  (<DSH_HOME>/fishball/runtime)
+              ├── fishball-core        the manager session  ── MCP ──▶ the main DSH's connector
+              │     └── fishball-ui    the Fishball page, ask cards, sidebar targets
+              └── fishball-amenities   board · heartbeat · taskboard · consultant
 ```
 
-Four packages wired together by [`cordis.patch.yml`](cordis.patch.yml):
+Five ideas, each doing one job:
 
-| Package | Role |
-| --- | --- |
-| `dsh-instance` | Spawns and manages Fishball's isolated child DSH (`fishball-core` + `fishball-amenities`), syncs API-key model providers, and provisions the hosted token. |
-| `dsh-agent-connector` | Exposes this DSH's sessions over MCP (`/api/agent/mcp`) and OAuth 2.1 (`/api/agent/oauth`), and renders the Fishball portal & **Hand over / Take back** controls. |
-| `dsh-connector-adapter` | Lets this DSH sign in to remote or sibling DSH connectors over MCP. |
-| `dsh-connector-watchdog` | Supervises managed sessions against their goal and approves in-scope permission requests (`preset-watchdog`). |
+| Concept | What it is |
+|---|---|
+| **Main DSH** | The DSH you work in. The connector, Watchdog, the adapter and the instance run here. |
+| **Child DSH** | Fishball's own private DSH profile, run by `dsh-instance` and stopped with the main DSH. |
+| **Connector** | `dsh-agent-connector`: the MCP endpoint and OAuth server that lets an agent with a token manage this DSH's sessions. |
+| **Manager session** | Fishball's one long-lived session in the child, with its persona, reminders and private Skills. |
+| **Managed session** | A main-DSH session Fishball started with `session_start`, or one you handed to it with **Hand over**. Fishball sees and operates only these. |
 
-> **Do not install separately.** Never install `dsh-agent-connector`, `dsh-connector-amenities`, or `dsh-instance` alongside `dsh-fishball-bundle` — it already includes all of them, and separate installs will create duplicate plugin entries.
+What happens in a managed session:
+
+| Event | Where it goes |
+|---|---|
+| A turn comes to a standstill | Fishball gets one `turn-finished` with the final reply (cut to 4 KB) or the stop reason. |
+| A permission request | Watchdog first, when it supervises the session: in scope → allow; off purpose and dangerous → reject; anything else → Fishball. Your own prompt shows when Fishball escalates it. |
+| A question or plan review | Fishball, and your card in the session too. The first answer counts. |
+| **Take back**, `session_release`, or its token switched off | Management ends, and anything still waiting comes to you. |
+
+Fishball wakes on connector events in batches, one turn per batch, and anything you type is never
+delayed.
 
 ---
 
-## Quick start (Embedded edition)
+## What you get
 
-### Prerequisites
+- **A coordinator, not a worker.** One manager session with a persona, reminders (`schedule_*`),
+  `message_user` for the Fishball page, `ask_user` question cards and private Skills.
+- **Scoped access.** The connector shows an agent only the sessions it manages. **Hand over to
+  <agent>** and **Take back** sit in each session's header and sidebar menu, and a managed row shows
+  Fishball's fish.
+- **A hosted child that looks after itself.** `dsh-instance` places `fishball-core` and
+  `fishball-amenities` in the child at every start, provisions its connector token once, and offers
+  **Restart**, **Reconnect** and **Open Fishball**. A **Fishball** tab on the Plugins page installs,
+  switches and removes the child's own plugins from the main DSH.
+- **Guided first run.** Four skippable onboarding pages: Fishball's model, Watchdog's model,
+  recommended memory and long-context plugins, and a welcome.
+- **Model sync.** API-key providers and their model lists are copied into the child once,
+  automatically; after that, **Check for new models** offers only what the child lacks. Keys never
+  reach the page, the logs or the chat.
+- **More than one DSH.** Fishball's settings hold a list of DSH targets, one connector endpoint each.
+  In a hosted child the main DSH comes first and cannot be removed.
+- **Watchdog.** Briefed per session with a purpose and a scope, it patrols on a timer, stops a
+  drifting turn, and uses its own model. It stays off until you choose that model.
+- **Cross-DSH sign-in.** `dsh-connector-adapter` lets a DSH use another DSH's connector through
+  DSH's own MCP client, with browser OAuth.
+- **Optional amenities** in the child: `fishball-taskboard` (a task board and memo pad in the right
+  sidebar's **Task board** tab), `fishball-heartbeat` (keeps the prompt cache warm while Fishball is
+  idle; off until both timer settings are set), `fishball-board` and `fishball-consultant`. See
+  their READMEs for current limits: the board stays idle beside today's `fishball-core`, and the
+  consultant sends nothing without a protected connector capability that current connectors lack.
+- **Programmatic tool calling.** On DSH 0.2.2 the manager session calls its tools from `run_code`
+  by default; DSH 0.2.1 keeps direct tool calls.
+
+---
+
+## Install
+
+Fishball is in **alpha**. The packages are on npm under the `alpha` tag.
+
+| | Path | Best for |
+|---|---|---|
+| **1** | [The bundle](#1-the-bundle-recommended) | Everyone. One plugin in your main DSH; Fishball runs in a child it manages. |
+| **2** | [Components, hosted](#2-components-hosted) | Choosing the main-DSH packages yourself. |
+| **3** | [Standalone Fishball DSH](#3-standalone-fishball-dsh) | Running Fishball in a DSH you set up yourself, on this machine or another. |
+| **4** | [From source](#4-from-source) | Offline installs and local builds. |
+
+### Requirements
 
 | Requirement | Detail |
-| --- | --- |
-| **DSH** | `0.2.1-rc.5` or `0.2.2-rc.1` (and compatible `0.2.2` releases), DSH Web or DSH-X. |
-| **Node.js** | `24.9+` for running DSH (`22.14+` for package tooling). |
-| **`$DSH_HOME`** | Default `~/.dsh` must be a **real, non-symlink** directory (otherwise `dsh-instance` refuses with `INVALID_MAIN_HOME`). |
+|---|---|
+| **DSH** | Tested on `0.2.1-rc.5` and `0.2.2-rc.1`, DSH Web or the DSH bundled with DSH-X. |
+| **Node.js** | `24.9+` to run DSH. The packages and release tooling need `22.14+`. |
+| **`$DSH_HOME`** | Default `~/.dsh`. It must be a canonical real path, not one through a symbolic link, or `dsh-instance` refuses with `INVALID_MAIN_HOME`. |
 
-### 1. Install
+### 1. The bundle (recommended)
 
-Quit DSH before installing. If you previously installed pre-V3 preview packages (`dsh-fishball`, `fishball-connector`, `fishball-instance`, `fishball-embed-ui`, `dsh-fishball-*`) or older separate packages (`dsh-agent-connector`, `dsh-connector-amenities`, `dsh-instance`), remove them first (and delete `<DSH_HOME>/fishball/` if upgrading from pre-V3).
+`dsh-fishball-bundle` is the package at this repository's root. It depends on
+`dsh-agent-connector`, `dsh-connector-adapter`, `dsh-connector-watchdog` and `dsh-instance`, and
+its [`cordis.patch.yml`](cordis.patch.yml) wires them, and Watchdog's `preset-watchdog` agent preset,
+into your profile.
 
-Install via DSH's UI (**Plugins → Add plugin → `dsh-fishball-bundle@1.0.0-alpha.3`**), or from your terminal (replace `web` with your DSH profile name if different):
+1. **Quit DSH.** If you installed a pre-V3 preview (`dsh-fishball`, `fishball-connector`,
+   `fishball-instance`, `fishball-embed-ui`, `dsh-fishball-*`), remove it and delete
+   `<DSH_HOME>/fishball/`. Nothing is migrated.
+2. **Install** on DSH's Plugins page (**Add plugin → `dsh-fishball-bundle@1.0.0-alpha.3`**), or from
+   a terminal (`web` is the profile name; use your own):
+
+   ```bash
+   dsh plugin --profile web add dsh-fishball-bundle@1.0.0-alpha.3
+   ```
+
+   pnpm may report DSH's own `@deepseek-ai/*` packages as missing peers. DSH provides them at run
+   time, so the warning is expected.
+3. **Start DSH** and open it at `http://127.0.0.1:<port>` or `http://localhost:<port>`. The Fishball
+   window refuses other host names.
+4. **Open Fishball** with the fish in the sidebar, or with **Plugins → Fishball → Open Fishball**, and
+   follow the onboarding.
+
+> **Do not add the components on top.** The bundle already contains `dsh-agent-connector`,
+> `dsh-connector-adapter`, `dsh-connector-watchdog` and `dsh-instance`. Installing any of them, or
+> `dsh-connector-amenities`, beside it creates duplicate plugin rows.
+
+**Plugins → Fishball** is the one settings page:
+
+- **Fishball** tab: the child's status, **Open Fishball**, **Reconnect**, model sync and the on/off switch.
+- **Connector** tab: MCP tokens (`dsht_…`), the approval page port (default `47615`), the DSH name
+  and the connector's limits.
+- **Components**: open `dsh-connector-adapter` or `dsh-connector-watchdog` to configure it.
+
+### 2. Components, hosted
+
+The same hosted set-up without the bundle. Quit DSH, then install the connector and the instance in
+your main profile. `dsh-instance` places `fishball-core` and `fishball-amenities` in the child itself.
 
 ```bash
-dsh plugin --profile web add dsh-fishball-bundle@1.0.0-alpha.3
+dsh plugin --profile web add dsh-agent-connector@alpha dsh-instance@alpha
+# Optional: the adapter and Watchdog together
+dsh plugin --profile web add dsh-connector-amenities@alpha
 ```
 
-*(pnpm may print missing-peer warnings for `@deepseek-ai/*` packages; DSH provides those at runtime, so the warning is expected.)*
+### 3. Standalone Fishball DSH
 
-### 2. First start & onboarding
+Fishball in a DSH of its own, managing one or more other DSHs.
 
-1. Start DSH and open it in your browser at `http://127.0.0.1:<port>` or `http://localhost:<port>` (non-loopback hostnames are restricted for local security).
-2. Click the **Fishball** icon in the sidebar (or go to **Plugins → Fishball → Open Fishball**).
-3. Complete the first-run onboarding wizard:
-   - **Fishball model:** Syncs your API-key model providers once automatically and lets you pick Fishball's model. *(OAuth/login providers and non-HTTPS endpoints are not copied automatically — sign in inside Fishball if needed.)*
-   - **Watchdog model:** Optionally pick a dedicated model for `dsh-connector-watchdog` (disabled by default until configured).
-   - **Recommended plugins:** Optionally install recommended Fishball plugins into the child DSH.
-4. Open **Plugins → Fishball** at any time to manage everything in one place:
-   - **Fishball** tab: child runtime status, **Open Fishball**, **Reconnect**, model sync, and auto-launch toggle.
-   - **Connector** tab: create/manage MCP tokens (`dsht_...`), approval page port (default `47615`), DSH display name, and safety limits.
-   - **Components** section: click `dsh-connector-adapter` or `dsh-connector-watchdog` to configure cross-DSH servers or Watchdog's model and patrol limits.
+1. **In each managed DSH**, install the connector, then create a token under **Plugins → Fishball connector
+   → Tokens → New token**. The `dsht_…` value is shown once.
 
-### 3. Uninstall
+   ```bash
+   dsh plugin --profile web add dsh-agent-connector@alpha
+   ```
 
-1. Quit DSH (stops the embedded Fishball child process).
-2. Remove `<DSH_HOME>/fishball/runtime` cleanly (`--home <path>` if not using `~/.dsh`):
+2. **In the Fishball DSH**, install `fishball-core` (it carries `fishball-ui`), and optionally the
+   amenities. Install either the `fishball-amenities` umbrella or single amenities, never both.
+
+   ```bash
+   dsh plugin --profile fishball add fishball-core@alpha
+   dsh plugin --profile fishball add fishball-amenities@alpha
+   ```
+
+3. **Link them** in **Plugins → fishball-core**: add the managed DSH's endpoint, for example
+   `http://127.0.0.1:<port>/api/agent/mcp`, then either paste the token into that target's token
+   field and **Save**, or use **Connect** (browser OAuth with a Client ID Metadata Document you host;
+   see the [connector README](dsh-connector/packages/dsh-connector/README.md#browser-clients-authorization-code-with-pkce)).
+
+Plain `http` is accepted only on loopback (`127.0.0.1`, `localhost`, `[::1]`). Any other target must
+be `https`, for example behind your own tunnel with DSH started with `--trusted-host`.
+
+### 4. From source
+
+Pack the components from a checkout of this repository, Fishball first so the instance can embed its
+tarballs for offline placement:
+
+```bash
+npm run pack:v3                            # → dsh-fishball/.runtime/release/<version>/
+(cd dsh-connector && npm run pack)         # → dsh-connector/.runtime/release/<version>/
+(cd dsh-fishball-instance && npm run pack) # → dsh-fishball-instance/.runtime/release/<version>/
+```
+
+Each release folder holds the tarballs, `SHA256SUMS`, an offline pnpm store and an `INSTALL.md` with
+the exact install commands. See the [workspace and release layout](docs/layout.md).
+
+---
+
+## First run
+
+1. **Fishball's model.** Onboarding syncs your API-key providers into the child and asks for the model
+   Fishball uses, with its reasoning effort. OAuth/login providers, providers with custom headers and
+   non-https endpoints are not copied; sign in to those inside Fishball. Until a model is chosen,
+   Fishball uses the child's default model.
+2. **Watchdog's model** (optional). Watchdog is disabled until it has one.
+3. **Memory and context plugins** (optional), installed into the child.
+4. **Hand over** a session from its header or sidebar menu, or ask Fishball to start one. **Take
+   back** returns it to you at any time.
+
+---
+
+## The connector endpoints
+
+Any MCP client can manage sessions on a DSH that runs `dsh-agent-connector`. Create a token for each
+agent first; a token serves one agent and grants full manager rights over this DSH's sessions.
+
+| Purpose | Path |
+|---|---|
+| MCP (Streamable HTTP, revision `2026-07-28`) | `/api/agent/mcp` |
+| OAuth 2.1 issuer and token endpoint | `/api/agent/oauth`, `/api/agent/oauth/token` |
+| Protected-resource metadata (RFC 9728) | `/.well-known/oauth-protected-resource/api/agent/mcp` |
+| Authorization-server metadata (RFC 8414) | `/.well-known/oauth-authorization-server/api/agent/oauth` |
+| Approval page for browser clients | `/authorize` on the approval port (default `47615`) |
+
+Two ways in: **client credentials** for headless agents (the token is the client secret, then one
+`pair` call), or **authorization code with PKCE `S256`** for browser clients, whose client id is a
+Client ID Metadata Document you host. The flows, the MCP tools, session routing and the settings are
+in the [connector README](dsh-connector/packages/dsh-connector/README.md).
+
+---
+
+## Components
+
+This repository is an npm workspace and, at its root, the `dsh-fishball-bundle` package. The
+component packages keep their own npm names and are released separately.
+
+| Package | Folder | Installed in | Role |
+|---|---|---|---|
+| `dsh-fishball-bundle` | [`/`](.) | main DSH | The all-in-one bundle: depends on the four main-DSH plugins and carries the combined settings page. |
+| `dsh-agent-connector` | [`dsh-connector/packages/dsh-connector`](dsh-connector/packages/dsh-connector/README.md) | main / managed DSH | The MCP endpoint, OAuth, tokens, session routing, Hand over / Take back. Ships the `dsh-connector-ui` component. |
+| `dsh-connector-adapter` | [`dsh-connector/packages/dsh-connector-adapter`](dsh-connector/packages/dsh-connector-adapter/README.md) | any DSH | Signs a DSH in to another DSH's connector. |
+| `dsh-connector-watchdog` | [`amenities/watchdog`](amenities/watchdog/README.md) | main / managed DSH | Supervises managed sessions for their manager. |
+| `dsh-connector-amenities` | [`amenities/connector-amenities`](amenities/connector-amenities/README.md) | main / managed DSH | Umbrella for the adapter and Watchdog, with their settings pages. |
+| `dsh-instance` | [`dsh-fishball-instance/packages/dsh-instance`](dsh-fishball-instance/packages/dsh-instance/README.md) | main DSH | Runs the hosted Fishball child and bridges it to the connector. |
+| `fishball-core` | [`dsh-fishball/packages/core`](dsh-fishball/packages/core/README.md) | Fishball DSH / child | The manager session, its tools and links to DSH targets. Ships the `fishball-ui` component. |
+| `fishball-amenities` | [`amenities/fishball-amenities`](amenities/fishball-amenities/README.md) | Fishball DSH / child | Umbrella for [`fishball-board`](amenities/board/README.md), [`fishball-heartbeat`](amenities/heartbeat/README.md), [`fishball-taskboard`](amenities/taskboard/README.md) and [`fishball-consultant`](amenities/consultant/README.md). |
+| `fishball-shared`, `dsh-connector-shared` | [`dsh-fishball/packages/shared`](dsh-fishball/packages/shared/README.md), [`dsh-connector/packages/dsh-connector-shared`](dsh-connector/packages/dsh-connector-shared/README.md) | bundled | Libraries inside the tarballs. Not plugins. |
+
+```
+.                        dsh-fishball-bundle: index.js, client.js, cordis.patch.yml, locale/
+dsh-fishball/            Fishball: core, UI, shared library, design docs, integration packages
+dsh-connector/           the connector, the adapter, the shared library, integration packages
+dsh-fishball-instance/   dsh-instance and its integration packages
+amenities/               Fishball amenities (child) and connector amenities (main DSH)
+scripts/                 the per-package test runner
+docs/                    workspace layout and recovered release history
+```
+
+Each component folder has its own index: [Fishball](dsh-fishball/README.md),
+[Connector](dsh-connector/README.md) and [Instance](dsh-fishball-instance/README.md). The approved
+design is [dsh-fishball/DESIGN.md](dsh-fishball/DESIGN.md).
+
+---
+
+## Uninstall
+
+DSH runs no plugin code when a plugin is removed, so clear the child first.
+
+1. **Quit DSH.** That also stops Fishball's child.
+2. **Remove the child's runtime** (`<DSH_HOME>/fishball/runtime` and nothing else). Add
+   `--home <DSH_HOME>` if you do not use `~/.dsh`:
 
    ```bash
    node ~/.dsh/profiles/web/node_modules/dsh-instance/uninstall.js
    ```
 
-3. Remove the bundle:
+   It refuses, deleting nothing, while the child still runs or when the folder is not provably this
+   home's. The codes are listed in the [instance README](dsh-fishball-instance/README.md#install-and-uninstall).
+3. **Remove the plugin:**
 
    ```bash
    dsh plugin --profile web remove dsh-fishball-bundle
    ```
 
+The connector's settings and token entries stay in the profile, as for any DSH plugin.
+
 ---
 
-## Standalone edition
+## Development
 
-If you prefer running Fishball in its **own separate DSH instance** (on the same computer or a remote server) to manage one or more target DSH instances:
-
-### Step 1: Install Connector on the managed DSH
-
-Quit the managed DSH, then run:
+Work from the repository root. Test one package, or the packages your change touches; there is no
+whole-repository run for development.
 
 ```bash
-dsh plugin --profile web add dsh-agent-connector@1.0.0-alpha.3
-# Optional: adapter + watchdog amenities
-dsh plugin --profile web add dsh-connector-amenities@1.0.0-alpha.1
+npm run test:changed -- --list   # preview which packages a change selects
+npm run test:changed             # test them, one worker per package
+npm test -w fishball-core        # one package, by npm name
+npm test -- dsh-fishball-bundle  # the root package
 ```
 
-Start the managed DSH, open **Plugins → Fishball connector**, enter a label under **Tokens**, and click **New token**. Copy the `dsht_...` token immediately (it is shown only once).
-
-### Step 2: Install Fishball on the Fishball DSH
-
-Quit the dedicated Fishball DSH, then run:
-
-```bash
-dsh plugin --profile fishball add fishball-core@1.0.0-alpha.1
-# Optional: board, heartbeat, and taskboard amenities
-dsh plugin --profile fishball add fishball-amenities@1.0.0-alpha.1
-```
-
-*(Omit `--profile fishball` or replace with your profile name as needed.)*
-
-### Step 3: Link Fishball to the managed DSH
-
-Open the Fishball DSH → **Plugins → fishball-core**:
-
-1. Set **Target** to the managed DSH's MCP endpoint, e.g. `http://127.0.0.1:<port>/api/agent/mcp` (or `https://<host>/api/agent/mcp` for a remote DSH).
-2. Authenticate using either method:
-   - **Direct Token:** Paste `dsht_...` into **Token for connecting a DSH** and click **Save**.
-   - **Browser Connect (OAuth PKCE + CIMD):** Host a [Client ID Metadata Document](#method-b-browser--public-oauth-clients-pkce-s256--cimd), enter its `https://...` URL in **Client metadata URL**, click **Connect**, and enter `dsht_...` on the approval page (default `http://127.0.0.1:47615/authorize`).
-
-> **Loopback vs. remote:** Non-loopback connections require **HTTPS** (for example behind a reverse proxy or tunnel with `--trusted-host`). Plain HTTP is accepted only on `127.0.0.1`, `localhost`, and `[::1]`.
-
----
-
-## Connecting external agents (MCP + OAuth 2.1)
-
-Any MCP-compatible agent or orchestrator (Claude Code, custom bots, scripts, or another DSH) can manage sessions on a DSH running `dsh-agent-connector`. Create a dedicated token (`dsht_...`) in **Plugins → Fishball → Connector** (embedded) or **Plugins → Fishball connector** (standalone).
-
-### Endpoints
-
-| Purpose | Path |
-| --- | --- |
-| MCP Streamable HTTP (`2026-07-28`) | `/api/agent/mcp` |
-| OAuth 2.1 Issuer / Token Endpoint | `/api/agent/oauth` (`/api/agent/oauth/token`) |
-| Protected Resource Metadata (RFC 9728) | `/.well-known/oauth-protected-resource/api/agent/mcp` |
-| Authorization Server Metadata (RFC 8414) | `/.well-known/oauth-authorization-server/api/agent/oauth` |
-| Browser Approval Page (PKCE) | `http://127.0.0.1:47615/authorize` *(port configurable)* |
-
-### Method A: Machine / headless agents (`client_credentials`)
-
-1. Request a 1-hour access token from `POST <origin>/api/agent/oauth/token`:
-   - `grant_type=client_credentials`
-   - `client_id=<agent-id>` (`1–64` chars matching `[A-Za-z0-9_-]+`)
-   - `client_secret=<dsht_token>` (via HTTP Basic `client_secret_basic` or form body `client_secret_post`)
-   - `resource=<origin>/api/agent/mcp`
-2. Connect to `/api/agent/mcp` with `Authorization: Bearer <access_token>` (do **not** send a browser `Origin` header; requests with `Origin` are rejected).
-3. On first connection, the token starts with `agent:pair` scope — call the MCP tool `pair` (with optional `name`) once to bind `<agent-id>` to the token. Thereafter, tokens for that `<agent-id>` receive full `agent` scope.
-
-### Method B: Browser / public OAuth clients (PKCE `S256` + CIMD)
-
-For interactive MCP clients without a client secret (including `dsh-connector-adapter` in another DSH):
-
-1. Host a **Client ID Metadata Document (CIMD)** over public `https://` (no redirects, max 5 KiB, no private/loopback host):
-
-   ```json
-   {
-     "client_id": "https://example.com/dsh/client.json",
-     "client_name": "My Agent",
-     "redirect_uris": ["http://127.0.0.1/callback"],
-     "token_endpoint_auth_method": "none"
-   }
-   ```
-
-   `client_id` must match the document URL (`http://127.0.0.1:<port>/callback` allows any loopback port).
-2. Complete OAuth 2.1 Authorization Code + PKCE (`S256`) using `client_id` = your CIMD URL and authorize on the approval page with your `dsht_...` token. Refresh tokens rotate on use.
-3. From another DSH using `dsh-connector-adapter`, configure `clientMetadataUrl` and `servers` (`{ serverName, url }`), then ask the agent to invoke `dsh_connector_sign_in`.
-
-### Session & event workflow
-
-- **Scoped access:** Agents only see and operate sessions they started (`session_start`) or sessions explicitly handed over by the user (**Hand over** in DSH's session header/menu).
-- **Mailbox events:** Subscribe to `dsh-agent://events` for change hints, read events with `inbox_poll`, and acknowledge them with `inbox_ack`.
-- **Approvals & control:** Use `session_message`, `session_read`, `session_stop`, `session_redirect`, `session_release`, `permission_decide`, `question_answer`, and `plan_review_decide`. Subscribe to `dsh-agent://identity` for live DSH name updates.
-- **Remote exposure:** Route both DSH's web port and the approval port (`47615`) over `https://` behind your reverse proxy or tunnel, passing `--trusted-host` to DSH.
-
----
-
-## Repositories
-
-This repository contains the bundle at its root and the components below. The npm packages keep their existing names and are still published separately.
-
-| Directory | What lives there |
-| --- | --- |
-| [`dsh-fishball/`](https://github.com/Arrosam/dsh-fishball/tree/main/dsh-fishball) | Fishball core, UI and shared library |
-| [`dsh-connector/`](https://github.com/Arrosam/dsh-fishball/tree/main/dsh-connector) | DSH-side connector, adapter and shared package |
-| [`dsh-fishball-instance/`](https://github.com/Arrosam/dsh-fishball/tree/main/dsh-fishball-instance) | Hosted Fishball child runtime |
-| [`amenities/`](https://github.com/Arrosam/dsh-fishball/tree/main/amenities) | Amenities for the parent and child profiles |
-
-See the [workspace and release guide](https://github.com/Arrosam/dsh-fishball/blob/main/docs/layout.md) for development and packing.
+Tests run in throwaway homes, never against a live DSH profile. Integration packages and
+`npm run test:release` are for releases only. The rules, options and package independence checks are
+in **[TESTING.md](TESTING.md)**; packing is in [docs/layout.md](docs/layout.md).
 
 ## License
 
